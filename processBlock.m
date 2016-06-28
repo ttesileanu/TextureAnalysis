@@ -1,6 +1,49 @@
 function [P,ev,entropy,pattern_ix] = processBlock(I)
-
-% Collect histogram of patterns for square glider
+% processBlock Calculate texture statistics from an image patch.
+%   [P, ev, entropy, pattern_ix] = processBlock(I) calculates texture
+%   statistics from an image patch by counting the occurrences of each
+%   configuration of binary pixels for a square 2x2 glider. The 16 possible
+%   configurations are then used to calculate 10 independent parameters
+%   (see getStatistics).
+%
+%   Returns:
+%    P:
+%       Probabilities of gliders of each type. The encoding is as follows:
+%           0               00             8               00
+%                           00                             01
+%
+%           1               10             9               10
+%                           00                             01 
+%
+%           2               01             10              01
+%                           00                             01  
+%
+%           3               11             11              11
+%                           00                             01  
+%
+%           4               00             12              00
+%                           10                             11 
+%
+%           5               10             13              10
+%                           10                             11  
+%
+%           6               01             14              01
+%                           10                             11 
+%
+%           7               11             15              11
+%                           10                             11
+%    ev:
+%       Probabilities projected onto the 10-dimensional space of
+%       independent parameters (see getStatistics).
+%    entropy:
+%       Entropy of the discrete probability distribution identified by P.
+%       (in bits)
+%    pattern_ix:
+%       Image in terms of the glider configurations. pattern_ix(i, j)
+%       identifies the glider at I(i:i+1, j:j+1) using the code described
+%       above.
+%
+%   See also: getStatistics.
 
 patterns = cat(3, ...
                    I(1:end-1,1:end-1), ...  % Upper left 
@@ -55,6 +98,3 @@ entropy = -sum(P(ix).*log2(P(ix)));
 
 
 end
-
-  
-  

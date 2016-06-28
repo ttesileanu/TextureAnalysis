@@ -1,9 +1,10 @@
 function [img_out] = binarize(img,gamma)
-% Binarize img so that the fraction of 'on' pixels is (1+gamma)/2
+% binarize Binarize images.
+%   img_out = binarize(img, gamma) binarizes 'img' so that the fraction of
+%   'on' pixels is (1+gamma)/2.
 
 if (gamma < -1) || (gamma > 1)
-    display('gamma must lie between -1 and 1');
-    return;
+    error([mfilename ':badgamma'], 'gamma must lie between -1 and 1');
 end
 
 p = (1+gamma)/2;
@@ -26,3 +27,4 @@ img_out = double(img >= threshold);
 % threshold = vect(index);
 % clear vect;
 
+end

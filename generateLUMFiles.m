@@ -21,7 +21,7 @@ parser = inputParser;
 parser.CaseSensitive = true;
 parser.FunctionName = mfilename;
 
-parser.addParamValue('selection', [], @(s) (ischar(s) && isvector(s)) || iscell(s));
+parser.addParameter('selection', [], @(s) (ischar(s) && isvector(s)) || iscell(s));
 
 parser.parse(varargin{:});
 params = parser.Results;
@@ -71,24 +71,9 @@ for i = 1:length(files)
     [~, fname, ext] = fileparts(crt.name);
     if any(strcmpi(ext, extensions))
         % this is an image file
-        image = double(imread(fullfile(src, crt.name)));
-        
-        disp(['Converting ' crt.name ', size ' int2str(size(image, 2)) ' x ' ...
-            int2str(size(image, 1)) '...']);
-        if size(image, 3) == 3
-            % convert to gray scale
-            % this is a simple transformation that approximates the proper
-            % gamma correction for sRGB
-            image = sqrt(0.299*image(:, :, 1).^2 + ...
-                         0.587*image(:, :, 2).^2 + ...
-                         0.114*image(:, :, 3).^2);
-        elseif size(image, 3) ~= 1
-            % don't really know what to do with other numbers of samples
-            error([mfilename ':badsamps'], 'Can only work with 1 or 3 samples per pixel.');
-        end
-        
-        % store this to a Matlab file
-        LUM_Image = image; %#ok<NASGU>
+        LUM_Image = processImage(fullfile(src, crt.name));
+        disp(['Converted ' crt.name ', size ' int2str(size(LUM_Image, 2)) ' x ' ...
+            int2str(size(LUM_Image, 1)) '...']);
         save(fullfile(dest, [fname postfix]), 'LUM_Image');
     else
         disp(['Skipping unrecognized file ' crt.name '...']);
