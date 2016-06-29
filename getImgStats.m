@@ -36,7 +36,7 @@ for i = 1:length(images)
     numWide(i)=floor(size(LUM_Image,2)/(blockAvgFactor*patchSize));
     numHigh(i)=floor(size(LUM_Image,1)/(blockAvgFactor*patchSize));
     
-    N(i)=numWide(i).*numHigh(i); %number of patches per image
+    N(i)=numWide(i)*numHigh(i); %number of patches per image
     imgpatches=zeros(patchSize,patchSize,N(i));
     
     %Set any luminance values which have been corrected to below zero to a very small number so we can take the logarithm

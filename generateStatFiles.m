@@ -10,7 +10,7 @@ for i=1:numel(patchSizes)
     for j=1:numel(blockAFs)
         outputTag = strcat('_N0',num2str(blockAFs(j)),...
             '_PCfrac',num2str(100*PCfrac),'_PS',num2str(patchSizes(i)),'.mat');        
-        outputFname = fullfile(analysesDirectory, analysesFileName, outputTag);
+        outputFname = fullfile(analysesDirectory, strcat(analysesFileName, outputTag));
         if ~params.forcestats
             try
                 rawdata = open(outputFname);
@@ -40,7 +40,7 @@ for i=1:numel(patchSizes)
             data.sharpness = sharpness;
             
             crtFfilter = Ffilter{crt}; %#ok<NASGU>
-            save(outputFname, {'data', 'crtFfilter'});
+            save(outputFname, 'data', 'crtFfilter');
         end
         crt = crt + 1;
     end

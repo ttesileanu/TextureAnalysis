@@ -17,11 +17,8 @@ for i=1:length(dataNI.indA)
     dataNI.indA(i).obj = gmdistribution.fit(dataNI.indA(i).ev,2,'options',options,'SharedCov',false,'replicates',10);
     
     % assign every image patch to one of the two gaussians
-    dataNI.indA(i).mahal = zeros(size(dataNI.indA(i).ev, 1), 2);
-    for j=1:size(dataNI.indA(i).ev,1)
-        dataNI.indA(i).cx(j)=dataNI.indA(i).obj.cluster(dataNI.indA(i).ev(j,:));
-        dataNI.indA(i).mahal(j, :) = dataNI.indA(i).obj.mahal(dataNI.indA(i).ev(j, :));
-    end
+    dataNI.indA(i).cx = dataNI.indA(i).obj.cluster(dataNI.indA(i).ev);
+    dataNI.indA(i).mahal = dataNI.indA(i).obj.mahal(dataNI.indA(i).ev);
     
     % for every image, compute how many patches are in cluster 1 or cluster 2
     % on average

@@ -3,9 +3,9 @@
 %   generateStatFiles.
 %
 %   All the files from the folder pointed to by the variable 'analysesDirectory'
-%   are loaded. The data is stored in a structure called 'dataNI', which
-%   has a single member, a structure array called 'indA'. The fields of
-%   this structure are:
+%   and starting with the string from 'analysesFileName' are loaded. The
+%   data is stored in a structure called 'dataNI', which has a single member,
+%   a structure array called 'indA'. The fields of this structure are:
 %    ev:
 %       Values of the 10 independent texture parameters for all the image
 %       patches. (see analyzeImageSetModNoPC)
@@ -27,7 +27,7 @@
 %   See also: generateStatFiles, analyzeImageSetModNoPC, getImgStats.
 
 dr0 = analysesDirectory;
-dr  = dir(fullfile(dr0,analysesFileName,'*.mat'));
+dr  = dir(fullfile(dr0, strcat(analysesFileName, '*.mat')));
 
 dataNI=struct;
 disp(['Number of analyses: ' num2str(length(dr))])

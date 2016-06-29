@@ -7,15 +7,20 @@ function LUM_Image = loadLUMImage(fname)
 %
 % See also: processImage.
 
-LUM_Image = [];
-try
-    contents = open(fname);
-catch
-    LUM_Image = processImage(fname);
-end
+[~, ~, ext] = fileparts(fname);
 
+LUM_Image = [];
+if strcmpi(ext, '.mat')
+    contents = open(fname);    
+    
+    try
+        LUM_Image = contents.LUM_Image;
+    catch
+    end
+end
+    
 if isempty(LUM_Image)
-    LUM_Image = contents.LUM_Image;
+    LUM_Image = processImage(fname);
 end
 
 end

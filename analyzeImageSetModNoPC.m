@@ -40,15 +40,21 @@ covM=cov(ev);
 
 %save the locations of patches
 %disp('Copying image patches...');
+crtN = 0;
 for i=1:length(images)
     imageCoordinates.name{i} = images(i).path;
     for j = 1:numWide(i)
         for k = 1:numHigh(i)
-            l=(i-1)*N(i)+j+(k-1)*numWide(i); %index to use
+            l = crtN + j + (k-1)*numWide(i); %index to use
             imageCoordinates.image(l) = i;
             imageCoordinates.x(l) = j;
             imageCoordinates.y(l) = k;
         end
+    end
+    crtN = crtN + N(i);
+    % a sanity check
+    if N(i) ~= numWide(i)*numHigh(i)
+        error([mfilename ':badN'], 'Values in N, numWide, and numHigh vectors don''t match.');
     end
 end
 

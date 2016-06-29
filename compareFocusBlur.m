@@ -31,10 +31,10 @@ parser = inputParser;
 parser.CaseSensitive = true;
 parser.FunctionName = mfilename;
 
-parser.addParamValue('imgpath', '', @(s) ischar(s) && isvector(s));
-parser.addParamValue('choice', 'random', @(c) (ischar(c) && isvector(c)) || ...
+parser.addParameter('imgpath', '', @(s) ischar(s) && isvector(s));
+parser.addParameter('choice', 'random', @(c) (ischar(c) && isvector(c)) || ...
     (isnumeric(c) && isequal(size(c), [2 m*n])));
-parser.addParamValue('clim', [], @(clim) isvector(clim) && numel(clim) == 2);
+parser.addParameter('clim', [], @(clim) isvector(clim) && numel(clim) == 2);
 
 parser.parse(varargin{:});
 params = parser.Results;
@@ -67,8 +67,7 @@ ys = (res.ic.y(patch_idxs)-1)*patch_size;
 
 patches = zeros(patch_size, patch_size, 2, m, n);
 for k = 1:numel(image_names)
-    image_struc = open(fullfile(params.imgpath, image_names{k}));
-    image = image_struc.LUM_Image;
+    image = loadLUMImage(fullfile(params.imgpath, image_names{k}));
     crt_patch = image((ys(k)+1):(ys(k)+patch_size), (xs(k)+1):(xs(k)+patch_size));
     patches(:, :, k) = crt_patch;
 end
