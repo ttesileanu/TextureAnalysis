@@ -95,7 +95,7 @@ function handles = smartscatter(x, y, varargin)
 %       A single number representing the size of the points, or a vector
 %       giving the size of each of the points individually. This does not
 %       work when 'refseq' is provided.
-%       (default: 20)
+%       (default: 25)
 %     'tight' <b>
 %       Whether to use a framing that is tightly centered on the data, or
 %       simply use Matlab's default.
@@ -110,20 +110,20 @@ parser = inputParser;
 parser.CaseSensitive = true;
 parser.FunctionName = mfilename;
 
-parser.addParameter('colors', 'r', @(x) (ischar(x) && isvector(x)) || (isnumeric(x) && ismatrix(x)));
-parser.addParameter('edge', 0.1, @(x) isscalar(x) && isnumeric(x));
-parser.addParameter('labels', [], @(x) (isscalar(x) && islogical(x)) || (isvector(x) && (isnumeric(x) || iscell(x))));
-parser.addParameter('maxpoints', 5000, @(x) isscalar(x) && isnumeric(x));
-parser.addParameter('range', [], @(x) isnumeric(x) && isvector(x) && length(x) == 4);
-parser.addParameter('refseq', {}, @(x) iscell(x) && isvector(x) && length(x) == 2);
-parser.addParameter('shapes', '.', @(x) isvector(x) && (ischar(x) || isnumeric(x)));
-parser.addParameter('sizes', 20, @(x) isvector(x) && isnumeric(x));
-parser.addParameter('tight', true, @(b) islogical(b) && isscalar(b));
-parser.addParameter('alpha', 1, @(x) isscalar(x) && isnumeric(x));
+parser.addParamValue('colors', 'r', @(x) (ischar(x) && isvector(x)) || (isnumeric(x) && ismatrix(x)));
+parser.addParamValue('edge', 0.1, @(x) isscalar(x) && isnumeric(x));
+parser.addParamValue('labels', [], @(x) (isscalar(x) && islogical(x)) || (isvector(x) && (isnumeric(x) || iscell(x))));
+parser.addParamValue('maxpoints', 5000, @(x) isscalar(x) && isnumeric(x));
+parser.addParamValue('range', [], @(x) isnumeric(x) && isvector(x) && length(x) == 4);
+parser.addParamValue('refseq', {}, @(x) iscell(x) && isvector(x) && length(x) == 2);
+parser.addParamValue('shapes', '.', @(x) isvector(x) && (ischar(x) || isnumeric(x)));
+parser.addParamValue('sizes', 25, @(x) isvector(x) && isnumeric(x));
+parser.addParamValue('tight', true, @(b) islogical(b) && isscalar(b));
+parser.addParamValue('alpha', 1, @(x) isscalar(x) && isnumeric(x));
 
-parser.addParameter('density', false, @(b) islogical(b) && isscalar(b));
-parser.addParameter('displayfunction', [], @(x) (ischar(x) && isvector(x)) || isa(x, 'function_handle'));
-parser.addParameter('resolution', 100, @(n) isnumeric(n) && isscalar(n));
+parser.addParamValue('density', false, @(b) islogical(b) && isscalar(b));
+parser.addParamValue('displayfunction', [], @(x) (ischar(x) && isvector(x)) || isa(x, 'function_handle'));
+parser.addParamValue('resolution', 100, @(n) isnumeric(n) && isscalar(n));
 
 % parse
 parser.parse(varargin{:});
@@ -249,23 +249,30 @@ end
 % figure out what the final range of the plot will be
 if params.range
     final_range = params.range;
-elseif params.tight
+else
     edgex = params.edge*(datarange(2) - datarange(1));
     edgey = params.edge*(datarange(4) - datarange(3));
-    final_range = datarange + [-edgex, edgex, -edgey, edgey];
+    if params.tight || params.density || params.alpha ~= 1
+        % XXX this isn't quite right
+        final_range = datarange + [-edgex, edgex, -edgey, edgey];
+    else
+        final_range = [];
+    end
 end
 
-xrange = (final_range(2) - final_range(1));
-if xrange < eps
-    xrange = 1;
-    tmp = sum(final_range(1:2))/2;
-    final_range(1:2) = tmp + [-xrange/2 xrange/2];
-end
-yrange = (final_range(4) - final_range(3));
-if yrange < eps
-    yrange = 1;
-    tmp = sum(final_range(3:4))/2;
-    final_range(3:4) = tmp + [-yrange/2 yrange/2];
+if ~isempty(final_range)
+    xrange = (final_range(2) - final_range(1));
+    if xrange < eps
+        xrange = 1;
+        tmp = sum(final_range(1:2))/2;
+        final_range(1:2) = tmp + [-xrange/2 xrange/2];
+    end
+    yrange = (final_range(4) - final_range(3));
+    if yrange < eps
+        yrange = 1;
+        tmp = sum(final_range(3:4))/2;
+        final_range(3:4) = tmp + [-yrange/2 yrange/2];
+    end
 end
 
 if ~params.density

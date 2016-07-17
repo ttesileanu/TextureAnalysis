@@ -3,9 +3,9 @@ function LUM_Image = loadLUMImage(fname)
 %   LUM_Image = loadLUMImage(fname) loads an image in luminosity format. If
 %   the file is a Matlab file, then it must contain a 'LUM_Image' variable,
 %   and this is directly returned. Otherwise the file must be an image
-%   file, in which case it will be processed using processImage.m.
+%   file, in which case it will be processed using imageToLUM.m.
 %
-% See also: processImage.
+% See also: imageToLUM.
 
 [~, ~, ext] = fileparts(fname);
 
@@ -20,7 +20,7 @@ if strcmpi(ext, '.mat')
 end
     
 if isempty(LUM_Image)
-    LUM_Image = processImage(fname);
+    LUM_Image = imageToLUM(fname);
 end
 
 end

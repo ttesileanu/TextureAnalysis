@@ -71,7 +71,7 @@ for i = 1:length(files)
     [~, fname, ext] = fileparts(crt.name);
     if any(strcmpi(ext, extensions))
         % this is an image file
-        LUM_Image = processImage(fullfile(src, crt.name));
+        LUM_Image = imageToLUM(fullfile(src, crt.name));
         disp(['Converted ' crt.name ', size ' int2str(size(LUM_Image, 2)) ' x ' ...
             int2str(size(LUM_Image, 1)) '...']);
         save(fullfile(dest, [fname postfix]), 'LUM_Image');

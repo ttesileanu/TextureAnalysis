@@ -11,13 +11,17 @@ function compareResults(res1, res2, varargin)
 %    'labels' <c>
 %       Cell array of labels to use for the legend.
 %       (default: no legend)
+%    'fields' {<s1>, <s2>}
+%       Fields to use from each result structure.
+%       (default: {'ev', 'ev'})
 
 % parse the optional arguments
 parser = inputParser;
 parser.CaseSensitive = true;
 parser.FunctionName = mfilename;
 
-parser.addParamValue('labels', {}, @(c) iscell(c) && isvector(c));
+parser.addParameter('labels', {}, @(c) iscell(c) && isvector(c));
+parser.addParameter('fields', {'ev', 'ev'}, @(c) iscell(c) && numel(c) == 2);
 
 parser.parse(varargin{:});
 params = parser.Results;
@@ -26,10 +30,12 @@ params = parser.Results;
 set(gcf, 'position', [50 50 961 600], 'paperposition', [0.25 0.25 9.61 6]);
 
 % get rid of spurious patches
-mask1 = (res1.ev(:, 1) ~= 1);
-mask2 = (res2.ev(:, 1) ~= 1);
+ev1 = res1.(params.fields{1});
+ev2 = res2.(params.fields{2});
+mask1 = (ev1(:, 1) ~= 1);
+mask2 = (ev2(:, 1) ~= 1);
 
-style_opts = {'sizes', 1.5};
+style_opts = {'sizes', 10};
 
 c_labels = {'\gamma', '\beta_|', '\beta_{--}', '\beta_{\\}', '\beta_{/}', ...
     '\theta_{|-}', '\theta_{-|}', '\theta_{\_|}', '\theta_{|\_}', '\alpha'};
@@ -41,12 +47,12 @@ for i0 = 1:2:10
     i2 = order(i0+1);
     
     subplot(2, 3, (i0+1)/2);
-    smartscatter(res1.ev(mask1, i1), res1.ev(mask1, i2), 'colors', 'b', style_opts{:});
+    smartscatter(ev1(mask1, i1), ev1(mask1, i2), 'colors', 'b', style_opts{:});
     xl1 = xlim;
     yl1 = ylim;
 
     hold on;
-    smartscatter(res2.ev(mask2, i1), res2.ev(mask2, i2), 'colors', 'r', style_opts{:});
+    smartscatter(ev2(mask2, i1), ev2(mask2, i2), 'colors', 'r', style_opts{:});
     xl2 = xlim;
     yl2 = ylim;
     

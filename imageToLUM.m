@@ -1,7 +1,9 @@
-function img = processImage(fname)
-% processImage Convert a single image to LUM Matlab format.
-%   image = processImage(fname) loads the image pointed to by the given
-%   file name, and returns it in LUM format -- a luminance-only matrix.
+function img = imageToLUM(fname)
+% imageToLUM Convert a single image to LUM Matlab format.
+%   image = imageToLUM(fname) loads the image pointed to by the given
+%   file name, and returns it in LUM format -- a luminance-only matrix. It
+%   assumes RGB colors in sRGB profile for images with three samples per
+%   pixel.
 
 img = double(imread(fname));
 

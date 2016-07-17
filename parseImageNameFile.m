@@ -27,19 +27,19 @@ for i = 1:length(raw)
     k = find(s == '=', 1);
     if ~isempty(k)
         fname = s(k+1:end);
-        [~, name, ext] = fileparts(fname);
+        [subpath, name, ext] = fileparts(fname);
         
         if ~strcmp(ext, '.mat')
             found = false;
             for j = 1:length(postfixes)
-                fnameCheck = fullfile(path, name, postfixes{j});
+                fnameCheck = fullfile(path, subpath, [name, postfixes{j}]);
                 if exist(fnameCheck, 'file') == 2
                     found = true;
                     break;
                 end
             end
             if found
-                fname = fullfile(name, postfixes{j});
+                fname = fullfile(subpath, [name, postfixes{j}]);
             end
         end
         images(n).path = fname;

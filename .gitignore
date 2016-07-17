@@ -1,0 +1,9 @@
+.DS_Store
+*.swp
+*~
+old/
+BSRAnalyses/
+VOCAnalyses/
+PennAnalyses/
+NaturalImages/
+BSR_LUMs/
