@@ -70,6 +70,12 @@ function [evs,numWide,numHigh, others] = ...
 %       processData.m), and also for the complementary masks. The values
 %       will be returned as 'others.evF', 'others.covF', and 'others.evB',
 %       'others.covB', respectively.
+%    'progressEvery': float
+%       How often to display progress information (in seconds), after the
+%       'progressStart' period (see below) elapsed.
+%    'progressStart': float
+%       How long to wait before displaying progress information for the
+%       first time. Set to infinity to never display progress.
 
 % parse optional arguments
 parser = inputParser;
@@ -81,6 +87,8 @@ parser.addParameter('images', false, @(b) islogical(b) && isscalar(b));
 parser.addParameter('filterFull', false, @(b) islogical(b) && isscalar(b));
 parser.addParameter('fullImageEv', false, @(b) islogical(b) && isscalar(b));
 parser.addParameter('overlappingPatches', false, @(b) islogical(b) && isscalar(b));
+parser.addParameter('progressEvery', 10, @(x) isnumeric(x) && isscalar(x));
+parser.addParameter('progressStart', 20, @(x) isnumeric(x) && isscalar(x));
 
 % parse
 parser.parse(varargin{:});
@@ -123,7 +131,19 @@ else
 end
 trimEdgeOrig = trimEdge*blockAvgFactor;
 
+t0 = tic;
+tLast = tic;
+
 for i = 1:length(imageNames)
+    if toc(t0) > params.progressStart
+        if toc(tLast) > params.progressEvery
+            disp(['getImgStats working on image ' int2str(i) '/' int2str(length(imageNames)) ...
+                ', ' imageNames(i).path ...
+                '... ' num2str(toc(t0), '%.2f') ' seconds elapsed.']);
+            tLast = tic;
+        end
+    end
+    
     imageCoordinates.name{i} = imageNames(i).path;
     
     [preprocessed, image0] = preprocessImage(fullfile(imgDirectory, imageNames(i).path), ...
@@ -209,6 +229,10 @@ for i = 1:length(imageNames)
         end
     end
 
+    if params.images
+        % store a copy of the image mask
+        others.segmentationMasks{i} = crtImageMask;
+    end
     
     if ~params.overlappingPatches && ~params.fullImageEv
         % calculate sharpness per patch

@@ -77,6 +77,12 @@ function [ covM, ev, others ] = analyzeImageSetModNoPC(...
 %    'subSelect': array
 %       A list of integers or a boolean mask selecting which images from
 %       the analysis (as opposed to filter) set should be processed.
+%    'progressEvery': float
+%       How often to display progress information (in seconds), after the
+%       'progressStart' period (see below) elapsed.
+%    'progressStart': float
+%       How long to wait before displaying progress information for the
+%       first time. Set to infinity to never display progress.
 %
 %   See also: processBlock, getStatistics, processData, getImgStats.
 
@@ -92,6 +98,8 @@ parser.addParameter('subSelect', [], @(v) isempty(v) || (isvector(v) && isnumeri
 parser.addParameter('filter', [], @(m) isempty(m) || (ismatrix(m) && isnumeric(m)));
 parser.addParameter('filterFull', false, @(b) islogical(b) && isscalar(b));
 parser.addParameter('fullImageEv', false, @(b) islogical(b) && isscalar(b));
+parser.addParameter('progressEvery', 10, @(x) isnumeric(x) && isscalar(x));
+parser.addParameter('progressStart', 20, @(x) isnumeric(x) && isscalar(x));
 
 % parse
 parser.parse(varargin{:});
@@ -119,7 +127,8 @@ tic
 if isempty(params.filter)
     disp('Whitening...');
     [Ffilter] = generateFourierWhitenFilter(imgDirectory_filter, images_filter, ...
-        blockAvgFactor, patchSize);
+        blockAvgFactor, patchSize, ...
+        'progressStart', params.progressStart, 'progressEvery', params.progressEvery);
 else
     Ffilter = params.filter;
     disp('Using existing filter.');
@@ -136,7 +145,9 @@ opts = {...
     'images', params.images, ...
     'filterFull', params.filterFull, ...
     'overlappingPatches', params.overlappingPatches, ...
-    'fullImageEv', params.fullImageEv};
+    'fullImageEv', params.fullImageEv, ...
+    'progressStart', params.progressStart, ...
+    'progressEvery', params.progressEvery};
 [ev,numWide,numHigh, others]=getImgStats(imgDirectory, imageNames, blockAvgFactor, ...
     patchSize, Ffilter, opts{:});
 

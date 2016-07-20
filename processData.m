@@ -95,6 +95,12 @@ function dataNI = processData(...
 %       List of images to use, or a boolean mask indicating which images to
 %       be kept. The determination of the focus gaussian doesn't run when
 %       this list is nonempty.
+%    'progressEvery': float
+%       How often to display progress information (in seconds), after the
+%       'progressStart' period (see below) elapsed.
+%    'progressStart': float
+%       How long to wait before displaying progress information for the
+%       first time. Set to infinity to never display progress.
 %
 %   See also: analyzeImageSetModNoPC, getImgStats.
 
@@ -122,6 +128,8 @@ parser.addParameter('segField', 'fgMat', @(s) ischar(s) && isscalar(s));
 parser.addParameter('segSel', [], @(v) isempty(v) || (isvector(v) && isnumeric(v)));
 parser.addParameter('subSelect', [], @(v) isempty(v) || (isvector(v) && ...
     (islogical(v) || isnumeric(v))));
+parser.addParameter('progressEvery', 10, @(x) isnumeric(x) && isscalar(x));
+parser.addParameter('progressStart', 20, @(x) isnumeric(x) && isscalar(x));
 
 % parse
 parser.parse(varargin{:});

@@ -9,6 +9,14 @@ function images = parseImageNameFile(imgNameFile, path)
 %   exists in the given path. If not, it checks for a file '.mat'. If both
 %   of these don't exist, the file name is stored as-is. The file is also
 %   stored as-is if the extension was '.mat' to start with.
+%
+%   images = parseImageNameFile(imgNameFile) parses the text file without
+%   checking for the existence of the images, and without changing the
+%   extension or ending of the files.
+
+if nargin < 2
+    path = '';
+end
 
 %get images for estimating statistics
 images = struct('path', {});
@@ -29,7 +37,7 @@ for i = 1:length(raw)
         fname = s(k+1:end);
         [subpath, name, ext] = fileparts(fname);
         
-        if ~strcmp(ext, '.mat')
+        if ~strcmp(ext, '.mat') && ~isempty(path)
             found = false;
             for j = 1:length(postfixes)
                 fnameCheck = fullfile(path, subpath, [name, postfixes{j}]);
