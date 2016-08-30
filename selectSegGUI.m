@@ -737,13 +737,11 @@ for i = 1:n
         end
         
         % enable or disable arrow buttons as needed
-        if ~crtHasSeg
-            set(controlsHandles(ctrlIdx:ctrlIdx+2), 'enable', 'off');
-        else
-            set(controlsHandles(ctrlIdx:ctrlIdx+2), 'enable', 'on');
-        end
-        if crtIgnoreSeg
+        set(controlsHandles(ctrlIdx+1), 'enable', 'on');
+        if ~crtHasSeg || crtIgnoreSeg
             set(controlsHandles([ctrlIdx, ctrlIdx+2]), 'enable', 'off');
+        else
+            set(controlsHandles([ctrlIdx, ctrlIdx+2]), 'enable', 'on');
         end
         if crtHasSeg && ~crtIgnoreSeg
             if crtSegChoice == 1
@@ -1199,7 +1197,7 @@ overlayPlanes = {normalizedImage, normalizedImage, normalizedImage};
 crtHasSeg = ~isempty(segField) && ~strcmp(segField, 'none') && ~isempty(crtSeg);
 crtIgnoreSeg = isnan(crtSegChoice);
 %    if isfinite(crtSegChoice) && ~isempty(crtSeg) && ~isempty(segField)
-if showSeg && crtHasSeg && ~crtIgnoreSeg
+if showSeg && crtHasSeg % && ~crtIgnoreSeg
     crtSegImage = crtSeg.(segField);
     segmentValues = setdiff(unique(crtSegImage(:)), 0);
     nSegments = numel(segmentValues);

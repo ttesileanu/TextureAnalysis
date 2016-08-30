@@ -1,11 +1,10 @@
 function [segs, segSel] = collectSegmentations(imgNamesFile, segDirectory, varargin)
 % collectSegmentations Collect image segmentations into a single structure.
-%   segs = collectSegmentations(imgNamesFile, imgDirectory, segDirectory)
-%   loads segmentation data from 'segDirectory' corresponding to the files
-%   from the 'imgNamesFile'. Matching segmentation files are assumed to
-%   have the same name (but different extension). When a segmentation file
-%   is not found, a warning is issued, and a blank segmentation is
-%   returned.
+%   segs = collectSegmentations(imgNamesFile, segDirectory) loads
+%   segmentation data from 'segDirectory' corresponding to the files from
+%   the 'imgNamesFile'. Matching segmentation files are assumed to have the
+%   same name (but different extension). When a segmentation file is not
+%   found, a warning is issued, and a blank segmentation is returned.
 %
 %   [segs, segSel] = collectSegmentations(...) returns a selection vector
 %   for the segmentations in which all entries are equal to 1 except when a
@@ -83,7 +82,9 @@ for i = 1:length(images)
         
         FG.objMat = segData;
         FG.contourMat = (segData == 255);
-        FG.fgMat = (segData > 0 & segData < 255);
+%        FG.fgMat = (segData > 0 & segData < 255);
+        % include contour in the foreground
+        FG.fgMat = (segData > 0);
     end
     
     segs(i).FG = FG;
