@@ -7,3 +7,6 @@ VOCAnalyses/
 PennAnalyses/
 NaturalImages/
 BSR_LUMs/
+VOCImages
+figs/
+segGuiSettings.mat

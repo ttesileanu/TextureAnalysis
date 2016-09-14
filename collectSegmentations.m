@@ -10,7 +10,13 @@ function [segs, segSel] = collectSegmentations(imgNamesFile, segDirectory, varar
 %   for the segmentations in which all entries are equal to 1 except when a
 %   segmentation file is not found, in which case the entry is set to NaN.
 %
+%   Use the 'labelsDirectory' option below to read in labels for the
+%   segmented objects.
+%
 %   Options:
+%    'labelsDirectory': string
+%       Directory where to search for XML files describing the objects in
+%       the segmentations.
 %    'progressEvery': float
 %       How often to display progress information (in seconds), after the
 %       'progressStart' period (see below) elapsed.
@@ -28,6 +34,7 @@ parser.FunctionName = mfilename;
 parser.addParameter('progressEvery', 10, @(x) isnumeric(x) && isscalar(x));
 parser.addParameter('progressStart', 20, @(x) isnumeric(x) && isscalar(x));
 parser.addParameter('warnNotFound', false, @(b) islogical(b) && isscalar(b));
+parser.addParameter('labelsDirectory', '', @(s) isempty(s) || (ischar(s) && isvector(s)));
 
 % parse
 parser.parse(varargin{:});
@@ -85,9 +92,69 @@ for i = 1:length(images)
 %        FG.fgMat = (segData > 0 & segData < 255);
         % include contour in the foreground
         FG.fgMat = (segData > 0);
+        
+        % is there any label data?
+        if ~isempty(params.labelsDirectory)
+            labelsFile = fullfile(params.labelsDirectory, [file_root '.xml']);
+            xmlData = [];
+            try
+                xmlData = parseXML(labelsFile);
+            catch
+                 warning([mfilename ':noxml'], ['XML data could not be loaded for ' segs(i).image '.']);   
+            end
+            if ~isempty(xmlData)
+                [FG.objMatLabels, FG.objMatDetails] = translateXml(xmlData);
+            end
+        end
     end
     
     segs(i).FG = FG;
+end
+
+end
+
+function [labels, details] = translateXml(xml)
+% Translate the XML structure into object labels and other details that may
+% be available in the file (bounding box, pose, etc.)
+
+labels = {};
+details = {};
+
+if ~strcmp(xml.Name, 'annotation')
+    return;
+end
+
+for i = 1:numel(xml.Children)
+    node = xml.Children(i);
+    if strcmp(node.Name, 'object')
+        objDetails = struct;
+        for j = 1:numel(node.Children)
+            subnode = node.Children(j);
+            if strcmp(subnode.Name, 'name')
+                % assuming this is properly formatted, and keeping only
+                % information from the last 'name' tag from every 'object'
+                objName = subnode.Children(1).Data;
+            end
+            if strcmp(subnode.Name, 'pose')
+                objDetails.pose = subnode.Children(1).Data;
+            end
+            if any(strcmp(subnode.Name, {'truncated', 'occluded', 'difficult'}))
+                objDetails.(subnode.Name) = logical(subnode.Children(1).Data);
+            end
+            if strcmp(subnode.Name, 'bndbox')
+                bndBox = struct;
+                for k = 1:numel(subnode.Children)
+                    subsubnode = subnode.Children(k);
+                    if ~strcmp(subsubnode.Name, '#text')
+                        bndBox.(subsubnode.Name) = str2double(subsubnode.Children(1).Data);
+                    end
+                end
+                objDetails.bndBox = bndBox;
+            end
+        end
+        labels = [labels objName]; %#ok<AGROW>
+        details = [details objDetails]; %#ok<AGROW>
+    end
 end
 
 end
