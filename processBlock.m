@@ -1,10 +1,13 @@
-function [P,ev,entropy,pattern_ix] = processBlock(I)
+function [P, ev, entropy, pattern_ix] = processBlock(I, nLevels)
 % processBlock Calculate texture statistics from an image patch.
-%   [P, ev, entropy, pattern_ix] = processBlock(I) calculates texture
+%   [P, ev, entropy, pattern_ix] = processBlock(I) calculates binary texture
 %   statistics from an image patch by counting the occurrences of each
 %   configuration of binary pixels for a square 2x2 glider. The 16 possible
 %   configurations are then used to calculate 10 independent parameters
 %   (see getStatistics).
+%
+%   processBlock(I, nLevels) calculates the statistics for nLevels gray
+%   levels. XXX This isn't yet implemented.
 %
 %   Returns:
 %    P:
@@ -44,6 +47,13 @@ function [P,ev,entropy,pattern_ix] = processBlock(I)
 %       above.
 %
 %   See also: getStatistics.
+
+if nargin < 2
+    nLevels = 2;
+end
+if nLevels ~= 2
+    error([mfilename ':notimp'], 'Only binary images are implemented for now.');
+end
 
 patterns = cat(3, ...
                    I(1:end-1,1:end-1), ...  % Upper left 

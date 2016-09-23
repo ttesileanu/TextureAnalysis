@@ -2,7 +2,8 @@ function images = parseImageNameFile(imgNameFile, path)
 % parseImageNameFile Parse file of image names.
 %   images = parseImageNameFile(imgNameFile, path) parses a text file
 %   containing image names (in the format '<something> = <image name>') and
-%   returns a structure containing all the names.
+%   returns a cell array containing all the names. (The left side of the
+%   equality is ignored.)
 %
 %   The function processes the file names in the following way. It first
 %   removes the extension and checks whether a file ending in '_LUM.mat'
@@ -15,11 +16,11 @@ function images = parseImageNameFile(imgNameFile, path)
 %   extension or ending of the files.
 
 if nargin < 2
-    path = '';
+    path = 0;
 end
 
 %get images for estimating statistics
-images = struct('path', {});
+%images = struct('path', {});
 
 fid = fopen(imgNameFile);
 raw = textscan(fid, '%s', 'delimiter', '\n\r');
@@ -29,7 +30,7 @@ raw = raw{1};
 postfixes = {'_LUM.mat', '.mat'};
 
 n = 1;
-
+images = cell(1, length(raw));
 for i = 1:length(raw)
     s = raw{i};
     k = find(s == '=', 1);
@@ -37,7 +38,7 @@ for i = 1:length(raw)
         fname = s(k+1:end);
         [subpath, name, ext] = fileparts(fname);
         
-        if ~strcmp(ext, '.mat') && ~isempty(path)
+        if ~strcmp(ext, '.mat') && ~isequal(path, 0)
             found = false;
             for j = 1:length(postfixes)
                 fnameCheck = fullfile(path, subpath, [name, postfixes{j}]);
@@ -50,9 +51,12 @@ for i = 1:length(raw)
                 fname = fullfile(subpath, [name, postfixes{j}]);
             end
         end
-        images(n).path = fname;
+%        images(n).path = fname;
+        images{n} = fname;
         n = n + 1;
     end
 end
+% we might have preallocated too much if there are comment lines
+images = images(1:n-1);
 
 end
