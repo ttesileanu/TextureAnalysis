@@ -90,8 +90,8 @@ checkNumber = @(x) isempty(x) || (isscalar(x) && isreal(x) && isnumeric(x));
 
 parser.addOptional('blockAF', 1, checkNumber);
 parser.addOptional('filter', [], @(m) isempty(m) || (ismatrix(m) && isreal(m) && isnumeric(m)));
-parser.addOptional('nLevels', checkNumber);
-parser.addOptional('quantPatchSize', checkPatchSize);
+parser.addOptional('nLevels', [], checkNumber);
+parser.addOptional('quantPatchSize', [], checkPatchSize);
 
 parser.addParameter('averageType', [], checkStr);
 parser.addParameter('doLog', [], checkBool);
@@ -126,6 +126,8 @@ if params.imageCopies
     res.imageCopies.final = cell(size(imageNames));
     res.imageCopies.masks = cell(size(imageNames));
 end
+preprocessArgs = [{params.blockAF params.filter params.nLevels params.quantPatchSize} ...
+    structToCell(params, {'averageType', 'doLog', 'filterType', 'quantType', 'threshold'})];
 for i = 1:numel(imageNames)
     % output progress information if required
     if (~progressWritten && toc(t0) > params.progressStart) || ...
@@ -143,7 +145,7 @@ for i = 1:numel(imageNames)
     crtProcessedMasks = cell(size(crtMasks));
     [crtImage, crtProcessedMasks{:}, ...
         crtOrigImage, crtLogImage, crtAveragedImage, crtFilteredImage] = ...
-        preprocessImage(fullfile(path, imageNames{i}), crtMasks{:}, varargin{:});
+        preprocessImage(fullfile(path, imageNames{i}), crtMasks{:}, preprocessArgs{:});
     
     % call the walker function
     crtRes = fct(i, crtImage, crtProcessedMasks{:});

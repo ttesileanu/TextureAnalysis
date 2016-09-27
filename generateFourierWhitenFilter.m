@@ -28,57 +28,39 @@ parser = inputParser;
 parser.CaseSensitive = true;
 parser.FunctionName = mfilename;
 
-parser.addParameter('progressEvery', 10, @(x) isnumeric(x) && isscalar(x));
-parser.addParameter('progressStart', 20, @(x) isnumeric(x) && isscalar(x));
+parser.addParameter('progressEvery', [], @(x) isnumeric(x) && isscalar(x));
+parser.addParameter('progressStart', [], @(x) isnumeric(x) && isscalar(x));
 
-% parse
+% parse -- just for error checking, since we directly pass the arguments to
+% walkImageSet, anyway
 parser.parse(varargin{:});
-params = parser.Results; %#ok<*NASGU>
 
-% handle rectangular patches
 if numel(patchSize) == 1
     patchSize = [patchSize patchSize];
 end
 
-t0 = tic;
-tLast = tic;
-
 Fpower = zeros(patchSize);
 count = 0;
-for i = 1:length(imageNames)
-    if toc(t0) > params.progressStart
-        if toc(tLast) > params.progressEvery
-            disp([mfilename ' processing image ' int2str(i) '/' int2str(length(imageNames)) ...
-                ', ' imageNames(i).path ...
-                '... ' num2str(toc(t0), '%.2f') ' seconds elapsed.']);
-            tLast = tic;
-        end
-    end
-    
-    image = preprocessImage(fullfile(path, imageNames(i).path), blockAvgFactor);
-    
-    nPatches = floor(size(image) ./ patchSize);
-    for k = 1:nPatches(1)
-        rows = ((k-1)*patchSize(1) + 1):(k*patchSize(1));
-        for l = 1:nPatches(2)
-            cols = ((l-1)*patchSize(2) + 1):(l*patchSize(2));
-            patchF = fft2(image(rows, cols));
-            Fpower = Fpower + (patchF .* conj(patchF));
-        end
-    end
-    count = count + prod(nPatches);
-    
-    % XXX the following only works with square patches:
-%     imgPatches = patchifyImage(image, patchSize(1));
-    
-    % Fourier transform the patches
-%     imgpatchesF=zeros(size(imgPatches));
-%     for j=1:size(imgPatches,3)
-%         imgpatchesF(:,:,j)=fft2(imgPatches(:,:,j));
-%     end
-%     Fpower=Fpower+mean(imgpatchesF.*conj(imgpatchesF),3)/length(images);
-end
+
+walkImageSet(@walker, imageNames, path, blockAvgFactor, varargin{:});
+
 Fpower = Fpower / count;
 Ffilter = 1 ./ sqrt(Fpower);
+
+    function res = walker(~, image)
+        nPatches = floor(size(image) ./ patchSize);
+        
+        for k = 1:nPatches(1)
+            rows = ((k-1)*patchSize(1) + 1):(k*patchSize(1));
+            for l = 1:nPatches(2)
+                cols = ((l-1)*patchSize(2) + 1):(l*patchSize(2));
+                patchF = fft2(image(rows, cols));
+                Fpower = Fpower + (patchF .* conj(patchF));
+            end
+        end
+        count = count + prod(nPatches);
+        
+        res = [];
+    end
 
 end

@@ -116,6 +116,10 @@ averagedImage = image;
 % block average the masks, if any
 for i = 1:numel(masks)
     if ~isempty(masks{i})
+        % XXX This can lead to ambiguous results if the masks are quickly
+        % XXX varying on length scales comparable to params.blockAF.
+        % XXX This could be easily solved for binary masks, but not clear
+        % XXX how to handle for more general object masks.
         masks{i} = blockAverage(masks{i}, params.blockAF, 'sub'); %#ok<AGROW>
     end
 end
