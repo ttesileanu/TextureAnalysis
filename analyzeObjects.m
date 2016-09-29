@@ -24,8 +24,9 @@ function res = analyzeObjects(image, nLevels, mask, varargin)
 %    'nLevels':
 %       This is just copied from the input argument.
 %    
-%   The following fields are only present when the statistics are
-%   calculated for patches:
+%       The following fields are only present when the statistics are
+%       calculated for patches:
+%
 %    'patchLocations': [nPatches, 2] matrix
 %       Locations of the top-left corner of the patches, in pixels.
 %    'patchSize':
@@ -44,6 +45,7 @@ parser.addOptional('patchSize', []);
 
 parser.addParameter('minPatchUsed', []);
 parser.addParameter('overlapping', []);
+parser.addParameter('maskCrop', []);
 
 % parse
 parser.parse(varargin{:});
@@ -57,6 +59,9 @@ end
 if ~isempty(params.overlapping)
     anPNamedArgs = [anPNamedArgs {'overlapping' params.overlapping}];
 end
+if ~isempty(params.maskCrop)
+    anPNamedArgs = [anPNamedArgs {'maskCrop' params.maskCrop}];
+end
 
 allObjIds = unique(mask(:));
 
@@ -69,6 +74,7 @@ else
     pxPerPatch = [];
     objIds = [];
     locs = [];
+    locsOrig = [];
 end
 for i = 1:numel(allObjIds)
     crtObjId = allObjIds(i);
@@ -95,6 +101,7 @@ for i = 1:numel(allObjIds)
         ev = [ev ; crtRes.ev]; %#ok<AGROW>
         pxPerPatch = [pxPerPatch ; crtRes.pxPerPatch]; %#ok<AGROW>
         locs = [locs ; crtRes.patchLocations]; %#ok<AGROW>
+        locsOrig = [locsOrig ; crtRes.patchLocationsOrig]; %#ok<AGROW>
         objIds = [objIds ; double(crtObjId)*ones(size(crtRes.ev, 1), 1)]; %#ok<AGROW>
     end
 end
@@ -108,6 +115,7 @@ res.nLevels = nLevels;
 
 if ~isempty(params.patchSize)
     res.patchLocations = locs;
+    res.patchLocationsOrig = locsOrig;
     res.patchSize = crtRes.patchSize;
     res.overlapping = crtRes.overlapping;
     res.minPatchUsed = crtRes.minPatchUsed;

@@ -16,6 +16,10 @@ function res = analyzePatches(image, nLevels, patchSize, varargin)
 %   mask are to be used, or whether partial patches are fine.
 %
 %   Options:
+%    'maskCrop': [row1, col1, row2, col2]
+%       Crop region within the mask that corresponds to the image. If
+%       [row2 - row1 + 1, col2 - col1 + 1] is not equal to size(image),
+%       this can also represent a scaling.
 %    'minPatchUsed': double
 %       Minimum fraction of patch that should be contained in the mask.
 %       Patches that overlap with the mask less than this fraction are
@@ -36,6 +40,11 @@ function res = analyzePatches(image, nLevels, patchSize, varargin)
 %   The output is a structure with the following fields:
 %    'patchLocations': [nPatches, 2] matrix
 %       Locations of the top-left corner of the patches, in pixels.
+%    'patchLocationsOrig': [nPatches, 4] matrix
+%       Locations of the patches ([row1, col1, row2, col2]) in unscaled
+%       mask coordinates, if the `maskCrop` option is used (see above).
+%       Otherwise this is simply implied by `patchLocations` and
+%       `patchSize`.
 %    'ev': [nPatches, nStats] matrix
 %       Matrix containing the statistics for each of the patches.
 %    'pxPerPatch': vector
@@ -55,6 +64,7 @@ parser.addOptional('mask', [], @(m) isempty(m) || (ismatrix(m) && isreal(m)));
 
 parser.addParameter('minPatchUsed', 0, @(x) isnumeric(x) && isscalar(x) && x >= 0 && x <= 1);
 parser.addParameter('overlapping', false, @(b) islogical(b) && isscalar(b));
+parser.addParameter('maskCrop', [], @(c) isempty(c) || (isvector(c) && isreal(c) && numel(c) == 4 && all(c >= 1)));
 
 % parse
 parser.parse(varargin{:});
@@ -63,6 +73,22 @@ params = parser.Results;
 % default mask is to use all image
 if isempty(params.mask)
     params.mask = true(size(image));
+    % mask crop is meaningless if there's no mask
+    params.maskCrop = [];
+end
+
+% default crop: entire mask
+if isempty(params.maskCrop)
+    params.maskCrop = [1 1 size(params.mask)];
+end
+
+% figure out scaling from image to mask coordinates
+rowStep = max(1, floor((diff(params.maskCrop([1 3])) + 1)/size(image, 1)));
+colStep = max(1, floor((diff(params.maskCrop([2 4])) + 1)/size(image, 2)));
+if rowStep ~= colStep
+    error([mfilename ':badmaskcrop'], 'Scaling from mask to image should be aspect-ratio preserving.');
+else
+    maskStep = rowStep;
 end
 
 % handle square or rectangular patches
@@ -79,7 +105,11 @@ if ~params.overlapping
     [locsRowP, locsColP] = ind2sub(nPatches, 1:prod(nPatches));
     locs = [(locsRowP(:)-1)*patchSize(1) (locsColP(:)-1)*patchSize(2)] + 1;
 else
-    [locsRow0, locsCol0] = ind2sub(size(image), find(params.mask));
+    % perform any needed scaling/cropping for the mask
+    scaledMask = params.mask(params.maskCrop(1):maskStep:params.maskCrop(3), ...
+        params.maskCrop(2):maskStep:params.maskCrop(4));
+    
+    [locsRow0, locsCol0] = ind2sub(size(image), find(scaledMask));
     % convert from centers to corners
     locsRow = locsRow0 - floor(patchSize(1)/2);
     locsCol = locsCol0 - floor(patchSize(2)/2);
@@ -101,7 +131,16 @@ for i = 1:size(locs, 1)
     rows = (crtLoc(1):crtLoc(1) + patchSize(1) - 1);
     cols = (crtLoc(2):crtLoc(2) + patchSize(2) - 1);
     patch = image(rows, cols);
-    maskPatch = params.mask(rows, cols);
+    
+    % transform to mask coordinates
+    rowsMask = params.maskCrop(1) + (rows-1)*maskStep;
+    colsMask = params.maskCrop(2) + (cols-1)*maskStep;
+    maskPatch0 = params.mask(rowsMask, colsMask);
+    
+    % scale mask to image coordinates, making sure that only pixels that
+    % are fully contained in the mask are counted
+    maskPatch = (blockAverage(double(maskPatch0), maskStep, 'avg') >= 0.999999);
+    
     % skip patches that don't have enough useable pixels
     nPix = sum(maskPatch(:));
     pxPerPatch(i) = nPix;
@@ -134,6 +173,8 @@ pxPerPatch = pxPerPatch(locsMask, :);
 % fill the output structure
 res = struct;
 res.patchLocations = locs;
+locsOrig0 = bsxfun(@plus, params.maskCrop(1:2), (locs-1)*maskStep);
+res.patchLocationsOrig = [locsOrig0 bsxfun(@plus, locsOrig0, maskStep*patchSize(:)')];
 res.ev = ev;
 res.pxPerPatch = pxPerPatch;
 res.patchSize = patchSize;

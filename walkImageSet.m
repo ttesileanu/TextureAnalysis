@@ -5,10 +5,11 @@ function res = walkImageSet(fct, imageNames, path, varargin)
 %   by the `imageNames` and located in the folder `path`, and passes it to
 %   the function `fct` (after preprocessing by taking the logarithm of each
 %   entry; see the options below), together with its index:
-%       fct(i, image)
+%       fct(i, image, details)
 %   The function should return either an empty matrix (which is ignored),
 %   or a structure. All the fields in the structures returned for each
-%   image are combined into the output `res`.
+%   image are combined into the output `res`. See a description of the
+%   `details` structure below.
 %
 %   The walkImageSet function can take a number of parameters mirroring the
 %   parameters of the `preprocessImage` function, which it calls:
@@ -16,7 +17,10 @@ function res = walkImageSet(fct, imageNames, path, varargin)
 %   walkImageSet(fct, imageNames, path, masks1, ..., masksN) preprocesses
 %   the given masks (which should be cell arrays of matrices) together with
 %   the images, and passes them to `fct` as
-%       fct(i, image, mask1, ..., maskN)
+%       fct(i, image, mask1, ..., maskN, details)
+%   where `details` is a structure containing `origImage`, `logImage`,
+%   `averagedImage`, `filteredImage`, and `crops`, as returned by
+%   `preprocessImage`.
 %
 %   walkImgeSet(..., blockAF) downsamples the images by the factor `blockAF
 %   before passing them to `fct`. See options below to tweak the
@@ -50,11 +54,6 @@ function res = walkImageSet(fct, imageNames, path, varargin)
 %    'threshold': number
 %       Threshold to use to avoid taking the logarithm of negative numbers
 %       when `doLog` is true. See `preprocessImage` and `convertToLog`.
-%    'imageCopies': logical
-%       If true, copies of the original, log-transformed, block-averaged,
-%       filtered, and final, quantized, images are included in the output
-%       structure. The (downsampled) masks are also included. This is true
-%       by default for at most 10 images, false otherwise.
 %    'progressEvery': double
 %       How often to display progress information (in seconds), after the
 %       'progressStart' period (see below) elapsed.
@@ -99,8 +98,6 @@ parser.addParameter('filterType', [], checkStr);
 parser.addParameter('quantType', [], checkStr);
 parser.addParameter('threshold', [], checkNumber);
 
-parser.addParameter('imageCopies', [], checkBool);
-
 parser.addParameter('progressEvery', 10, checkNumber);
 parser.addParameter('progressStart', 20, checkNumber);
 
@@ -108,24 +105,11 @@ parser.addParameter('progressStart', 20, checkNumber);
 parser.parse(varargin{:});
 params = parser.Results;
 
-% set the default for image copies
-if isempty(params.imageCopies)
-    params.imageCopies = numel(imageNames) <= 10;
-end
-
 t0 = tic;
 tEvery = tic;
 progressWritten = false;
 
 res = [];
-if params.imageCopies
-    res.imageCopies.original = cell(size(imageNames));
-    res.imageCopies.log = cell(size(imageNames));
-    res.imageCopies.blockAveraged = cell(size(imageNames));
-    res.imageCopies.filtered = cell(size(imageNames));
-    res.imageCopies.final = cell(size(imageNames));
-    res.imageCopies.masks = cell(size(imageNames));
-end
 preprocessArgs = [{params.blockAF params.filter params.nLevels params.quantPatchSize} ...
     structToCell(params, {'averageType', 'doLog', 'filterType', 'quantType', 'threshold'})];
 for i = 1:numel(imageNames)
@@ -144,11 +128,16 @@ for i = 1:numel(imageNames)
     % preprocess image (and mask, if available)
     crtProcessedMasks = cell(size(crtMasks));
     [crtImage, crtProcessedMasks{:}, ...
-        crtOrigImage, crtLogImage, crtAveragedImage, crtFilteredImage] = ...
+        crtOrigImage, crtLogImage, crtAveragedImage, crtFilteredImage, crtCrops] = ...
         preprocessImage(fullfile(path, imageNames{i}), crtMasks{:}, preprocessArgs{:});
     
     % call the walker function
-    crtRes = fct(i, crtImage, crtProcessedMasks{:});
+    details.origImage = crtOrigImage;
+    details.logImage = crtLogImage;
+    details.averagedImage = crtAveragedImage;
+    details.filteredImage = crtFilteredImage;
+    details.crops = crtCrops;
+    crtRes = fct(i, crtImage, crtProcessedMasks{:}, details);
     
     if ~isempty(crtRes)        
         % add the current stats to the overall structure
@@ -166,16 +155,6 @@ for i = 1:numel(imageNames)
                 end
             end
         end
-    end
-    
-    % keep track of the source images if asked to do so
-    if params.imageCopies
-        res.imageCopies.original{i} = crtOrigImage;
-        res.imageCopies.log{i} = crtLogImage;
-        res.imageCopies.blockAveraged{i} = crtAveragedImage;
-        res.imageCopies.filtered{i} = crtFilteredImage;
-        res.imageCopies.final{i} = crtImage;
-        res.imageCopies.masks{i} = crtMask;
     end
 end
 

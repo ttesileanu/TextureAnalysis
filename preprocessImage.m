@@ -28,7 +28,24 @@ function [image, varargout] = preprocessImage(image0, varargin)
 %   the image together with a number of 'masks' -- images that will be
 %   downsampled without averaging and cropped if necessary, but not
 %   filtered or quantized. This is useful to ensure that the masks are
-%   aligned with the preprocessed image.
+%   aligned with the preprocessed image. Note that since the downsampling
+%   is done without any averaging, masks with high-frequency components can
+%   lead to confusing results. In that case, it might make more sense to
+%   not downsample the masks, but instead use the `crops` output argument
+%   (see below) to convert between coordinates in the masks and coordinates
+%   in the preprocessed image.
+%
+%   [..., origImage, logImage, averagedImage, filteredImage] = preprocessImage(...)
+%   also returns copies of the image along the preprocessing pipeline.
+%
+%   [..., crops] = preprocessImage(...) also returns a structure indicating
+%   where the images returned along the pipeline fit on the original image
+%   coordinates. So, crops.averaged, crops.filtered, and crops.final are
+%   vectors of four elements [row1, col1, row2, col2] indicating the ranges
+%   of rows and columns in the original image that correspond to each of
+%   the steps along the preprocessing pipeline. These can be used to convert
+%   between coordinates in these images, and coordinates in the original
+%   image.
 %
 %   Options:
 %    'averageType': char
@@ -105,24 +122,22 @@ end
 logImage = image;
 
 % block average
-if isempty(params.averageType)
-    avgOpts = {};
-else
-    avgOpts = {params.averageType};
-end
-image = blockAverage(image, params.blockAF, avgOpts{:});
-averagedImage = image;
-
-% block average the masks, if any
-for i = 1:numel(masks)
-    if ~isempty(masks{i})
-        % XXX This can lead to ambiguous results if the masks are quickly
-        % XXX varying on length scales comparable to params.blockAF.
-        % XXX This could be easily solved for binary masks, but not clear
-        % XXX how to handle for more general object masks.
-        masks{i} = blockAverage(masks{i}, params.blockAF, 'sub'); %#ok<AGROW>
+if params.blockAF > 1
+    if isempty(params.averageType)
+        avgOpts = {};
+    else
+        avgOpts = {params.averageType};
+    end
+    image = blockAverage(image, params.blockAF, avgOpts{:});
+    
+    % block average the masks, if any
+    for i = 1:numel(masks)
+        if ~isempty(masks{i})
+            masks{i} = blockAverage(masks{i}, params.blockAF, 'sub'); %#ok<AGROW>
+        end
     end
 end
+averagedImage = image;
 
 if ~isempty(params.filter)
     % filter
@@ -139,6 +154,8 @@ if ~isempty(params.filter)
             masks{i} = masks{i}(filterCrop(1):filterCrop(3), filterCrop(2):filterCrop(4)); %#ok<AGROW>
         end
     end
+else
+    filterCrop = [1 1 size(image)];
 end
 filteredImage = image;
 
@@ -164,9 +181,22 @@ if ~isempty(params.nLevels)
             masks{i} = masks{i}(qCrop(1):qCrop(3), qCrop(2):qCrop(4)); %#ok<AGROW>
         end
     end
+else
+    qCrop = [1 1 size(image)];
 end
 
+% update the crops
+crops.averaged = [1 1 size(averagedImage)*params.blockAF];
+% filtered crop is in scaled coordinates
+crops.filtered = [(filterCrop(1:2)-1)*params.blockAF+1 filterCrop(3:4)*params.blockAF];
+% combine filter with quantization crop to obtain coordinates in scaled but
+% non-trimmed image
+qfCropOrigin = filterCrop(1:2) + qCrop(1:2) - 1;
+qfCrop = [qfCropOrigin qfCropOrigin+qCrop(3:4)-1];
+% scale back to coordinates in original image
+crops.final = [(qfCrop(1:2)-1)*params.blockAF+1 qfCrop(3:4)*params.blockAF];
+
 % return the image with the masks, if there are any masks
-varargout = [masks {origImage logImage averagedImage filteredImage}];
+varargout = [masks {origImage logImage averagedImage filteredImage crops}];
 
 end

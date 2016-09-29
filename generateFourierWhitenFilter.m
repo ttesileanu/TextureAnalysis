@@ -47,7 +47,7 @@ walkImageSet(@walker, imageNames, path, blockAvgFactor, varargin{:});
 Fpower = Fpower / count;
 Ffilter = 1 ./ sqrt(Fpower);
 
-    function res = walker(~, image)
+    function res = walker(~, image, ~)
         nPatches = floor(size(image) ./ patchSize);
         
         for k = 1:nPatches(1)

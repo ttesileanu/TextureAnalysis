@@ -52,7 +52,11 @@ function res = analyzeImageSet(imageNames, path, varargin)
 %       calculated, averaging over all patches. If there are masks, then a
 %       covariance matrix is calculated for every object ID found in the
 %       masks.
-%    'imageCopies':
+%    'imageCopies': logical
+%       If true, copies of the original, log-transformed, block-averaged,
+%       filtered, and final, quantized, images are included in the output
+%       structure. The (downsampled) masks are also included. This is true
+%       by default for at most 10 images, false otherwise.
 %    'progressEvery':
 %    'progressStart':
 %       See `walkImageSet`.
@@ -61,10 +65,10 @@ function res = analyzeImageSet(imageNames, path, varargin)
 
 % handle masks
 if iscell(varargin{1})
-    maskArgs = varargin(1);
+    masks = varargin{1};
     varargin = varargin(2:end);
 else
-    maskArgs = {};
+    masks = {};
 end
 
 % parse optional arguments
@@ -113,6 +117,11 @@ if isempty(params.quantPatchSize)
     end
 end
 
+% set the default for image copies
+if isempty(params.imageCopies)
+    params.imageCopies = numel(imageNames) <= 10;
+end
+
 % generate argument lists for walkImageSet and analyzeObjects
 if isempty(params.quantPatchSize)
     quantPatchSizeArgs = {};
@@ -121,7 +130,7 @@ else
 end
 optionalArgs = structToCell(params, ...
     {'averageType', 'doLog', 'filterType', 'quantType', 'threshold', ...
-     'imageCopies', 'progressEvery', 'progressStart'});
+     'progressEvery', 'progressStart'});
 if ~isempty(params.patchSize)
     analysisArgs = {params.patchSize};
 else
@@ -129,16 +138,18 @@ else
 end
 analysisArgs = [analysisArgs structToCell(params, {'minPatchUsed', 'overlapping'})];
 
-res = walkImageSet(@walker, imageNames, path, maskArgs{:}, ...
+res = walkImageSet(@walker, imageNames, path, ...
     params.blockAF, params.filter, params.nLevels, quantPatchSizeArgs{:}, ...
     optionalArgs{:});
 
 if params.covariances
     res.covM = safeCov(res.ev);
-    if ~isempty(maskArgs)
-        res.covPerObj = cell(1, length(res.objIds));
-        for i = 1:length(res.objIds)
-            crtObj = res.objIds(i);
+    if ~isempty(masks)
+        % this assumes that object IDs are consistent across images!
+        allObjs = unique(res.objIds);
+        res.covPerObj = cell(1, length(allObjs));
+        for i = 1:length(allObjs)
+            crtObj = allObjs(i);
             crtEv = res.ev(res.objIds == crtObj, :);
             res.covPerObj{i} = safeCov(crtEv);
         end
@@ -149,12 +160,14 @@ res.options.patchSize = params.patchSize;
 res.options.overlapping = params.overlapping;
 res.options.minPatchUsed = params.minPatchUsed;
 
-    function crtRes = walker(i, image, mask)
-        % walker(i, image[, mask]) processes the image (potentially with a mask)
-        % and returns texture statistics data for it.
+    function crtRes = walker(i, image, details)
+        % walker(i, image, details) processes the image and returns texture
+        % statistics data for it.
         
-        if nargin < 3
+        if isempty(masks)
             mask = ones(size(image));
+        else
+            mask = masks{i};
         end
         
         % if there is no mask, skip image
@@ -164,10 +177,23 @@ res.options.minPatchUsed = params.minPatchUsed;
         end
         
         % calculate statistics
-        crtRes = analyzeObjects(image, params.nLevels, mask, analysisArgs{:});
+        crtRes = analyzeObjects(image, params.nLevels, mask, analysisArgs{:}, ...
+            'maskCrop', details.crops.final);
         crtRes.imgIds = i*ones(size(crtRes.ev, 1), 1);
         
-        crtRes = rmfield(crtRes, 'nLevels');
+        crtRes = rmfield(crtRes, {'nLevels', 'patchSize', 'overlapping', ...
+            'minPatchUsed'});
+        
+        % keep track of the source images if asked to do so
+        if params.imageCopies
+            crtRes.imageCopies.original = details.origImage;
+            crtRes.imageCopies.log = details.logImage;
+            crtRes.imageCopies.blockAveraged = details.averagedImage;
+            crtRes.imageCopies.filtered = details.filteredImage;
+            crtRes.imageCopies.final = image;
+            crtRes.imageCopies.mask = mask;
+            crtRes.imageCopies.crops = details.crops;
+        end
     end
 
 end

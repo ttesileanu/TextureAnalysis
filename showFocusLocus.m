@@ -8,16 +8,16 @@ function showFocusLocus(res, varargin)
 %   have been set to 1.
 %
 %   Options:
-%    'fsel' <v>
+%    'fSel' <v>
 %       Binary mask showing which patches to be considered in-focus.
-%       (default: inferred from res.cx and res.focus.component)
+%       (default: inferred from res.focus.clusterIds and res.focus.focusCluster)
 
 % parse the optional arguments
 parser = inputParser;
 parser.CaseSensitive = true;
 parser.FunctionName = mfilename;
 
-parser.addParamValue('fsel', [], @(v) isvector(v) && islogical(v));
+parser.addParameter('fSel', [], @(v) isvector(v) && islogical(v));
 
 parser.parse(varargin{:});
 params = parser.Results;
@@ -28,16 +28,16 @@ set(gcf, 'position', [50 50 961 600], 'paperposition', [0.25 0.25 9.61 6]);
 % get rid of spurious patches
 mask = (res.ev(:, 1) ~= 1);
 
-focus_comp = res.focus.component;
-if isempty(params.fsel)
-    mask_focus_comp = (res.cx == focus_comp);
+focus_comp = res.focus.focusCluster;
+if isempty(params.fSel)
+    mask_focus_comp = (res.focus.clusterIds == focus_comp);
 else
-    mask_focus_comp = params.fsel;
+    mask_focus_comp = params.fSel;
 end
 mask_focus = (mask(:) & mask_focus_comp(:));
 mask_blur = (mask(:) & ~mask_focus_comp(:));
 
-style_opts = {'sizes', 5};
+style_opts = {'sizes', 10};
 
 c_labels = {'\gamma', '\beta_|', '\beta_{--}', '\beta_{\\}', '\beta_{/}', ...
     '\theta_{|-}', '\theta_{-|}', '\theta_{\_|}', '\theta_{|\_}', '\alpha'};
