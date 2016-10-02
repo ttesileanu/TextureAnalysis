@@ -23,19 +23,19 @@ function res = analyzeImageSet(imageNames, path, varargin)
 %    'quantPatchSize': 
 %       These control the preprocessing of the images. See `walkImageSet`
 %       for a description. Note that `quantPatchSize` is by default set to
-%       either `patchSize` (see below), if provided, or to `size(filter)`
-%       (if it's not empty). If both the filter is empty and `patchSize` is
-%       not provided, the quantization is done for the whole image, without
+%       the `size(filter)`, if the `filter` is not empty, or to `patchSize`
+%       (if provided). If both the filter is empty and `patchSize` is not
+%       provided, the quantization is done for the whole image, without
 %       splitting into patches (see `walkImageSet` and `quantize` for
 %       details).
 %    'patchSize': integer, or pair of integers
-%       When this is given, the analysis is performed by splitting each
-%       image (or each region within an image as identified by the masks)
-%       into patches of size `patchSize`. This can be a single number to
-%       use square patches, or a pair of numbers [sizeY, sizeX] for
-%       rectangular patches. When `patchSize` is not provided, the entire
-%       image (or the entire region identified by the masks) is analyzed
-%       together.
+%       When this is given, or when a (non-empty) `filter` is given, the
+%       analysis is performed by splitting each image (or each region
+%       within an image as identified by the masks) into patches of size
+%       `patchSize`. This can be a single number to use square patches, or
+%       a pair of numbers [sizeY, sizeX] for rectangular patches. Set
+%       `patchSize` to an empty matrix to have the entire image (or the
+%       entire region identified by the masks) analyzed together.
 %    'overlapping': logical
 %       Set to true to use a pixel-by-pixel sliding patch to evaluate
 %       statistics. This generates many more patches but these are no
@@ -93,7 +93,7 @@ parser.addParameter('filterType', [], checkStr);
 parser.addParameter('quantType', [], checkStr);
 parser.addParameter('quantPatchSize', [], checkPatchSize);
 
-parser.addParameter('patchSize', [], checkPatchSize);
+parser.addParameter('patchSize', 'default', checkPatchSize);
 parser.addParameter('overlapping', [], checkBool);
 parser.addParameter('minPatchUsed', [], checkNumber);
 parser.addParameter('covariances', true, checkBool);
@@ -106,14 +106,21 @@ parser.addParameter('progressStart', [], checkNumber);
 parser.parse(varargin{:});
 params = parser.Results;
 
+% default patchSize is the same as size of filter
+if strcmp(params.patchSize, 'default')
+    if isempty(params.filter)
+        params.patchSize = [];
+    else
+        params.patchSize = size(params.filter);
+    end
+end
+
 % default quantPatchSize is the same as patchSize or filter
 if isempty(params.quantPatchSize)
-    if ~isempty(params.patchSize)
-        params.quantPatchSize = params.patchSize;
-    elseif ~isempty(params.filter)
+    if ~isempty(params.filter)
         params.quantPatchSize = size(params.filter);
-    else
-        params.quantPatchSize = [];
+    elseif ~isempty(params.patchSize)
+        params.quantPatchSize = params.patchSize;
     end
 end
 
@@ -165,15 +172,16 @@ res.options.minPatchUsed = params.minPatchUsed;
         % statistics data for it.
         
         if isempty(masks)
-            mask = ones(size(image));
+            % need to create a mask as large as the unscaled & untrimmed
+            % image
+            mask = ones(details.crops.final(3), details.crops.final(4));
         else
             mask = masks{i};
-        end
-        
-        % if there is no mask, skip image
-        if isempty(mask)
-            crtRes = [];
-            return;
+            % if there is no mask, skip image
+            if isempty(mask)
+                crtRes = [];
+                return;
+            end
         end
         
         % calculate statistics
@@ -181,8 +189,9 @@ res.options.minPatchUsed = params.minPatchUsed;
             'maskCrop', details.crops.final);
         crtRes.imgIds = i*ones(size(crtRes.ev, 1), 1);
         
-        crtRes = rmfield(crtRes, {'nLevels', 'patchSize', 'overlapping', ...
-            'minPatchUsed'});
+        crtRes = rmfield(crtRes, intersect(...
+            {'nLevels', 'patchSize', 'overlapping', 'minPatchUsed'}, ...
+            fieldnames(crtRes)));
         
         % keep track of the source images if asked to do so
         if params.imageCopies

@@ -63,6 +63,10 @@ function res = walkImageSet(fct, imageNames, path, varargin)
 %
 %   See also: preprocessImage.
 
+if ~iscell(imageNames)
+    error([mfilename ':badimgs'], 'imageNames should be a cell array of strings.');
+end
+
 % handle the optional masks
 firstNonMaskIdx = find(cellfun(@(c) ~iscell(c), varargin), 1);
 if isempty(firstNonMaskIdx) || firstNonMaskIdx == 1

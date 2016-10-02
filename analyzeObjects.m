@@ -23,12 +23,12 @@ function res = analyzeObjects(image, nLevels, mask, varargin)
 %       The number of pixels that are analyzed for each patch.
 %    'nLevels':
 %       This is just copied from the input argument.
-%    
-%       The following fields are only present when the statistics are
-%       calculated for patches:
-%
 %    'patchLocations': [nPatches, 2] matrix
-%       Locations of the top-left corner of the patches, in pixels.
+%       Locations of the top-left corner of the patches, in pixels relative
+%       to `image` coordinates.
+%    'patchLocationsOrig': [nPatches, 2] matrix
+%       Locations of the top-left corner of the patches, in pixels relative
+%       to `mask` coordinates (see `maskCrop` option).
 %    'patchSize':
 %    'overlapping':
 %    'minPatchUsed':
@@ -67,43 +67,23 @@ allObjIds = unique(mask(:));
 
 % split the scene into objects and calculate statistics for each
 ev = [];
-if isempty(params.patchSize)
-    pxPerPatch = zeros(numel(allObjIds), 1);
-    objIds = double(allObjIds);
-else
-    pxPerPatch = [];
-    objIds = [];
-    locs = [];
-    locsOrig = [];
-end
+pxPerPatch = [];
+objIds = [];
+locs = [];
+locsOrig = [];
 for i = 1:numel(allObjIds)
     crtObjId = allObjIds(i);
     
     % focus on a given object
     objMask = (mask == crtObjId);
     
-    if isempty(params.patchSize)
-        % treat each object as a single patch
-        objImage = image;
-        objImage(~objMask) = nan;
-        
-        pxPerPatch(i) = sum(objMask(:));
-        
-        [~, crtEv] = processBlock(objImage, nLevels);
-        if isempty(ev)
-            % allocate space only once, for speed
-            ev = zeros(numel(allObjIds), numel(crtEv));
-        end
-        ev(i, :) = crtEv; %#ok<AGROW>
-    else
-        crtRes = analyzePatches(image, nLevels, params.patchSize, objMask, anPNamedArgs{:});
-        
-        ev = [ev ; crtRes.ev]; %#ok<AGROW>
-        pxPerPatch = [pxPerPatch ; crtRes.pxPerPatch]; %#ok<AGROW>
-        locs = [locs ; crtRes.patchLocations]; %#ok<AGROW>
-        locsOrig = [locsOrig ; crtRes.patchLocationsOrig]; %#ok<AGROW>
-        objIds = [objIds ; double(crtObjId)*ones(size(crtRes.ev, 1), 1)]; %#ok<AGROW>
-    end
+    crtRes = analyzePatches(image, nLevels, params.patchSize, objMask, anPNamedArgs{:});
+    
+    ev = [ev ; crtRes.ev]; %#ok<AGROW>
+    pxPerPatch = [pxPerPatch ; crtRes.pxPerPatch]; %#ok<AGROW>
+    locs = [locs ; crtRes.patchLocations]; %#ok<AGROW>
+    locsOrig = [locsOrig ; crtRes.patchLocationsOrig]; %#ok<AGROW>
+    objIds = [objIds ; double(crtObjId)*ones(size(crtRes.ev, 1), 1)]; %#ok<AGROW>
 end
 
 % fill the output structure

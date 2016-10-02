@@ -15,6 +15,9 @@ function res = analyzePatches(image, nLevels, patchSize, varargin)
 %   can be used to choose whether only patches fully-contained within the
 %   mask are to be used, or whether partial patches are fine.
 %
+%   Set `patchSize` to an empty matrix to analyze the entire image, or the
+%   part of the image contained within the `mask`.
+%
 %   Options:
 %    'maskCrop': [row1, col1, row2, col2]
 %       Crop region within the mask that corresponds to the image. If
@@ -74,21 +77,32 @@ params = parser.Results;
 if isempty(params.mask)
     params.mask = true(size(image));
     % mask crop is meaningless if there's no mask
-    params.maskCrop = [];
-end
-
-% default crop: entire mask
-if isempty(params.maskCrop)
     params.maskCrop = [1 1 size(params.mask)];
-end
-
-% figure out scaling from image to mask coordinates
-rowStep = max(1, floor((diff(params.maskCrop([1 3])) + 1)/size(image, 1)));
-colStep = max(1, floor((diff(params.maskCrop([2 4])) + 1)/size(image, 2)));
-if rowStep ~= colStep
-    error([mfilename ':badmaskcrop'], 'Scaling from mask to image should be aspect-ratio preserving.');
+    maskStep = 1;
 else
-    maskStep = rowStep;
+    % default crop: entire mask
+    if isempty(params.maskCrop)
+        params.maskCrop = [1 1 size(params.mask)];
+        maskStep = 1;
+    else
+        % figure out scaling from image to mask coordinates
+        rowStep = (diff(params.maskCrop([1 3])) + 1)/size(image, 1);
+        colStep = (diff(params.maskCrop([2 4])) + 1)/size(image, 2);
+        if abs(rowStep - colStep) >= 1e-6
+            error([mfilename ':badmaskcrop'], 'Scaling from mask to image should be aspect-ratio preserving.');
+        else
+            maskStep = max(1, floor(rowStep));
+        end
+        
+        % scale mask to image coordinates, making sure that only pixels that
+        % are fully contained in the mask are counted
+        params.mask = params.mask(params.maskCrop(1):params.maskCrop(3), ...
+            params.maskCrop(2):params.maskCrop(4));
+        params.mask = (blockAverage(double(params.mask), maskStep, 'avg') >= 0.999999);
+    end
+end
+if ~all(size(image) == size(params.mask))
+    error([mfilename ':badmasksize'], 'Incompatible mask and image sizes.');
 end
 
 % handle square or rectangular patches
@@ -96,62 +110,66 @@ if numel(patchSize) == 1
     patchSize = [patchSize patchSize];
 end
 
-% ensure image size is integer multiple of patch size
-nPatches = floor(size(image) ./ patchSize);
-image = image(1:nPatches(1)*patchSize(1), 1:nPatches(2)*patchSize(2));
-
-% figure out where the patches might be
-if ~params.overlapping
-    [locsRowP, locsColP] = ind2sub(nPatches, 1:prod(nPatches));
-    locs = [(locsRowP(:)-1)*patchSize(1) (locsColP(:)-1)*patchSize(2)] + 1;
+if ~isempty(patchSize)
+    % figure out where the patches might be
+    if ~params.overlapping
+        % ensure image size is integer multiple of patch size
+        nPatches = floor(size(image) ./ patchSize);
+        image = image(1:nPatches(1)*patchSize(1), 1:nPatches(2)*patchSize(2));
+        
+        [locsRowP, locsColP] = ind2sub(nPatches, 1:prod(nPatches));
+        locs = [(locsRowP(:)-1)*patchSize(1) (locsColP(:)-1)*patchSize(2)] + 1;
+    else
+        % find patch centers -- one for each pixel within the mask
+        [locsRow0, locsCol0] = ind2sub(size(image), find(params.mask));
+        % convert from centers to corners
+        locsRow = locsRow0 - floor(patchSize(1)/2);
+        locsCol = locsCol0 - floor(patchSize(2)/2);
+        % keep only patches that don't go outside the image bounds
+        locsMask = ((locsRow >= 1) & (locsCol >= 1) & ...
+            (locsRow + patchSize(1) - 1 <= size(image, 1)) & ...
+            (locsCol + patchSize(2) - 1 <= size(image, 2)));
+        locsRow = locsRow(locsMask);
+        locsCol = locsCol(locsMask);
+        locs = [locsRow(:) locsCol(:)];
+    end
+    wholeImagePatch = false;
 else
-    % perform any needed scaling/cropping for the mask
-    scaledMask = params.mask(params.maskCrop(1):maskStep:params.maskCrop(3), ...
-        params.maskCrop(2):maskStep:params.maskCrop(4));
-    
-    [locsRow0, locsCol0] = ind2sub(size(image), find(scaledMask));
-    % convert from centers to corners
-    locsRow = locsRow0 - floor(patchSize(1)/2);
-    locsCol = locsCol0 - floor(patchSize(2)/2);
-    % keep only patches that don't go outside the image bounds
-    locsMask = ((locsRow >= 1) & (locsCol >= 1) & ...
-                (locsRow + patchSize(1) - 1 <= size(image, 1)) & ...
-                (locsCol + patchSize(2) - 1 <= size(image, 2)));
-    locsRow = locsRow(locsMask);
-    locsCol = locsCol(locsMask);
-    locs = [locsRow(:) locsCol(:)];
+    % whole image is a patch
+    if params.overlapping
+        error([mfilename ':badargs'], 'Can''t use overlapping patches without a patch size.');
+    end
+    locs = [1 1];
+    patchSize = size(image);
+    wholeImagePatch = true;
 end
 
 % process the patches that have enough overlap with the mask
 ev = [];
 locsMask = true(size(locs, 1), 1);
 pxPerPatch = zeros(size(locs, 1), 1);
+
+locsOrig0 = bsxfun(@plus, params.maskCrop(1:2), (locs-1)*maskStep);
+locsOrig = [locsOrig0 bsxfun(@plus, locsOrig0, maskStep*patchSize(:)' - 1)];
 for i = 1:size(locs, 1)
     crtLoc = locs(i, :);
     rows = (crtLoc(1):crtLoc(1) + patchSize(1) - 1);
     cols = (crtLoc(2):crtLoc(2) + patchSize(2) - 1);
     patch = image(rows, cols);
+    maskPatch = params.mask(rows, cols);
     
-    % transform to mask coordinates
-    rowsMask = params.maskCrop(1) + (rows-1)*maskStep;
-    colsMask = params.maskCrop(2) + (cols-1)*maskStep;
-    maskPatch0 = params.mask(rowsMask, colsMask);
-    
-    % scale mask to image coordinates, making sure that only pixels that
-    % are fully contained in the mask are counted
-    maskPatch = (blockAverage(double(maskPatch0), maskStep, 'avg') >= 0.999999);
-    
-    % skip patches that don't have enough useable pixels
+    % skip patches that don't have enough useable pixels, unless the whole
+    % image is a patch
     nPix = sum(maskPatch(:));
     pxPerPatch(i) = nPix;
-    if nPix/numel(maskPatch) >= params.minPatchUsed
+    if wholeImagePatch || nPix/numel(maskPatch) >= params.minPatchUsed
         % replacing pixels that are not to be used by NaNs, so they are
         % ignored in the analysis
         patch(~maskPatch) = nan;
         [~, crtEv] = processBlock(patch, nLevels);
         % skip any patches that don't have enough contiguous pixels to
         % allow estimating the texture stats
-        if any(isnan(crtEv))
+        if ~wholeImagePatch && any(isnan(crtEv))
             locsMask(i) = false;
         else
             if isempty(ev)
@@ -167,14 +185,14 @@ end
 
 % restrict to only the patches that were valid
 locs = locs(locsMask, :);
+locsOrig = locsOrig(locsMask, :);
 ev = ev(locsMask, :);
 pxPerPatch = pxPerPatch(locsMask, :);
 
 % fill the output structure
 res = struct;
 res.patchLocations = locs;
-locsOrig0 = bsxfun(@plus, params.maskCrop(1:2), (locs-1)*maskStep);
-res.patchLocationsOrig = [locsOrig0 bsxfun(@plus, locsOrig0, maskStep*patchSize(:)')];
+res.patchLocationsOrig = locsOrig;
 res.ev = ev;
 res.pxPerPatch = pxPerPatch;
 res.patchSize = patchSize;
