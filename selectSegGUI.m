@@ -43,6 +43,14 @@ function segSel = selectSegGUI(segData, imgDirectory, varargin)
 %   choices are loaded from a variable called 'segSel', 'seg_select',
 %   'segSelect', 'seg_selections', or 'segSelections', if available.
 
+% TODO:
+%   - add checkbox to disable label display
+%     - any way to handle the fact that for classMat, multiple objects have
+%       the same label?
+%   - use number of labels as maximum for color display
+%     - but note that there are some anomalous cases where there are fewer
+%       labels than actual objects in the scene!
+
 % load previous settings
 try
     settings = open('segGuiSettings.mat');
@@ -1200,6 +1208,14 @@ crtIgnoreSeg = isnan(crtSegChoice);
 if showSeg && crtHasSeg % && ~crtIgnoreSeg
     crtSegImage = crtSeg.(segField);
     segmentValues = setdiff(unique(crtSegImage(:)), 0);
+    % if there are labels, use the number of labels as maximum for the
+    % colormap (unless there are more colors in the image than there are
+    % labels)
+    segLabel = [segField 'Labels'];
+    if isfield(crtSeg, segLabel)
+        crtLabels = crtSeg.(segLabel);
+        segmentValues = 1:length(crtLabels);
+    end
     nSegments = numel(segmentValues);
     segColors = parula(nSegments);
     
@@ -1225,7 +1241,42 @@ end
 
 % draw the overlay
 crtH = image(uint8(255*overlay), 'parent', ax);
-colormap('gray');
+%colormap('gray');
+
+% draw object labels if available/needed
+if showSeg && crtHasSeg && ~crtIgnoreSeg
+    % check if we have labels
+    segLabel = [segField 'Labels'];
+    if isfield(crtSeg, segLabel)
+        % approximate objects with ellipses
+        crtCenters = zeros(nSegments, 2);
+        crtSigmas = zeros(nSegments, 2);
+        for j = 1:nSegments
+            mask = crtSegImage == segmentValues(j);
+            [crtCenters(j, :), crtSigmas(j, :)] = getEllipticApproximation(mask);
+        end
+        
+        % find best location for labels
+        crtLabelLocs = optimizeLocations(crtCenters, crtSigmas);
+        
+        % make sure we don't go off the edges
+        crtLabelLocs(:, 1) = min(crtLabelLocs(:, 1), size(crtSegImage, 2) - 50);
+        crtLabelLocs(:, 2) = min(crtLabelLocs(:, 2), size(crtSegImage, 1) - 10);
+        crtLabelLocs = max(crtLabelLocs, 0);
+        
+        % display the labels
+        crtLabels = crtSeg.(segLabel);
+        for j = 1:nSegments
+            if segmentValues(j) <= length(crtLabels) && ~any(isnan(crtLabelLocs(j, :)))
+                text(crtLabelLocs(j, 1), crtLabelLocs(j, 2), crtLabels{segmentValues(j)}, ...
+                    'fontname','fixedwidth', 'fontweight', 'bold', 'color', 'w', 'parent', ax);
+                text(crtLabelLocs(j, 1), crtLabelLocs(j, 2), crtLabels{segmentValues(j)}, ...
+                    'fontname','fixedwidth', 'color', 'k', 'parent', ax);
+            end
+        end
+    end
+end
+
 %    if isnan(crtSegChoice)
 if crtIgnoreSeg
     % this image is to be ignored -- draw an X over it

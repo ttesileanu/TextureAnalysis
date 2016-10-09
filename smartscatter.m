@@ -110,20 +110,20 @@ parser = inputParser;
 parser.CaseSensitive = true;
 parser.FunctionName = mfilename;
 
-parser.addParamValue('colors', 'r', @(x) (ischar(x) && isvector(x)) || (isnumeric(x) && ismatrix(x)));
-parser.addParamValue('edge', 0.1, @(x) isscalar(x) && isnumeric(x));
-parser.addParamValue('labels', [], @(x) (isscalar(x) && islogical(x)) || (isvector(x) && (isnumeric(x) || iscell(x))));
-parser.addParamValue('maxpoints', 5000, @(x) isscalar(x) && isnumeric(x));
-parser.addParamValue('range', [], @(x) isnumeric(x) && isvector(x) && length(x) == 4);
-parser.addParamValue('refseq', {}, @(x) iscell(x) && isvector(x) && length(x) == 2);
-parser.addParamValue('shapes', '.', @(x) isvector(x) && (ischar(x) || isnumeric(x)));
-parser.addParamValue('sizes', 25, @(x) isvector(x) && isnumeric(x));
-parser.addParamValue('tight', true, @(b) islogical(b) && isscalar(b));
-parser.addParamValue('alpha', 1, @(x) isscalar(x) && isnumeric(x));
+parser.addParameter('colors', 'r', @(x) (ischar(x) && isvector(x)) || (isnumeric(x) && ismatrix(x)));
+parser.addParameter('edge', 0.1, @(x) isscalar(x) && isnumeric(x));
+parser.addParameter('labels', [], @(x) (isscalar(x) && islogical(x)) || (isvector(x) && (isnumeric(x) || iscell(x))));
+parser.addParameter('maxpoints', 5000, @(x) isscalar(x) && isnumeric(x));
+parser.addParameter('range', [], @(x) isnumeric(x) && isvector(x) && length(x) == 4);
+parser.addParameter('refseq', {}, @(x) iscell(x) && isvector(x) && length(x) == 2);
+parser.addParameter('shapes', '.', @(x) isvector(x) && (ischar(x) || isnumeric(x)));
+parser.addParameter('sizes', 25, @(x) isvector(x) && isnumeric(x));
+parser.addParameter('tight', true, @(b) islogical(b) && isscalar(b));
+parser.addParameter('alpha', 1, @(x) isscalar(x) && isnumeric(x));
 
-parser.addParamValue('density', false, @(b) islogical(b) && isscalar(b));
-parser.addParamValue('displayfunction', [], @(x) (ischar(x) && isvector(x)) || isa(x, 'function_handle'));
-parser.addParamValue('resolution', 100, @(n) isnumeric(n) && isscalar(n));
+parser.addParameter('density', false, @(b) islogical(b) && isscalar(b));
+parser.addParameter('displayfunction', [], @(x) (ischar(x) && isvector(x)) || isa(x, 'function_handle'));
+parser.addParameter('resolution', 100, @(n) isnumeric(n) && isscalar(n));
 
 % parse
 parser.parse(varargin{:});
