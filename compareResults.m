@@ -1,6 +1,6 @@
 function compareResults(res1, res2, varargin)
-% compareResults Compare the statistical distributions of texture
-% statistics between two image sets.
+% compareResults Compare the distributions of texture statistics between
+% two image sets.
 %   compareResults(res1, res2) makes scatter plots comparing the
 %   distributions of texture statistics in the two sets of results.
 %
@@ -35,8 +35,6 @@ ev2 = res2.(params.fields{2});
 mask1 = (ev1(:, 1) ~= 1);
 mask2 = (ev2(:, 1) ~= 1);
 
-style_opts = {'sizes', 10};
-
 c_labels = {'\gamma', '\beta_|', '\beta_{--}', '\beta_{\\}', '\beta_{/}', ...
     '\theta_{|-}', '\theta_{-|}', '\theta_{\_|}', '\theta_{|\_}', '\alpha'};
 
@@ -47,12 +45,12 @@ for i0 = 1:2:10
     i2 = order(i0+1);
     
     subplot(2, 3, (i0+1)/2);
-    smartscatter(ev1(mask1, i1), ev1(mask1, i2), 'colors', 'b', style_opts{:});
+    smartscatter(ev1(mask1, i1), ev1(mask1, i2), 10, 'b');
     xl1 = xlim;
     yl1 = ylim;
 
     hold on;
-    smartscatter(ev2(mask2, i1), ev2(mask2, i2), 'colors', 'r', style_opts{:});
+    smartscatter(ev2(mask2, i1), ev2(mask2, i2), 10, 'r');
     xl2 = xlim;
     yl2 = ylim;
     

@@ -22,7 +22,7 @@ parser.CaseSensitive = true;
 parser.FunctionName = mfilename;
 
 parser.addParameter('fSel', [], @(v) isvector(v) && islogical(v));
-parser.addParameter('alpha', 0.5, @(x) isscalar(x) && isnumeric(x) && isreal(x));
+parser.addParameter('alpha', [], @(x) isscalar(x) && isnumeric(x) && isreal(x));
 parser.addParameter('size', 10, @(x) isscalar(x) && isnumeric(x) && isreal(x));
 
 parser.parse(varargin{:});
@@ -43,12 +43,16 @@ end
 mask_focus = (mask(:) & mask_focus_comp(:));
 mask_blur = (mask(:) & ~mask_focus_comp(:));
 
-% style_opts = {'sizes', 10};
-
 c_labels = {'\gamma', '\beta_|', '\beta_{--}', '\beta_{\\}', '\beta_{/}', ...
     '\theta_{|-}', '\theta_{-|}', '\theta_{\_|}', '\theta_{|\_}', '\alpha'};
 
 order = [1, 10, 2, 3, 4, 5, 6, 7, 8, 9];
+
+if isempty(params.alpha)
+    opts = {};
+else
+    opts = {'alpha', params.alpha};
+end
 
 for i0 = 1:2:10
     i1 = order(i0);
@@ -56,16 +60,14 @@ for i0 = 1:2:10
     
     subplot(2, 3, (i0+1)/2);
     
-%     smartscatter(res.ev(mask_blur, i1), res.ev(mask_blur, i2), 'colors', 'b', style_opts{:});
-    scatter(res.ev(mask_blur, i1), res.ev(mask_blur, i2), params.size, 'markerfacecolor', 'b', ...
-        'markerfacealpha', params.alpha, 'markeredgealpha', params.alpha);
+    smartscatter(res.ev(mask_blur, i1), res.ev(mask_blur, i2), params.size, ...
+        'filled', opts{:});
     xl1 = xlim;
     yl1 = ylim;
     hold on;
     
-%     smartscatter(res.ev(mask_focus, i1), res.ev(mask_focus, i2), 'colors', 'r', style_opts{:});
-    scatter(res.ev(mask_focus, i1), res.ev(mask_focus, i2), params.size, 'markerfacecolor', 'r', ...
-        'markerfacealpha', params.alpha, 'markeredgealpha', params.alpha);
+    smartscatter(res.ev(mask_focus, i1), res.ev(mask_focus, i2), params.size, ...
+        'filled', opts{:});
     xl2 = xlim;
     yl2 = ylim;
     
