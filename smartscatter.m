@@ -71,6 +71,15 @@ if n > params.maxPoints
     idxs = round(linspace(1, n, params.maxPoints));
     x = x(idxs);
     y = y(idxs);
+    
+    for i = 1:length(argsPos)
+        % XXX this is very error-prone!
+        if isvector(argsPos{i}) && length(argsPos{i}) == n
+            argsPos{i} = argsPos{i}(idxs);
+        elseif ismatrix(argsPos{i}) && size(argsPos{i}, 1) == n
+            argsPos{i} = argsPos{i}(idxs, :);
+        end
+    end
 end
 
 % figure out scatter options
