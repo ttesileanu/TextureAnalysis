@@ -47,9 +47,6 @@ function segSel = selectSegGUI(segData, imgDirectory, varargin)
 %   - add checkbox to disable label display
 %     - any way to handle the fact that for classMat, multiple objects have
 %       the same label?
-%   - use number of labels as maximum for color display
-%     - but note that there are some anomalous cases where there are fewer
-%       labels than actual objects in the scene!
 
 % load previous settings
 try
