@@ -1,12 +1,12 @@
 function [evProj, evObjProj, pcaData] = runPca(res, varargin)
 % runPca Project statistics onto principal components.
-%   [evProj, evObjProj] = pcaForeVsBack(res) finds the top 2 principal
-%   components of the texture statistics from `res.ev`, and projects the
-%   data onto these components. `evObjProj` is a `Map` object giving the
-%   projections for patches restricted to each object id. The function
-%   shows the patches on a plot (unless 'plot' is false; see options below).
+%   [evProj, evObjProj] = runPca(res) finds the top 2 principal components
+%   of the texture statistics from `res.ev`, and projects the data onto
+%   these components. `evObjProj` is a `Map` object giving the projections
+%   for patches restricted to each object id. The function shows the
+%   patches on a plot (unless 'plot' is false; see options below).
 %
-%   [..., pcaData] = pcaForeVsBack(res) also returns a structure containing
+%   [..., pcaData] = runPca(res) also returns a structure containing
 %   details about the PCA. `pcaData.U`, `pcaData.S`, `pcaData.V` are the U,
 %   S, V matrices returned from the `svd` command ('economy' size); while
 %   `pcaData.mu` is the mean of the patch statistics from `res.ev`.
@@ -16,6 +16,10 @@ function [evProj, evObjProj, pcaData] = runPca(res, varargin)
 %       Amount of transparency to use for the scatter plots.
 %    'plot': bool
 %       Set to false to suppress the plot.
+%    'skipGamma': bool
+%       By default, the code ignores the first component (luminance gamma)
+%       of the texture statistics when doing the PCA. Set this to false to
+%       use all components.
 
 % parse optional arguments
 parser = inputParser;
@@ -24,14 +28,22 @@ parser.FunctionName = mfilename;
 
 parser.addParameter('alpha', [], @(x) isnumeric(x) && isscalar(x));
 parser.addParameter('plot', true, @(b) islogical(b) && isscalar(b));
+parser.addParameter('skipGamma', true, @(b) islogical(b) && isscalar(b));
 
 % parse
 parser.parse(varargin{:});
 params = parser.Results;
 
+% skip luminance component if required
+if params.skipGamma
+    ev = res.ev(:, 2:end);
+else
+    ev = res.ev;
+end
+
 % mean-center full patch results, find SVD
-mu = mean(res.ev, 1);
-evCentered = bsxfun(@minus, res.ev, mu);
+mu = mean(ev, 1);
+evCentered = bsxfun(@minus, ev, mu);
 [svdU, svdS, svdV] = svd(evCentered, 0);
 
 evProj = evCentered*svdV;

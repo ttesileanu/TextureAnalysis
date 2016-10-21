@@ -9,4 +9,5 @@ NaturalImages/
 BSR_LUMs/
 VOCImages
 figs/
+summaries/
 segGuiSettings.mat
