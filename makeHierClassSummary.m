@@ -64,6 +64,9 @@ for i = 1:3
         'linestyle', 'none', 'capsize', 3, 'linewidth', 1);
 end
 
+text(1.5, 1.2, 'Top principal component', 'fontunits', 'normalized', 'fontsize', 0.07, ...
+    'verticalalignment', 'top');
+
 % draw the discriminant bar plot
 subplot('position', [0.55 0.5 0.43 0.4]);
 discNorm = stats.summary.lda.discriminant/norm(stats.summary.lda.discriminant);
