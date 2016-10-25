@@ -24,7 +24,7 @@ function [stats,cons] = getStatistics()
 %   (see J. D. Victor and M. M. Conte,
 %        "Local image statistics: maximum-entropy constructions and
 %         perceptual salience,"
-%        J. Opt. Soc. Am. A, vol. 29, no. 7, pp. 1313?1345, 2012)
+%        J. Opt. Soc. Am. A, vol. 29, no. 7, pp. 1313-1345, 2012)
 %
 %   The code for the 16 glider configuration is:
 %       0               00             8               00

@@ -171,6 +171,13 @@ res.options.minPatchUsed = params.minPatchUsed;
         % walker(i, image, details) processes the image and returns texture
         % statistics data for it.
         
+        if isempty(image)
+            % if preprocessing reduced the image to nothing, skip it
+            warning([mfilename ':smallimg'], ['Image #' int2str(i) ' was trimmed to zero size by preprocessing -- skipping.']);
+            crtRes = [];
+            return;
+        end
+        
         if isempty(masks)
             % need to create a mask as large as the unscaled & untrimmed
             % image
@@ -185,8 +192,15 @@ res.options.minPatchUsed = params.minPatchUsed;
         end
         
         % calculate statistics
-        crtRes = analyzeObjects(image, params.nLevels, mask, analysisArgs{:}, ...
-            'maskCrop', details.crops.final);
+        try
+            crtRes = analyzeObjects(image, params.nLevels, mask, analysisArgs{:}, ...
+                'maskCrop', details.crops.final);
+        catch errMsg
+            newErrMsg.message = ['Image #' int2str(i) ': ' errMsg.message];
+            newErrMsg.identifier = errMsg.identifier;
+            newErrMsg.stack = errMsg.stack;
+            error(newErrMsg);
+        end
         crtRes.imgIds = i*ones(size(crtRes.ev, 1), 1);
         
         crtRes = rmfield(crtRes, intersect(...
