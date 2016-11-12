@@ -23,6 +23,13 @@ function res = analyzePatches(image, nLevels, patchSize, varargin)
 %       Crop region within the mask that corresponds to the image. If
 %       [row2 - row1 + 1, col2 - col1 + 1] is not equal to size(image),
 %       this can also represent a scaling.
+%    'maxPatchesPerImage': integer
+%       If given, this ensures that the number of patches per image *per
+%       object* doesn't exceed the given value. If an object in an image
+%       generates more patches than `maxPatchesPerImage`, random sampling
+%       without replacement is used to select `maxPatchesPerImage` of them
+%       to keep.
+%       (default: no maximum)
 %    'minPatchUsed': double
 %       Minimum fraction of patch that should be contained in the mask.
 %       Patches that overlap with the mask less than this fraction are
@@ -31,13 +38,18 @@ function res = analyzePatches(image, nLevels, patchSize, varargin)
 %       don't contain at least one 2x2 block within the mask are always
 %       ignored because the textures statistics are not defined for them.
 %       (default: 0)
-%    'overlapping': logical
-%       Set to true to use overlapping patches -- one for each pixel of the
-%       input image (provided it's contained in the `mask`, if one is
-%       used). When 'overlapping' is true, patches are centered on the
-%       pixels. Patches that would go outside the area of the image are not
-%       considered (so the pixels close to the edges do not generate
-%       patches).
+%    'overlapping': logical, numeric, or pair of numbers
+%       If set to true, 1, or (1, 1), the function uses overlapping patches,
+%       one for each pixel of the input image (provided it's contained in
+%       the `mask`, if one is used). In this case, patches are centered on
+%       the pixels. Patches that would go outside the area of the image are
+%       not considered (so the pixels close to the edges do not generate
+%       patches). This can also be set to an integer larger than 1, or a
+%       pair of integers [stepY, stepX], which enables a different spacing
+%       to be used between the pixels that generate patches. In all cases
+%       the patches are centered on the chosen pixels. A step of 0, or a
+%       value of false of this option leads to the use of non-overlapping
+%       patches.
 %       (default: false)
 %
 %   The output is a structure with the following fields:
@@ -65,13 +77,26 @@ parser.FunctionName = mfilename;
 
 parser.addOptional('mask', [], @(m) isempty(m) || (ismatrix(m) && isreal(m)));
 
+parser.addParameter('maxPatchesPerImage', inf, @(x) isnumeric(x) && isscalar(x) && x >= 0);
 parser.addParameter('minPatchUsed', 0, @(x) isnumeric(x) && isscalar(x) && x >= 0 && x <= 1);
-parser.addParameter('overlapping', false, @(b) islogical(b) && isscalar(b));
+parser.addParameter('overlapping', false, ...
+    @(b) (isscalar(b) && (islogical(b) || (isnumeric(b) && b >= 0))) || ...
+         (isnumeric(b) && isvector(b) && all(b) >= 0 && length(b) == 2));
 parser.addParameter('maskCrop', [], @(c) isempty(c) || (isvector(c) && isreal(c) && numel(c) == 4 && all(c >= 1)));
 
 % parse
 parser.parse(varargin{:});
 params = parser.Results;
+
+% preprocess some parameters
+if any(params.overlapping == 0)
+    params.overlapping = [];
+elseif islogical(params.overlapping) && params.overlapping
+    params.overlapping = [1 1];
+elseif isnumeric(params.overlapping) && isscalar(params.overlapping)
+    params.overlapping = repmat(params.overlapping, 1, 2);
+end
+params.overlapping = round(params.overlapping);
 
 % default mask is to use all image
 if isempty(params.mask)
@@ -112,7 +137,7 @@ end
 
 if ~isempty(patchSize)
     % figure out where the patches might be
-    if ~params.overlapping
+    if isempty(params.overlapping)
         % ensure image size is integer multiple of patch size
         nPatches = floor(size(image) ./ patchSize);
         image = image(1:nPatches(1)*patchSize(1), 1:nPatches(2)*patchSize(2));
@@ -120,11 +145,14 @@ if ~isempty(patchSize)
         [locsRowP, locsColP] = ind2sub(nPatches, 1:prod(nPatches));
         locs = [(locsRowP(:)-1)*patchSize(1) (locsColP(:)-1)*patchSize(2)] + 1;
     else
-        % find patch centers -- one for each pixel within the mask
-        [locsRow0, locsCol0] = ind2sub(size(image), find(params.mask));
+        % find patch centers -- one for each pixel within the mask,
+        % with spacing giving by the steps in params.overlapping
+        [locsRow0, locsCol0] = ind2sub(...
+            floor(size(image)./params.overlapping), ...
+            1:numel(image));
         % convert from centers to corners
-        locsRow = locsRow0 - floor(patchSize(1)/2);
-        locsCol = locsCol0 - floor(patchSize(2)/2);
+        locsRow = 1 + (locsRow0-1)*params.overlapping(1) - floor(patchSize(1)/2);
+        locsCol = 1 + (locsCol0-1)*params.overlapping(2) - floor(patchSize(2)/2);
         % keep only patches that don't go outside the image bounds
         locsMask = ((locsRow >= 1) & (locsCol >= 1) & ...
             (locsRow + patchSize(1) - 1 <= size(image, 1)) & ...
@@ -136,7 +164,7 @@ if ~isempty(patchSize)
     wholeImagePatch = false;
 else
     % whole image is a patch
-    if params.overlapping
+    if ~isempty(params.overlapping)
         error([mfilename ':badargs'], 'Can''t use overlapping patches without a patch size.');
     end
     locs = [1 1];
@@ -189,6 +217,15 @@ locsOrig = locsOrig(locsMask, :);
 ev = ev(locsMask, :);
 pxPerPatch = pxPerPatch(locsMask, :);
 
+% make sure we don't have too many patches
+if ~isempty(params.maxPatchesPerImage) && size(ev, 1) > params.maxPatchesPerImage
+    subIdxs = randperm(size(ev, 1), params.maxPatchesPerImage);
+    locs = locs(subIdxs, :);
+    locsOrig = locsOrig(subIdxs, :);
+    ev = ev(subIdxs, :);
+    pxPerPatch = pxPerPatch(subIdxs, :);
+end
+
 % fill the output structure
 res = struct;
 res.patchLocations = locs;
@@ -198,6 +235,7 @@ res.pxPerPatch = pxPerPatch;
 res.patchSize = patchSize;
 res.nLevels = nLevels;
 res.overlapping = params.overlapping;
+res.maxPatchesPerImage = params.maxPatchesPerImage;
 res.minPatchUsed = params.minPatchUsed;
 
 end

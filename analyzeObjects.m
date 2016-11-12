@@ -12,7 +12,8 @@ function res = analyzeObjects(image, nLevels, mask, varargin)
 %   generated.
 %
 %   Options:
-%     See options for `analyzePatches`.
+%     See options for `analyzePatches`. Note that `maxPatchesPerImage` will
+%     apply per image *and per object*.
 %
 %   The output is a structure with the following fields:
 %    'objIds': vector
@@ -43,6 +44,7 @@ parser.FunctionName = mfilename;
 
 parser.addOptional('patchSize', []);
 
+parser.addParameter('maxPatchesPerImage', []);
 parser.addParameter('minPatchUsed', []);
 parser.addParameter('overlapping', []);
 parser.addParameter('maskCrop', []);
@@ -53,6 +55,9 @@ params = parser.Results;
 
 % set up the named arguments for analyzePatches
 anPNamedArgs = {};
+if ~isempty(params.maxPatchesPerImage)
+    anPNamedArgs = [anPNamedArgs {'maxPatchesPerImage' params.maxPatchesPerImage}];
+end
 if ~isempty(params.minPatchUsed)
     anPNamedArgs = [anPNamedArgs {'minPatchUsed' params.minPatchUsed}];
 end
@@ -98,6 +103,7 @@ if ~isempty(params.patchSize)
     res.patchLocationsOrig = locsOrig;
     res.patchSize = crtRes.patchSize;
     res.overlapping = crtRes.overlapping;
+    res.maxPatchesPerImage = crtRes.maxPatchesPerImage;
     res.minPatchUsed = crtRes.minPatchUsed;
 end
 

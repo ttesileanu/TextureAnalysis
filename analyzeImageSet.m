@@ -36,12 +36,20 @@ function res = analyzeImageSet(imageNames, path, varargin)
 %       a pair of numbers [sizeY, sizeX] for rectangular patches. Set
 %       `patchSize` to an empty matrix to have the entire image (or the
 %       entire region identified by the masks) analyzed together.
-%    'overlapping': logical
-%       Set to true to use a pixel-by-pixel sliding patch to evaluate
-%       statistics. This generates many more patches but these are no
-%       longer independent of each other. See `analyzePatches` and
-%       `analyzeObjects`. Note that this is ignored if no `patchSize` is
-%       given.
+%    'overlapping': logical, numeric, or pair of numbers
+%       Set to true, or to a step size, or to a pair of step sizes, to use
+%       a pixel-by-pixel sliding patch to evaluate statistics. The patches
+%       are centered on a pixel that's sliding with the given step. This
+%       can generate many more patches but the patches are no longer
+%       independent of each other. See `analyzePatches` and
+%       `analyzeObjects`. Note that this option is ignored if no `patchSize`
+%       is given.
+%    'maxPatchesPerImage': integer
+%       If given, this ensures that the number of patches per image doesn't
+%       exceed a given value. If an image generates more patches than
+%       `maxPatchesPerImage`, random sampling without replacement is used
+%       to select `maxPatchesPerImage` of them to keep.
+%       (default: no maximum)
 %    'minPatchUsed': double
 %       Minimum fraction of patch that needs to be available (e.g.,
 %       contained within a region identified by the masks) to be analyzed.
@@ -94,7 +102,8 @@ parser.addParameter('quantType', [], checkStr);
 parser.addParameter('quantPatchSize', [], checkPatchSize);
 
 parser.addParameter('patchSize', 'default', checkPatchSize);
-parser.addParameter('overlapping', [], checkBool);
+parser.addParameter('overlapping', []);
+parser.addParameter('maxPatchesPerImage', checkNumber);
 parser.addParameter('minPatchUsed', [], checkNumber);
 parser.addParameter('covariances', true, checkBool);
 
@@ -143,7 +152,7 @@ if ~isempty(params.patchSize)
 else
     analysisArgs = {};
 end
-analysisArgs = [analysisArgs structToCell(params, {'minPatchUsed', 'overlapping'})];
+analysisArgs = [analysisArgs structToCell(params, {'minPatchUsed', 'overlapping', 'maxPatchesPerImage'})];
 
 res = walkImageSet(@walker, imageNames, path, ...
     params.blockAF, params.filter, params.nLevels, quantPatchSizeArgs{:}, ...
@@ -165,6 +174,7 @@ end
 
 res.options.patchSize = params.patchSize;
 res.options.overlapping = params.overlapping;
+res.options.maxPatchesPerImage = params.maxPatchesPerImage;
 res.options.minPatchUsed = params.minPatchUsed;
 
     function crtRes = walker(i, image, details)
@@ -201,10 +211,14 @@ res.options.minPatchUsed = params.minPatchUsed;
             newErrMsg.stack = errMsg.stack;
             error(newErrMsg);
         end
+        if isempty(crtRes.ev)
+            crtRes = [];
+            return;
+        end
         crtRes.imgIds = i*ones(size(crtRes.ev, 1), 1);
         
         crtRes = rmfield(crtRes, intersect(...
-            {'nLevels', 'patchSize', 'overlapping', 'minPatchUsed'}, ...
+            {'nLevels', 'patchSize', 'overlapping', 'minPatchUsed', 'maxPatchesPerImage'}, ...
             fieldnames(crtRes)));
         
         % keep track of the source images if asked to do so
