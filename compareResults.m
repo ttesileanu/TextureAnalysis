@@ -35,8 +35,15 @@ ev2 = res2.(params.fields{2});
 mask1 = (ev1(:, 1) ~= 1);
 mask2 = (ev2(:, 1) ~= 1);
 
-c_labels = {'\gamma', '\beta_|', '\beta_{--}', '\beta_{\\}', '\beta_{/}', ...
-    '\theta_{|-}', '\theta_{-|}', '\theta_{\_|}', '\theta_{|\_}', '\alpha'};
+% c_labels = {'\gamma', '\beta_|', '\beta_{--}', '\beta_{\\}', '\beta_{/}', ...
+%     '\theta_{\lceil}', '\theta_{\rceil}', '\theta_{\rfloor}', '\theta_{\lfloor}', '\alpha'};
+c_labels = {'\gamma', '\beta_|', ...
+    ['\beta_{' char(hex2dec('2014')) '}'], ...
+    '\beta_{\\}', '\beta_{/}', ...
+    ['\theta_{' char(hex2dec('250c')) '}'], ...
+    ['\theta_{' char(hex2dec('2510')) '}'], ...
+    ['\theta_{' char(hex2dec('2518')) '}'], ...
+    ['\theta_{' char(hex2dec('2514')) '}'], '\alpha'};
 
 order = [1, 10, 2, 3, 4, 5, 6, 7, 8, 9];
 
@@ -45,12 +52,12 @@ for i0 = 1:2:10
     i2 = order(i0+1);
     
     subplot(2, 3, (i0+1)/2);
-    smartscatter(ev1(mask1, i1), ev1(mask1, i2), 10, 'b');
+    smartscatter(ev1(mask1, i1), ev1(mask1, i2), 10, 'b', 'filled', 'alpha', 0.1);
     xl1 = xlim;
     yl1 = ylim;
 
     hold on;
-    smartscatter(ev2(mask2, i1), ev2(mask2, i2), 10, 'r');
+    smartscatter(ev2(mask2, i1), ev2(mask2, i2), 10, 'r', 'filled', 'alpha', 0.1);
     xl2 = xlim;
     yl2 = ylim;
     
