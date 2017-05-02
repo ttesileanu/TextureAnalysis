@@ -1,4 +1,4 @@
-function [stats,cons] = getStatistics()
+function [stats,cons] = getStatistics(nLevels)
 % getStatistics Generate mapping from all configurations of 2x2 gliders to
 % independent components.
 %   stats = getStatistics() generates a 10x16 matrix mapping all 16
@@ -53,6 +53,13 @@ function [stats,cons] = getStatistics()
 %
 %   See also: processBlock.
 
+if nargin < 1
+    nLevels = 2;
+end
+
+if isfinite(nLevels) && nLevels ~= 2
+    error([mfilename ':notimp'], 'Only binary and arbitrary grayscale images are implemented for now.');
+end
 
 stats = zeros(10, 16);
 

@@ -1,7 +1,8 @@
 function [imgOut, crop] = quantize(img, n, patchSize, type)
 % quantize Quantize images to discrete color levels.
 %   imgOut = quantize(img, n) discretizes the matrix `img` to `n` levels,
-%   such that each occurs approximately `numel(img)/n` times.
+%   such that each occurs approximately `numel(img)/n` times. The levels
+%   are represented by numbers between 0 and 1 (inclusive).
 %
 %   imgOut = quantize(img, n, patchSize) splits the image into
 %   non-overlapping patches of size `patchSize` and then discretizes within
@@ -16,7 +17,9 @@ function [imgOut, crop] = quantize(img, n, patchSize, type)
 %   surrounding it. The patches surrounding pixels close to the edges of
 %   the image are cropped to fit within the image.
 %
-%   NOTE: the 'perpixel' option is very slow!
+%   NOTE: The 'perpixel' option is slow by a patch-size-dependent factor.
+%         You can expect the factor to be of the order (pixels per patch)/25,
+%         so about 40x slower for a 32x32 patch.
 %
 %   [imgOut, crop] = quantize(...) also returns a vector of four elements
 %   [row1, col1, row2, col2] identifying the range in the original image
@@ -37,22 +40,45 @@ end
 
 crop = [1 1 size(img)];
 
+% adding a tiny amount of randomness doesn't affect the large
+% majority of results, but fixes indeterminacies for ill-behaved
+% patches that have tons of exactly equal pixels
+noise_level = 10*eps;
+
 switch type
     case 'full'
-        if n > 2
-            thresholds = quantile(img(:), n);
-        elseif n == 2
-            thresholds = quantile(img(:), 1/2);
-        else
-            error([mfilename ':badn'], 'Number of levels should be at least 2.');
-        end
+        % adding a tiny amount of randomness doesn't affect the large
+        % majority of results, but fixes indeterminacies for ill-behaved
+        % patches that have tons of exactly equal pixels
         
+        img = img + noise_level*randn(size(img));
+               
         imgOut = zeros(size(img));
-        for level = 1:n-2
-            imgOut(img >= thresholds(level) & img < thresholds(level+1)) = level;
+        if isfinite(n)
+            if n > 2
+                thresholds = quantile(img(:), n-1);
+            elseif n == 2
+                thresholds = quantile(img(:), 1/2);
+            else
+                error([mfilename ':badn'], 'Number of levels should be at least 2.');
+            end
+            
+            for level = 1:n-2
+                imgOut(img >= thresholds(level) & img < thresholds(level+1)) = level;
+            end
+            imgOut(img >= thresholds(end)) = n-1;
+            imgOut = imgOut / (n-1);
+        else
+            [~, idxs] = sort(img(:));
+            imgOut(idxs) = linspace(0, 1, length(idxs));
         end
-        imgOut(img >= thresholds(end)) = n-1;
     case 'patch'
+        % adding a tiny amount of randomness doesn't affect the large
+        % majority of patches, but fixes indeterminacies for ill-behaved
+        % patches that have tons of exactly equal pixels
+        
+        img = img + noise_level*randn(size(img));
+        
         nPatches = floor(size(img) ./ patchSize);
         imgOut = zeros(patchSize .* nPatches);
         for i = 1:nPatches(1)
@@ -66,22 +92,38 @@ switch type
         end
         crop(3:4) = size(imgOut);
     case 'perpixel'
+        % adding a tiny amount of randomness doesn't affect the large
+        % majority of patches, but fixes indeterminacies for ill-behaved
+        % patches that have tons of exactly equal pixels
+        
+        img = img + noise_level*randn(size(img));
+        
         imgOut = zeros(size(img));
         dr = floor(patchSize/2);
         
         [ymax, xmax] = size(img);
         
-        % precalculate the quantiles we will use
-        p = (1/n:1/n:1);
-        for i = 1:ymax
-            yr = max(1, i-dr(1)):min(ymax, i+dr(1));
-            for j = 1:xmax
-                xr = max(1, j-dr(2)):min(xmax, j+dr(2));
-                patch = img(yr, xr);
-                thresholds = quantile(patch(:), p);
-                imgOut(i, j) = find(img(i, j) <= thresholds, 1) - 1;
+        if isfinite(n)
+            for i = 1:ymax
+                yr = max(1, i-dr(1)):min(ymax, i+dr(1));
+                for j = 1:xmax
+                    xr = max(1, j-dr(2)):min(xmax, j+dr(2));
+                    patch = img(yr, xr);
+                    rk = sum(patch(:) < img(i, j));
+                    imgOut(i, j) = floor(rk*n/numel(patch));
+                end
             end
-        end   
+            imgOut = imgOut / (n-1);
+        else
+            for i = 1:ymax
+                yr = max(1, i-dr(1)):min(ymax, i+dr(1));
+                for j = 1:xmax
+                    xr = max(1, j-dr(2)):min(xmax, j+dr(2));
+                    patch = img(yr, xr);
+                    imgOut(i, j) = sum(patch(:) < img(i, j)) / (numel(patch) - 1);
+                end
+            end
+        end
     otherwise
         error([mfilename ':badtype'], 'Unrecognized type.');
 end
