@@ -103,7 +103,7 @@ parser.addParameter('quantPatchSize', [], checkPatchSize);
 
 parser.addParameter('patchSize', 'default', checkPatchSize);
 parser.addParameter('overlapping', []);
-parser.addParameter('maxPatchesPerImage', checkNumber);
+parser.addParameter('maxPatchesPerImage', inf, checkNumber);
 parser.addParameter('minPatchUsed', [], checkNumber);
 parser.addParameter('covariances', true, checkBool);
 
