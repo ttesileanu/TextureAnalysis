@@ -91,6 +91,6 @@ end
 opts = [opts structToCell(parser.Unmatched)];
 
 % plot!
-handles = scatter(x, y, argsPos{:}, opts{:});
+handles.hscatter = scatter(x, y, argsPos{:}, opts{:});
 
 end

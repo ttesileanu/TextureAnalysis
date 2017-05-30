@@ -165,7 +165,7 @@ if ~isempty(params.nLevels)
         if ~isempty(params.quantType)
             error([mfilename ':badqtype'], 'Non-default quantization types require a patch size.');
         end
-        [image, qCrop] = quantize(image, nLevels);
+        [image, qCrop] = quantize(image, params.nLevels);
     else        
         if isempty(params.quantType)
             quantOpts = {};
