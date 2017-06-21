@@ -31,7 +31,7 @@ function handles = smartscatter(x, y, varargin)
 % split out named arguments
 strMask = cellfun(@(x) ischar(x) && isvector(x), varargin);
 strMask(length(strMask):-2:1) = false;
-firstNamedArgIdx = find(strMask, 1, 'last');
+firstNamedArgIdx = find(strMask, 1, 'first');
 if ~isempty(firstNamedArgIdx)
     argsPos = varargin(1:firstNamedArgIdx-1);
     argsNamed = varargin(firstNamedArgIdx:end);

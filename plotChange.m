@@ -11,6 +11,23 @@ if ~isvector(x1) || ~isvector(y1) || ~isvector(x2) || ~isvector(y2) || ...
 end
 
 % XXX make configurable
+nmax = 5000;
+if n > nmax
+    s = rng;
+    
+    rng('default');
+    subsel = randperm(n, nmax);
+    x1 = x1(subsel);
+    y1 = y1(subsel);
+    x2 = x2(subsel);
+    y2 = y2(subsel);
+    
+    rng(s);
+    
+    n = nmax;
+end
+
+% XXX make configurable
 col1 = [0.1 0.1 1.0];
 col2 = [0.8 0.2 0.2];
 alpha = 0.4;
