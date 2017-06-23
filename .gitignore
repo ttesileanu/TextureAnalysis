@@ -1,12 +1,8 @@
 .DS_Store
 *.swp
 *~
-old/
-BSRAnalyses/
-VOCAnalyses/
-PennAnalyses/
+save/
 NaturalImages/
-BSR_LUMs/
 VOCImages
 figs/
 summaries/
