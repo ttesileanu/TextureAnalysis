@@ -1,0 +1,15 @@
+[
+	{
+		"flavor": "",
+		"hook": "",
+		"importance": "",
+		"localHookTemplate": "configuration/TextureAnalysisLocalHookTemplate.m",
+		"name": "TextureAnalysis",
+		"pathPlacement": "append",
+		"subfolder": ["analysis",  "batch", "filters", "graphing", "gui", "indices", "misc", "preprocess", "save", "segment", "texture"],
+		"toolboxRoot": "",
+		"type": "git",
+		"update": "",
+		"url": ""
+	}	
+]
