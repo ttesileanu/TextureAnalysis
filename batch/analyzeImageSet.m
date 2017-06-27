@@ -14,6 +14,12 @@ function res = analyzeImageSet(imageNames, path, varargin)
 %   entries in the `masks` cell array can be used to skip some of the
 %   images in the image set.
 %
+%   res = analyzeImageSet(imageCount, imageGenerator, ...) uses a function
+%   handle (`imageGenerator`) to generate the `imageCount` images that are
+%   to be processed. `imageGenerator` is called as `imageGenerator(i)`,
+%   where `i` is the index of the image that's being requested, and should
+%   return an image that can be handled by `preprocessImage`.
+%
 %   Options:
 %    'averageType':
 %    'doLog':
@@ -135,7 +141,11 @@ end
 
 % set the default for image copies
 if isempty(params.imageCopies)
-    params.imageCopies = numel(imageNames) <= 10;
+    if iscell(imageNames)
+        params.imageCopies = numel(imageNames) <= 10;
+    else
+        params.imageCopies = false;
+    end
 end
 
 % generate argument lists for walkImageSet and analyzeObjects

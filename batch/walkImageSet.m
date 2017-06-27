@@ -11,8 +11,15 @@ function res = walkImageSet(fct, imageNames, path, varargin)
 %   image are combined into the output `res`. See a description of the
 %   `details` structure below.
 %
-%   The walkImageSet function can take a number of parameters mirroring the
-%   parameters of the `preprocessImage` function, which it calls:
+%   res = walkImageSet(fct, imageCount, imageGenerator, ...) uses a function
+%   handle (`imageGenerator`) to generate the `imageCount` images that are
+%   to be processed. `imageGenerator` is called as `imageGenerator(i)`,
+%   where `i` is the index of the image that's being requested, and should
+%   return an image that can be handled by `preprocessImage`.
+%
+%   Furthermore, the walkImageSet function can take a number of parameters
+%   mirroring the parameters of the `preprocessImage` function, which it
+%   calls:
 %
 %   walkImageSet(fct, imageNames, path, masks1, ..., masksN) preprocesses
 %   the given masks (which should be cell arrays of matrices) together with
@@ -64,7 +71,18 @@ function res = walkImageSet(fct, imageNames, path, varargin)
 %   See also: preprocessImage.
 
 if ~iscell(imageNames)
-    error([mfilename ':badimgs'], 'imageNames should be a cell array of strings.');
+    if isnumeric(imageNames) && isscalar(imageNames) && isreal(imageNames)
+        imageCount = imageNames;
+        imageGenerator = path;
+        
+        imageNames = [];
+        path = [];
+    else
+        error([mfilename ':badimgs'], ['The first argument should either be imageNames, '...
+            'a cell array of strings, or imageCount, an integer.']);
+    end
+else
+    imageCount = numel(imageNames);
 end
 
 % handle the optional masks
@@ -76,8 +94,8 @@ else
     varargin = varargin(firstNonMaskIdx:end);
 end
 
-if ~all(cellfun(@length, masks) == length(imageNames))
-    error([mfilename ':badmasks'], 'All masks should be cell arrays of the same length as the imageNames.');
+if ~all(cellfun(@length, masks) == imageCount)
+    error([mfilename ':badmasks'], 'All masks should be cell arrays of the same length as the number of images.');
 end
 
 % parse optional arguments
@@ -116,11 +134,11 @@ progressWritten = false;
 res = [];
 preprocessArgs = [{params.blockAF params.filter params.nLevels params.quantPatchSize} ...
     structToCell(params, {'averageType', 'doLog', 'filterType', 'quantType', 'threshold'})];
-for i = 1:numel(imageNames)
+for i = 1:imageCount
     % output progress information if required
     if (~progressWritten && toc(t0) > params.progressStart) || ...
             (progressWritten && toc(tEvery) > params.progressEvery)
-        disp(['Processing image ' int2str(i) ' of ' int2str(numel(imageNames)) ...
+        disp(['Processing image ' int2str(i) ' of ' int2str(imageCount) ...
             ', elapsed ' num2str(toc(t0), '%.1f') ' seconds...']);
         progressWritten = true;
         tEvery = tic;
@@ -131,9 +149,14 @@ for i = 1:numel(imageNames)
     
     % preprocess image (and mask, if available)
     crtProcessedMasks = cell(size(crtMasks));
+    if ~isempty(imageNames)
+        crtOriginalImage = fullfile(path, imageNames{i});
+    else
+        crtOriginalImage = imageGenerator(i);
+    end
     [crtImage, crtProcessedMasks{:}, ...
         crtOrigImage, crtLogImage, crtAveragedImage, crtFilteredImage, crtCrops] = ...
-        preprocessImage(fullfile(path, imageNames{i}), crtMasks{:}, preprocessArgs{:});
+        preprocessImage(crtOriginalImage, crtMasks{:}, preprocessArgs{:});
     
     % call the walker function
     details.origImage = crtOrigImage;
@@ -167,6 +190,7 @@ if progressWritten
 end
 
 res.imageNames = imageNames;
+res.imageCount = imageCount;
 res.path = path;
 res.options = copyFields(params, {'averageType', 'blockAF', 'doLog', ...
     'threshold', 'filter', 'filterType', 'quantType', 'quantPatchSize', ...
