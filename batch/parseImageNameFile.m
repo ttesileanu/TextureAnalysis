@@ -32,29 +32,35 @@ postfixes = {'_LUM.mat', '.mat'};
 n = 1;
 images = cell(1, length(raw));
 for i = 1:length(raw)
-    s = raw{i};
+    s = strtrim(raw{i});
+    if s(1) == '#'
+        % comment line
+        continue;
+    end
     k = find(s == '=', 1);
     if ~isempty(k)
         fname = s(k+1:end);
-        [subpath, name, ext] = fileparts(fname);
-        
-        if ~strcmp(ext, '.mat') && ~isequal(path, 0)
-            found = false;
-            for j = 1:length(postfixes)
-                fnameCheck = fullfile(path, subpath, [name, postfixes{j}]);
-                if exist(fnameCheck, 'file') == 2
-                    found = true;
-                    break;
-                end
-            end
-            if found
-                fname = fullfile(subpath, [name, postfixes{j}]);
+    else
+        fname = s;
+    end
+    [subpath, name, ext] = fileparts(fname);
+    
+    if ~strcmp(ext, '.mat') && ~isequal(path, 0)
+        found = false;
+        for j = 1:length(postfixes)
+            fnameCheck = fullfile(path, subpath, [name, postfixes{j}]);
+            if exist(fnameCheck, 'file') == 2
+                found = true;
+                break;
             end
         end
-%        images(n).path = fname;
-        images{n} = fname;
-        n = n + 1;
+        if found
+            fname = fullfile(subpath, [name, postfixes{j}]);
+        end
     end
+%        images(n).path = fname;
+    images{n} = fname;
+    n = n + 1;
 end
 % we might have preallocated too much if there are comment lines
 images = images(1:n-1);
