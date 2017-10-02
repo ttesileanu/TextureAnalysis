@@ -2,7 +2,7 @@
 
 %% Load psychophysics data
 
-f = fopen('btc_thresholds.csv');
+f = fopen(fullfile('data', 'btc_thresholds.csv'));
 data0 = textscan(f, '%s', 'delimiter', '');
 fclose(f);
 

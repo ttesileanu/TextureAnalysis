@@ -75,7 +75,7 @@ parser = inputParser;
 parser.CaseSensitive = true;
 parser.FunctionName = mfilename;
 
-parser.addOptional('mask', [], @(m) isempty(m) || (ismatrix(m) && isreal(m)));
+parser.addOptional('mask', [], @(m) isempty(m) || (ismatrix(m) && isreal(m) && ~ischar(m)));
 
 parser.addParameter('maxPatchesPerImage', inf, @(x) isnumeric(x) && isscalar(x) && x >= 0);
 parser.addParameter('minPatchUsed', 0, @(x) isnumeric(x) && isscalar(x) && x >= 0 && x <= 1);

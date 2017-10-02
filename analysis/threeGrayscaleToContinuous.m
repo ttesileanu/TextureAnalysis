@@ -2,7 +2,7 @@
 
 %% Load psychophysics data
 
-f = fopen('three_grayscale_thresholds.csv');
+f = fopen(fullfile('data', 'three_grayscale_thresholds.csv'));
 data0 = textscan(f, '%s', 'delimiter', '');
 fclose(f);
 
