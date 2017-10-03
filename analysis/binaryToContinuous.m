@@ -137,8 +137,9 @@ for i = 1:length(fields)
         {'linewidth', 1, 'color', crt_color}, 'legend', false, ...
         'showci', false);
 %    plot(predicted_thresholds, crt_thresholds, '.', 'color', crt_color, 'markersize', 25);
+    [crt_c, crt_p] = corr(flatten(crt_sensitivities(crt_mask)), flatten(grouped_predicted_sensitivities(crt_mask)));
     disp(['Correlation ' fields{i} ': ' ...
-        num2str(corr(flatten(crt_sensitivities(crt_mask)), flatten(grouped_predicted_sensitivities(crt_mask))), '%.2f')]);
+        num2str(crt_c, '%.2f') ' (p=' num2str(crt_p, '%.3g') ')']);
 end
 xlabel('Predicted sensitivities');
 ylabel('Measured sensitivities');

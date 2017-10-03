@@ -140,51 +140,81 @@ natural_mu = mean(natural_stats.ev, 1);
 natural_cov = cov(natural_stats.ev);
 natural_sqrtcov = sqrtm(natural_cov);
 
-%% Map G=3 thresholds to continuous space using a linear approximation
+%% Map G=3 thresholds to continuous space
 
-threshold_locations = zeros(length(thresholds), 10);
-transformed_directions = zeros(length(thresholds), 10);
+threshold_locations = cell(1, length(thresholds));
+ellipsoid_sizes = zeros(1, length(thresholds));
 
-% find where the origin is in dot_locs
-[~, idx0] = min(abs(dot_locs));
-dot_step = dot_locs(idx0+1) - dot_locs(idx0 - 1);
-
+% use linear interpolation or extrapolation
 for i = 1:length(thresholds)
-    % get the derivative of the transformed coordinates at the origin
-    % XXX we could do this much more efficiently if we generated more
-    %     points closer to the origin
+    % thresholds can point in either direction
+    crt_thresh = (-1)^(strcmp(directions{i}, 'neg'))*thresholds(i);
     
-    crt_derivative = (mean(three_g_to_cont_stats{i}{idx0+1}, 1) - ...
-                      mean(three_g_to_cont_stats{i}{idx0-1}, 1)) / dot_step;
-                  
-    threshold_locations(i, :) = crt_derivative*thresholds(i);
-    transformed_directions(i, :) = crt_derivative / norm(crt_derivative);
+    if isnan(crt_thresh)
+        threshold_locations{i} = [];
+        ellipsoid_sizes(i) = nan;
+        continue;
+    end
+    
+    % can we interpolate, or do we have to extrapolate?
+    k = find(dot_locs(1:end-1) <= crt_thresh & dot_locs(2:end) > crt_thresh, 1);
+    if ~isempty(k)
+        % yes, we can interpolate
+        loc1 = mean(three_g_to_cont_stats{i}{k}, 1);
+        loc2 = mean(three_g_to_cont_stats{i}{k+1}, 1);
+        
+        alpha = (crt_thresh - dot_locs(k)) / (dot_locs(k+1) - dot_locs(k));
+        thresh_loc = (1 - alpha)*loc1 + alpha*loc2;
+        
+        threshold_locations{i} = thresh_loc;
+    else
+        % we need to extrapolate
+        if strcmp(directions{i}, 'neg')
+            loc1 = mean(three_g_to_cont_stats{i}{1}, 1);
+            loc2 = mean(three_g_to_cont_stats{i}{2}, 1);
+            der = (loc2 - loc1) / (dot_locs(2) - dot_locs(1));
+            thresh_loc = loc1 + der*(crt_thresh - dot_locs(1));
+            threshold_locations{i} = thresh_loc;
+        else
+            loc1 = mean(three_g_to_cont_stats{i}{end-1}, 1);
+            loc2 = mean(three_g_to_cont_stats{i}{end}, 1);
+            der = (loc2 - loc1) / (dot_locs(end) - dot_locs(end - 1));
+            thresh_loc = loc2 + der*(crt_thresh - dot_locs(end));
+            threshold_locations{i} = thresh_loc;
+        end
+    end
+    
+    ellipsoid_sizes(i) = threshold_locations{i}(:)'*natural_sqrtcov*threshold_locations{i}(:);
 end
 
-%% Show the thresholds in continuous space
+%% Threshold in transformed continuous space --> thresholds in G=3 space
 
-scatterTextureStats({threshold_locations});
+% this is actually radius *squared*
+ellipsoid_size = mean(ellipsoid_sizes, 'omitnan');
 
-%% Predict thresholds from Gaussian-approximated natural statistics
+%[predicted_thresholds, predicted_thresh_locs] = predictThreeGThresholds(...
+%    ellipsoid_size, three_g_to_cont_stats, directions, natural_sqrtcov, dot_locs);
 
-% assume that threshold = variance^trafo_pow
-% and that this holds in the principal component coordinate system
-trafo_pow = -0.25;
+%% Optimize match between predicted and measured thresholds
 
-predicted_thresholds0 = zeros(size(thresholds));
-trafo_matrix = natural_cov^trafo_pow;
-for i = 1:length(thresholds)
-    predicted_thresholds0(i) = norm(trafo_matrix*transformed_directions(i, :)')^2;
-end
+ignore_mask = true(size(thresholds));
+ignore_mask(strcmp(groups, 'A_1')) = false;
+% exclude directions for which the psycophysics has infinite error bars
+ignore_mask(isnan(stdev_ratios)) = false;
 
-% scale thresholds to match experimental values as closely as possible
-mask = isfinite(predicted_thresholds0) & isfinite(thresholds);
-% exclude A_1 directions because we equalized natural image patches, so
-% that direction is not properly represented by our analysis
-mask(strcmp(groups, 'A_1')) = false;
-scaling_thresholds = dot(predicted_thresholds0(mask), thresholds(mask)) / ...
-    norm(predicted_thresholds0(mask))^2;
-predicted_thresholds = predicted_thresholds0*scaling_thresholds;
+optim_options = optimset('display', 'iter', 'tolx', 1e-10);
+normdiff_mask = @(a, b, mask) norm((a(mask) - b(mask)) / (sum(mask) - 1));
+normdiff_skipinf = @(a, b) normdiff_mask(a, b, ignore_mask & isfinite(a) & isfinite(b));
+spcorr_mask = @(a, b, mask) corr(a(mask), b(mask), 'type', 'spearman');
+spcorr_skipinf = @(a, b) spcorr_mask(a(:), b(:), ignore_mask & isfinite(a) & isfinite(b));
+[optimal_size, optimal_norm, ~, optim_details] = fminbnd(@(sz) normdiff_skipinf(...
+    predictThreeGThresholds(sz, three_g_to_cont_stats, directions, natural_sqrtcov, dot_locs), ...
+    thresholds), 0, 2*max(ellipsoid_sizes), optim_options);
+% [optimal_size, optimal_norm, ~, optim_details] = fminbnd(@(sz) -spcorr_skipinf(...
+%     predictThreeGThresholds(sz, three_g_to_cont_stats, directions, natural_sqrtcov, dot_locs), ...
+%     thresholds), 0, 2*max(ellipsoid_sizes), optim_options);
+[predicted_thresholds, predicted_thresh_locs] = predictThreeGThresholds(...
+    optimal_size, three_g_to_cont_stats, directions, natural_sqrtcov, dot_locs);
 
 %% Make histograms of natural image stats along rays
 
@@ -291,8 +321,8 @@ end
 beautifygraph;
 preparegraph;
 
-% print('-dpdf', fullfile('figs', ['G3_to_cont_pred_vs_meas_' int2str(blockAF_choice) ...
-%     '.pdf']));
+print('-dpdf', fullfile('figs', ['G3_to_cont_pred_vs_meas_' int2str(blockAF_choice) ...
+    '.pdf']));
 
 %% Compare predicted to actual thresholds, separate fits by order
 
@@ -375,7 +405,7 @@ for i = 1:length(to_draw_stats)
     crt_ax = arrayfun(@int2str, tex_axes{crt_i});
     filename = ['sweep_G3_in_contspace_' crt_group '_' crt_ax '.pdf'];
     if ~show_all
-        % print('-dpdf', fullfile('figs', filename));
+        print('-dpdf', fullfile('figs', filename));
     else     
         waitforbuttonpress;
         close;
@@ -578,7 +608,7 @@ end
 
 preparegraph;
 
-% print('-dpdf', fullfile('figs', 'G3_to_contspace_ellipses.pdf'));
+print('-dpdf', fullfile('figs', 'G3_to_contspace_ellipses.pdf'));
 
 %% Check how much thresholds change with noise radius
 
