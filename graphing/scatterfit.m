@@ -1,13 +1,19 @@
 function [c, stats, handles] = scatterfit(x, y, varargin)
 % SCATTERFIT Make a scatter plot with a best fit line.
-%   [c, stats, handles] = SCATTERFIT(x, y, ...) makes a scatter plot and
+%   [c, stats, handles] = SCATTERFIT(x, y) makes a scatter plot and
 %   combines it with a best fit line. This essentially calls smartscatter
 %   and drawfitline one after the other, returning c and stats from
 %   drawfitline, and combining the handle information from the two
 %   functions.
 %
-%   The options to this function are the options that are allowed for
-%   smartscatter and drawfitline.
+%   Options
+%    'scatteropts'
+%       Cell array of options to be passed to smartscatter.
+%    'fitopts'
+%       Cell array of options to be passed to drawfitline.
+%    'nodraw'
+%       Don't display any plots, just calculate the statistics from
+%       drawfitline.
 %
 % See also: SMARTSCATTER, DRAWFITLINE.
 
@@ -16,31 +22,22 @@ function [c, stats, handles] = scatterfit(x, y, varargin)
 parser = inputParser;
 parser.CaseSensitive = true;
 parser.FunctionName = mfilename;
-parser.KeepUnmatched = true;
 
+parser.addParameter('scatteropts', {}, @(c) iscell(c) && isvector(c));
+parser.addParameter('fitopts', {}, @(c) iscell(c) && isvector(c));
 parser.addParameter('nodraw', false, @(b) isscalar(b) && islogical(b));
 
 % parse
 parser.parse(varargin{:});
 params = parser.Results;
 
-% need to split the options between options meant for smartscatter, and
-% options meant for drawfitline; some of them are common
-[scatter_opts, fit_opts, other_opts] = splitoptions(varargin, ...
-    {'alpha', 'maxPoints'}, ...
-    {'conflevel', 'corrtext', 'corrtype', 'intercept', 'legend', ...
-        'legendbox', 'legendloc', 'line', 'nodraw', 'showci', 'thinci', 'showfit', ...
-        'style', 'refseq', 'r2bootstrap', 'permutation'});
-if ~isempty(other_opts)
-    % XXX the downside of this is that I need to worry about keeping the
-    % list above in-sync with smartscatter and drawfitline
-    % an alternative would be to send all unrecognized options to one of
-    % them, but which one?
-    error([mfilename ':badoption'], ['Unknown option ''' other_opts{1} '''.']);
+if params.nodraw
+    % make sure to pass this to drawfitline, as well
+    params.fitopts = [params.fitopts {'nodraw', true}];
 end
 
 if ~params.nodraw
-    handles_scatter = smartscatter(x, y, scatter_opts{:});
+    handles_scatter = smartscatter(x, y, params.scatteropts{:});
     scatter_axes = gca;
     washold = ishold;
     hold on;
@@ -48,7 +45,7 @@ else
     handles_scatter = struct;
 end
 
-[c, stats, handles_fit] = drawfitline(x, y, fit_opts{:});
+[c, stats, handles_fit] = drawfitline(x, y, params.fitopts{:});
 
 if ~params.nodraw
     % the axes should be given by the scatter plot, not by the fit line

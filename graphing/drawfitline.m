@@ -2,7 +2,7 @@ function [c, stats, handles] = drawfitline(x, y, varargin)
 % DRAWFITLINE Draw a best fit line.
 %   DRAWFITLINE(x, y) calculates a best fit line for the given points and
 %   draws it in the current axes. The function automatically flattens the
-%   data.
+%   data and ignores NaNs.
 %
 %   c = DRAWFITLINE(...) returns the correlation coefficient between x and y.
 %
@@ -67,6 +67,9 @@ function [c, stats, handles] = drawfitline(x, y, varargin)
 %       When 'showci' is true, whether to show a thin confidence interval,
 %       that does not contain the interval for the residuals.
 %       (default: true)
+%     'skipinf' <b>
+%       If true, skip values that are infinite or NaN in either vector.
+%       (default: true)
 %     'showfit' <b>
 %       Whether to show the fit line or not. Note that the confidence
 %       interval can be displayed independently of the line.
@@ -91,8 +94,9 @@ parser.addParameter('legendbox', false, @(b) isscalar(b) && islogical(b));
 parser.addParameter('legendloc', 'north', @(s) ismember(s, {'north', 'northeast', 'east', 'southeast', 'south', 'southwest', 'west', 'northwest'}));
 parser.addParameter('line', [], @(v) isvector(v) && isnumeric(v) && length(v) == 2);
 parser.addParameter('nodraw', false, @(b) isscalar(b) && islogical(b));
-parser.addParameter('showci', true, @(b) isscalar(b) && islogical(b));
+parser.addParameter('showci', false, @(b) isscalar(b) && islogical(b));
 parser.addParameter('thinci', true, @(b) isscalar(b) && islogical(b));
+parser.addParameter('skipinf', true, @(b) isscalar(b) && islogical(b));
 parser.addParameter('showfit', true, @(b) isscalar(b) && islogical(b));
 parser.addParameter('style', {'k', 'linewidth', 2}, @(c) iscell(c));
 
@@ -109,6 +113,12 @@ y = y(:);
 if length(x) ~= length(y)
     error([mfilename ':badsizes'], 'The sizes of x and y do not match.');
 end
+
+if params.skipinf
+    mask = isfinite(x) & isfinite(y);
+end
+x = x(mask);
+y = y(mask);
 
 % calculate the correlation coefficient and the p-value
 if isempty(params.corrtype)
