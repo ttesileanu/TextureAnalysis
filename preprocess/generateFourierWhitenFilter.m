@@ -42,7 +42,8 @@ end
 Fpower = zeros(patchSize);
 count = 0;
 
-walkImageSet(@walker, imageNames, path, blockAvgFactor, varargin{:});
+walkImageSet(@walker, imageNames, path, blockAvgFactor, 'equalize', false, ...
+    varargin{:});
 
 Fpower = Fpower / count;
 Ffilter = 1 ./ sqrt(Fpower);

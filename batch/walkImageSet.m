@@ -29,21 +29,10 @@ function res = walkImageSet(fct, imageNames, path, varargin)
 %   `averagedImage`, `filteredImage`, and `crops`, as returned by
 %   `preprocessImage`.
 %
-%   walkImgeSet(..., blockAF) downsamples the images by the factor `blockAF
+%   walkImageSet(..., blockAF) downsamples the images by the factor `blockAF
 %   before passing them to `fct`. See options below to tweak the
-%   downsampling procedure.
-%
-%   walkImageSet(..., blockAF, filter) filters the images by convolving
-%   with fft2(filter) after block averaging. See options below to tweak the
-%   filtering procedure.
-%
-%   walkImageSet(..., blockAF, filter, nLevels) quantizes the images into
-%   `nLevels` levels after block-averaging and filtering. This is done by
-%   comparing the value of each pixel with the median over the whole image.
-%
-%   walkImageSet(..., blockAF, filter, nLevels, quantPatchSize) quantizes
-%   the image by looking at patches of the given size. See options below to
-%   tweak the quantization procedure.
+%   downsampling procedure and other preprocessing options. (The defaults
+%   are those from `preprocessImage`.)
 %
 %   Options:
 %    'averageType': char
@@ -52,12 +41,33 @@ function res = walkImageSet(fct, imageNames, path, varargin)
 %    'doLog': logical
 %       When true, the images are converted to a logarithmic space (this is
 %       the default). See `preprocessImage`.
+%    'equalize': logical
+%       if `true`, the image is histogram-equalized after the filtering
+%       (and before a potential quantization).
+%    'equalizeType': char
+%       This is passed to `equalize` to set the type of histogram
+%       equalization that is used.
+%    'filter': [], or matrix
+%       Whitening filter to use after log and block-averaging, but before
+%       equalization and/or quantization. If empty, no whitening is
+%       performed.
 %    'filterType': char
 %       Passed to `preprocessImage` to set the type of filtering that is
 %       performed (see `filterImage` for a description).
-%    'quantType': char
-%       Passed to `preprocessImage` to set the type of quantization that is
-%       performed (see `quantize` for a description).
+%    'patchSize': [], int, or [int, int]
+%       Patch size to use for `quantize` and/or `equalize`. See the
+%       documentation for those two functions for details. If empty, the
+%       whole image is processed at once (but see 'quantType' below).
+%    'quantize': int
+%       If non-empty, perform color quantization to the given number of
+%       levels after equalization (if any). The quantization algorithm
+%       assumes values in the range [0, 1]; everything outside that range
+%       is clipped.
+%    'quantizeType': char
+%       This can be 'deterministic' (in which case `quantize` is used), or
+%       'stochastic' (in which case `stochasticBinarize` is used). Note
+%       that 'stochastic' can only be used with binary images, so
+%       'quantize' must be 2 in this case.
 %    'threshold': number
 %       Threshold to use to avoid taking the logarithm of negative numbers
 %       when `doLog` is true. See `preprocessImage` and `convertToLog`.
@@ -110,14 +120,16 @@ checkPatchSize = @(v) isempty(v) || (isnumeric(v) && isvector(v) && ...
 checkNumber = @(x) isempty(x) || (isscalar(x) && isreal(x) && isnumeric(x));
 
 parser.addOptional('blockAF', 1, checkNumber);
-parser.addOptional('filter', [], @(m) isempty(m) || (ismatrix(m) && isreal(m) && isnumeric(m)));
-parser.addOptional('nLevels', [], checkNumber);
-parser.addOptional('quantPatchSize', [], checkPatchSize);
 
+parser.addParameter('filter', [], @(m) isempty(m) || (ismatrix(m) && isreal(m) && isnumeric(m)));
+parser.addParameter('equalize', [], checkBool);
+parser.addParameter('equalizeType', [], checkStr);
+parser.addParameter('patchSize', [], checkPatchSize);
 parser.addParameter('averageType', [], checkStr);
 parser.addParameter('doLog', [], checkBool);
 parser.addParameter('filterType', [], checkStr);
-parser.addParameter('quantType', [], checkStr);
+parser.addParameter('quantize', [], checkNumber);
+parser.addParameter('quantizeType', [], checkStr);
 parser.addParameter('threshold', [], checkNumber);
 
 parser.addParameter('progressEvery', 10, checkNumber);
@@ -132,8 +144,9 @@ tEvery = tic;
 progressWritten = false;
 
 res = [];
-preprocessArgs = [{params.blockAF params.filter params.nLevels params.quantPatchSize} ...
-    structToCell(params, {'averageType', 'doLog', 'filterType', 'quantType', 'threshold'})];
+preprocessArgs = [{params.blockAF} ...
+    structToCell(params, {'averageType', 'doLog', 'equalize', 'equalizeType', ...
+    'filter', 'filterType', 'patchSize', 'quantize', 'quantizeType', 'threshold'})];
 for i = 1:imageCount
     % output progress information if required
     if (~progressWritten && toc(t0) > params.progressStart) || ...
@@ -154,15 +167,11 @@ for i = 1:imageCount
     else
         crtOriginalImage = imageGenerator(i);
     end
-    [crtImage, crtProcessedMasks{:}, ...
-        crtOrigImage, crtLogImage, crtAveragedImage, crtFilteredImage, crtCrops] = ...
+    [crtImage, crtProcessedMasks{:}, crtImages, crtCrops] = ...
         preprocessImage(crtOriginalImage, crtMasks{:}, preprocessArgs{:});
     
     % call the walker function
-    details.origImage = crtOrigImage;
-    details.logImage = crtLogImage;
-    details.averagedImage = crtAveragedImage;
-    details.filteredImage = crtFilteredImage;
+    details = crtImages;
     details.crops = crtCrops;
     crtRes = fct(i, crtImage, crtProcessedMasks{:}, details);
     
@@ -192,9 +201,10 @@ end
 res.imageNames = imageNames;
 res.imageCount = imageCount;
 res.path = path;
+
 res.options = copyFields(params, {'averageType', 'blockAF', 'doLog', ...
-    'threshold', 'filter', 'filterType', 'quantType', 'quantPatchSize', ...
-    'nLevels'});
+    'equalize', 'equalizeType', 'filter', 'threshold', 'filterType', 'quantize', ...
+    'quantizeType', 'patchSize'});
 
 end
 

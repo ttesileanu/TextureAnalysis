@@ -1,12 +1,17 @@
 function res = analyzeImageSet(imageNames, path, varargin)
 % analyzeImageSet Calculate texture statistics for a set of images.
-%   res = analyzeImageSet(imageNames, path, blockAF, filter, nLevels)
-%   calculates texture statistics with `nLevels` levels for the images
-%   located in folder `path` with names given by the `imageNames` cell
-%   array. The images are processed by block averaging, filtering, and 
-%   quantization (see `walkImageSet` for details). The options below can be
-%   used to fine-tune the preprocessing and the processing. The `filter`
-%   argument can be set to an emtpy matrix to avoid filtering.
+%   res = analyzeImageSet(imageNames, path) calculates continuous texture
+%   statistics for the images located in folder `path` with names given by
+%   the `imageNames` cell array. See the options below (and in
+%   `walkImageSet`) for preprocessing options.
+%
+%   res = analyzeImageSet(imageNames, path, blockAF) performs block
+%   averaging by the given factor before running the analysis.
+%
+%   res = analyzeImageSet(..., 'nLevels', n) performs an `n`-graylevel
+%   analysis instead of the continuous texture analysis. This is implied by
+%   default when the `quantize` option is used. Conversely, if `nLevels` is
+%   provided, the quantization is implied.
 %
 %   res = analyzeImageSet(imageNames, path, masks, ...) uses the images
 %   given in the cell array `masks` to identify portions of the image on
@@ -24,32 +29,36 @@ function res = analyzeImageSet(imageNames, path, varargin)
 %    'averageType':
 %    'doLog':
 %    'threshold':
+%    'filter':
 %    'filterType':
-%    'quantType':
-%    'quantPatchSize': 
+%    'equalize':
+%    'equalizeType': 
+%    'patchSize':
+%    'quantize':
+%    'quantizeType':
 %       These control the preprocessing of the images. See `walkImageSet`
-%       for a description. Note that `quantPatchSize` is by default set to
-%       the `size(filter)`, if the `filter` is not empty, or to `patchSize`
-%       (if provided). If both the filter is empty and `patchSize` is not
-%       provided, the quantization is done for the whole image, without
-%       splitting into patches (see `walkImageSet` and `quantize` for
-%       details).
-%    'patchSize': integer, or pair of integers
-%       When this is given, or when a (non-empty) `filter` is given, the
-%       analysis is performed by splitting each image (or each region
-%       within an image as identified by the masks) into patches of size
-%       `patchSize`. This can be a single number to use square patches, or
-%       a pair of numbers [sizeY, sizeX] for rectangular patches. Set
-%       `patchSize` to an empty matrix to have the entire image (or the
-%       entire region identified by the masks) analyzed together.
+%       for a description. Note that `patchSize` is by default set to
+%       the `size(filter)`, if the `filter` is not empty, or to
+%       `analysisPatchSize` (if provided).
+%    'analysisPatchSize': integer, or pair of integers
+%       When provided, the analysis is performed by splitting each image
+%       (or each region within an image as identified by the masks) into
+%       patches of the given size. This can be a single number to use
+%       square patches, or a pair of numbers [sizeY, sizeX] for rectangular
+%       patches. If 'analysisPatchSize' is not provided, it is inferred
+%       from 'filter' or 'patchSize', if they are provided. To do the
+%       texture analysis on the entire image regardless of the size of the
+%       whitening filter or of the patch size used for
+%       equalization/quantization, set 'analysisPatchSize' to an empty
+%       matrix.
 %    'overlapping': logical, numeric, or pair of numbers
 %       Set to true, or to a step size, or to a pair of step sizes, to use
 %       a pixel-by-pixel sliding patch to evaluate statistics. The patches
 %       are centered on a pixel that's sliding with the given step. This
 %       can generate many more patches but the patches are no longer
 %       independent of each other. See `analyzePatches` and
-%       `analyzeObjects`. Note that this option is ignored if no `patchSize`
-%       is given.
+%       `analyzeObjects`. Note that this option is ignored if no
+%       `patchSize` is given.
 %    'maxPatchesPerImage': integer
 %       If given, this ensures that the number of patches per image doesn't
 %       exceed a given value. If an image generates more patches than
@@ -60,6 +69,11 @@ function res = analyzeImageSet(imageNames, path, varargin)
 %       Minimum fraction of patch that needs to be available (e.g.,
 %       contained within a region identified by the masks) to be analyzed.
 %       See `analyzePatches`.
+%    'nLevels': int
+%       Number of graylevels to use for the texture analysis. This
+%       overrides the 'quantize' option.
+%       (default: the value from 'quantize' if provided, otherwise use
+%                 continuous analysis)
 %    'covariances': logical
 %       Set to true (default) to evaluate covariance matrices for the
 %       patches. If no masks are provided, a single covarince matrix is
@@ -97,17 +111,21 @@ checkPatchSize = @(v) isempty(v) || (isnumeric(v) && isvector(v) && ...
 checkNumber = @(x) isempty(x) || (isscalar(x) && isreal(x) && isnumeric(x));
 
 parser.addOptional('blockAF', 1, checkNumber);
-parser.addOptional('filter', [], @(m) isempty(m) || (ismatrix(m) && isreal(m) && isnumeric(m)));
-parser.addOptional('nLevels', checkNumber);
+
+parser.addParameter('nLevels', [], checkNumber);
 
 parser.addParameter('averageType', [], checkStr);
 parser.addParameter('doLog', [], checkBool);
 parser.addParameter('threshold', [], checkNumber);
+parser.addParameter('filter', [], @(m) isempty(m) || (ismatrix(m) && isreal(m) && isnumeric(m)));
 parser.addParameter('filterType', [], checkStr);
-parser.addParameter('quantType', [], checkStr);
-parser.addParameter('quantPatchSize', [], checkPatchSize);
+parser.addParameter('equalize', [], checkBool);
+parser.addParameter('equalizeType', [], checkStr);
+parser.addParameter('patchSize', [], checkPatchSize);
+parser.addParameter('quantize', [], checkNumber);
+parser.addParameter('quantizeType', [], checkStr);
+parser.addParameter('analysisPatchSize', 'default', checkPatchSize);
 
-parser.addParameter('patchSize', 'default', checkPatchSize);
 parser.addParameter('overlapping', []);
 parser.addParameter('maxPatchesPerImage', inf, checkNumber);
 parser.addParameter('minPatchUsed', [], checkNumber);
@@ -121,22 +139,40 @@ parser.addParameter('progressStart', [], checkNumber);
 parser.parse(varargin{:});
 params = parser.Results;
 
-% default patchSize is the same as size of filter
-if strcmp(params.patchSize, 'default')
+% default patchSize is the same as size of filter, or as analysisPatchSize
+if isempty(params.patchSize)
     if isempty(params.filter)
-        params.patchSize = [];
+        if ~strcmp(params.analysisPatchSize, 'default')
+            params.patchSize = params.analysisPatchSize;
+        else
+            params.patchSize = [];
+        end
     else
         params.patchSize = size(params.filter);
     end
 end
 
-% default quantPatchSize is the same as patchSize or filter
-if isempty(params.quantPatchSize)
+% default analysisPatchSize is the same as patchSize or filter
+if strcmp(params.analysisPatchSize, 'default')
     if ~isempty(params.filter)
-        params.quantPatchSize = size(params.filter);
+        params.analysisPatchSize = size(params.filter);
     elseif ~isempty(params.patchSize)
-        params.quantPatchSize = params.patchSize;
+        params.analysisPatchSize = params.patchSize;
     end
+end
+
+% set defaults for nLevels and quantize
+if ~isempty(params.nLevels) && ~isempty(params.quantize)
+    if isfinite(params.nLevels) && ~isequal(params.nLevels, params.quantize)
+        error([mfilename ':badnlev'], 'nLevels and quantize must match when they are both provided, unless nLevels is infinity.');
+    end    
+elseif ~isempty(params.nLevels)
+    params.quantize = params.nLevels;
+elseif ~isempty(params.quantize)
+    params.nLevels = params.quantize;
+end
+if isempty(params.nLevels)
+    params.nLevels = inf;
 end
 
 % set the default for image copies
@@ -149,24 +185,17 @@ if isempty(params.imageCopies)
 end
 
 % generate argument lists for walkImageSet and analyzeObjects
-if isempty(params.quantPatchSize)
-    quantPatchSizeArgs = {};
-else
-    quantPatchSizeArgs = {params.quantPatchSize};
-end
 optionalArgs = structToCell(params, ...
-    {'averageType', 'doLog', 'filterType', 'quantType', 'threshold', ...
-     'progressEvery', 'progressStart'});
+    {'averageType', 'doLog', 'equalize', 'equalizeType', 'filter', 'filterType', ...
+    'quantize', 'quantizeType', 'patchSize', 'threshold', 'progressEvery', 'progressStart'});
 if ~isempty(params.patchSize)
-    analysisArgs = {params.patchSize};
+    analysisArgs = {params.analysisPatchSize};
 else
     analysisArgs = {};
 end
 analysisArgs = [analysisArgs structToCell(params, {'minPatchUsed', 'overlapping', 'maxPatchesPerImage'})];
 
-res = walkImageSet(@walker, imageNames, path, ...
-    params.blockAF, params.filter, params.nLevels, quantPatchSizeArgs{:}, ...
-    optionalArgs{:});
+res = walkImageSet(@walker, imageNames, path, params.blockAF, optionalArgs{:});
 
 if params.covariances
     res.covM = safeCov(res.ev);
@@ -182,7 +211,7 @@ if params.covariances
     end
 end
 
-res.options.patchSize = params.patchSize;
+res.options.analysisPatchSize = params.analysisPatchSize;
 res.options.overlapping = params.overlapping;
 res.options.maxPatchesPerImage = params.maxPatchesPerImage;
 res.options.minPatchUsed = params.minPatchUsed;

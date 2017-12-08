@@ -19,6 +19,7 @@ addpath(fullfile(PWD, 'indices'));
 addpath(fullfile(PWD, 'misc'));
 addpath(fullfile(PWD, 'preprocess'));
 %addpath(fullfile(PWD, 'save'));
+addpath(fullfile(PWD, 'sandbox'));
 addpath(fullfile(PWD, 'segment'));
 addpath(fullfile(PWD, 'texture'));
 

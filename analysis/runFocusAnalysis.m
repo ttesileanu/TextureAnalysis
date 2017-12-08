@@ -35,6 +35,9 @@ function res = runFocusAnalysis(res, varargin)
 %       The index of a patch that is in focus. If this is provided, it is
 %       used (instead of the sharpness measure) to identify which of the
 %       Gaussian clusters is most likely to contain the in-focus patches.
+%    'skipSharpness': boolean
+%       Set to true to skip sharpness calculation. If this is true, then a
+%       `focusPatch` or `focusImage` must be provided.
 %    'progressEvery': double
 %       How often to display progress information (in seconds), after the
 %       'progressStart' period (see below) elapsed.
@@ -53,41 +56,48 @@ parser.addParameter('focusImage', [], @(n) isscalar(n) && isnumeric(n) && isreal
 parser.addParameter('focusPatch', [], @(n) isscalar(n) && isnumeric(n) && isreal(n) && n >= 1);
 parser.addParameter('progressEvery', 10, @(n) isscalar(n) && isnumeric(n) && isreal(n));
 parser.addParameter('progressStart', 20, @(n) isscalar(n) && isnumeric(n) && isreal(n));
+parser.addParameter('skipSharpness', false, @(b) isscalar(b) && islogical(b));
 
 % parse
 parser.parse(varargin{:});
 params = parser.Results;
 
 % get sharpness for each patch -- need to load the images
-allImgIds = unique(res.imgIds);
-focus = struct;
-focus.sharpness = zeros(size(res.ev, 1), 1);
-statusDisplayed = false;
 t0 = tic;
-tEvery = tic;
-for i = 1:length(allImgIds)
-    if (~statusDisplayed && toc(tEvery) > params.progressStart) || ...
-            (statusDisplayed && toc(tEvery) > params.progressEvery)
-        disp(['Sharpness calculation, image ' int2str(i) ' of ' int2str(numel(allImgIds)) ...
-            ', elapsed ' num2str(toc(t0), '%.1f') ' seconds...']);
-        statusDisplayed = true;
-        tEvery = tic;
+if ~params.skipSharpness
+    allImgIds = unique(res.imgIds);
+    focus = struct;
+    focus.sharpness = zeros(size(res.ev, 1), 1);
+    statusDisplayed = false;
+    tEvery = tic;
+    for i = 1:length(allImgIds)
+        if (~statusDisplayed && toc(tEvery) > params.progressStart) || ...
+                (statusDisplayed && toc(tEvery) > params.progressEvery)
+            disp(['Sharpness calculation, image ' int2str(i) ' of ' int2str(numel(allImgIds)) ...
+                ', elapsed ' num2str(toc(t0), '%.1f') ' seconds...']);
+            statusDisplayed = true;
+            tEvery = tic;
+        end
+        crtImgId = allImgIds(i);
+        crtImgName = res.imageNames{crtImgId};
+        crtImg = loadLUMImage(fullfile(res.path, crtImgName));
+        crtPatchMask = (res.imgIds == crtImgId);
+        crtPatchLocs = res.patchLocationsOrig(crtPatchMask, :);
+        crtSharpness = zeros(size(crtPatchLocs, 1), 1);
+        for j = 1:size(crtPatchLocs, 1)
+            crtPatchLoc = crtPatchLocs(j, :);
+            crtPatch = crtImg(crtPatchLoc(1):crtPatchLoc(3), crtPatchLoc(2):crtPatchLoc(4));
+            crtSharpness(j) = getSharpnessMeasure(crtPatch);
+        end
+        focus.sharpness(crtPatchMask) = crtSharpness;
     end
-    crtImgId = allImgIds(i);
-    crtImgName = res.imageNames{crtImgId};
-    crtImg = loadLUMImage(fullfile(res.path, crtImgName));
-    crtPatchMask = (res.imgIds == crtImgId);
-    crtPatchLocs = res.patchLocationsOrig(crtPatchMask, :);
-    crtSharpness = zeros(size(crtPatchLocs, 1), 1);
-    for j = 1:size(crtPatchLocs, 1)
-        crtPatchLoc = crtPatchLocs(j, :);
-        crtPatch = crtImg(crtPatchLoc(1):crtPatchLoc(3), crtPatchLoc(2):crtPatchLoc(4));
-        crtSharpness(j) = getSharpnessMeasure(crtPatch);
+    if statusDisplayed
+        disp(['Sharpness calculation took ' num2str(toc(t0), '%.1f') ' seconds.']);
     end
-    focus.sharpness(crtPatchMask) = crtSharpness;
-end
-if statusDisplayed
-    disp(['Sharpness calculation took ' num2str(toc(t0), '%.1f') ' seconds.']);
+else
+    if isempty(params.focusImage) && isempty(params.focusPatch)
+        error([mfilename ':needidx'], 'When skipSharpness is true, either focusImage or focusPatch must be provided.');
+    end
 end
 
 % run 2 Gaussian decomposition on all analyses
@@ -105,7 +115,7 @@ focus.clusterDistances = focus.gMix.mahal(res.ev);
 focus.imageClusters = zeros(length(res.imageNames), 1);
 for i = 1:length(res.imageNames)
     crtMask = (res.imgIds == i);
-    focus.imageClusters(j) = mean(focus.clusterIds(crtMask));
+    focus.imageClusters(i) = mean(focus.clusterIds(crtMask));
 end
 
 % identify the in-focus cluster
@@ -120,9 +130,9 @@ else
     [~, focus.focusCluster] = max(sharpClusters);
 end
 
-if statusDisplayed
-    disp(['Focus analysis took ' num2str(toc(t0), '%.1f') ' seconds.']);
-end
+% if statusDisplayed
+disp(['Focus analysis took ' num2str(toc(t0), '%.1f') ' seconds.']);
+% end
 
 res.focus = focus;
 
