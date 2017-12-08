@@ -1,4 +1,4 @@
-function showResultsStats(res, varargin)
+ function showResultsStats(res, varargin)
 % showResultsStats Display distributions of texture statistics.
 %   showResultsStats(res) makes scatter plots showing the distribution of
 %   texture statistics for a set of results.

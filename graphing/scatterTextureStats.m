@@ -49,7 +49,7 @@ for i = 1:length(pairs)
     else
         if has_color_scheme
             colors0 = redbluem(255);
-            cidxs = 1 + round(0.5*(1 + ev{2})*(size(colors0, 1) - 1));
+            cidxs = min(max(1 + round(0.5*(1 + ev{2})*(size(colors0, 1) - 1)), 1), size(colors0, 1));
             colors = colors0(cidxs, :);
             ev_here = ev{1};
         else
@@ -59,7 +59,8 @@ for i = 1:length(pairs)
         hold on;
         for j = 1:length(ev_here)
             crt_ev = ev_here{j};
-            smartscatter(crt_ev(:, idx1), crt_ev(:, idx2), [], colors(j, :), varargin{:});
+            smartscatter(crt_ev(:, idx1), crt_ev(:, idx2), 'density', false, ...
+                'color', colors(j, :), varargin{:});
         end
     end
     xlabel(labels{idx1});
