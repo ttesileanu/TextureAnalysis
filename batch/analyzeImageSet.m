@@ -34,6 +34,7 @@ function res = analyzeImageSet(imageNames, path, varargin)
 %    'equalize':
 %    'equalizeType': 
 %    'patchSize':
+%    'nonlinearity':
 %    'quantize':
 %    'quantizeType':
 %       These control the preprocessing of the images. See `walkImageSet`
@@ -122,6 +123,7 @@ parser.addParameter('filterType', [], checkStr);
 parser.addParameter('equalize', [], checkBool);
 parser.addParameter('equalizeType', [], checkStr);
 parser.addParameter('patchSize', [], checkPatchSize);
+parser.addParameter('nonlinearity', [], @(v) isempty(v) || (isvector(v) && isnumeric(v) && isreal(v)));
 parser.addParameter('quantize', [], checkNumber);
 parser.addParameter('quantizeType', [], checkStr);
 parser.addParameter('analysisPatchSize', 'default', checkPatchSize);
@@ -187,7 +189,8 @@ end
 % generate argument lists for walkImageSet and analyzeObjects
 optionalArgs = structToCell(params, ...
     {'averageType', 'doLog', 'equalize', 'equalizeType', 'filter', 'filterType', ...
-    'quantize', 'quantizeType', 'patchSize', 'threshold', 'progressEvery', 'progressStart'});
+    'nonlinearity', 'quantize', 'quantizeType', 'patchSize', 'threshold', ...
+    'progressEvery', 'progressStart'});
 if ~isempty(params.patchSize)
     analysisArgs = {params.analysisPatchSize};
 else

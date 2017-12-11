@@ -26,8 +26,8 @@ function res = walkImageSet(fct, imageNames, path, varargin)
 %   the images, and passes them to `fct` as
 %       fct(i, image, mask1, ..., maskN, details)
 %   where `details` is a structure containing `origImage`, `logImage`,
-%   `averagedImage`, `filteredImage`, and `crops`, as returned by
-%   `preprocessImage`.
+%   `averagedImage`, `filteredImage`, `equalizedImage`, `nonlinearImage`,
+%   and `crops`, as returned by `preprocessImage`.
 %
 %   walkImageSet(..., blockAF) downsamples the images by the factor `blockAF
 %   before passing them to `fct`. See options below to tweak the
@@ -54,6 +54,10 @@ function res = walkImageSet(fct, imageNames, path, varargin)
 %    'filterType': char
 %       Passed to `preprocessImage` to set the type of filtering that is
 %       performed (see `filterImage` for a description).
+%    'nonlinearity': [], or vector
+%       If non-empty, this instructs preprocessImage to perform a per-pixel
+%       nonlinear filtering of the image. This happens after equalization
+%       but before quantization. See `applyNonlinearity`.
 %    'patchSize': [], int, or [int, int]
 %       Patch size to use for `quantize` and/or `equalize`. See the
 %       documentation for those two functions for details. If empty, the
@@ -128,6 +132,7 @@ parser.addParameter('patchSize', [], checkPatchSize);
 parser.addParameter('averageType', [], checkStr);
 parser.addParameter('doLog', [], checkBool);
 parser.addParameter('filterType', [], checkStr);
+parser.addParameter('nonlinearity', [], @(v) isempty(v) || (isvector(v) && isnumeric(v) && isreal(v)));
 parser.addParameter('quantize', [], checkNumber);
 parser.addParameter('quantizeType', [], checkStr);
 parser.addParameter('threshold', [], checkNumber);
@@ -146,7 +151,8 @@ progressWritten = false;
 res = [];
 preprocessArgs = [{params.blockAF} ...
     structToCell(params, {'averageType', 'doLog', 'equalize', 'equalizeType', ...
-    'filter', 'filterType', 'patchSize', 'quantize', 'quantizeType', 'threshold'})];
+    'filter', 'filterType', 'patchSize', 'nonlinearity', 'quantize', 'quantizeType', ...
+    'threshold'})];
 for i = 1:imageCount
     % output progress information if required
     if (~progressWritten && toc(t0) > params.progressStart) || ...
@@ -203,8 +209,8 @@ res.imageCount = imageCount;
 res.path = path;
 
 res.options = copyFields(params, {'averageType', 'blockAF', 'doLog', ...
-    'equalize', 'equalizeType', 'filter', 'threshold', 'filterType', 'quantize', ...
-    'quantizeType', 'patchSize'});
+    'equalize', 'equalizeType', 'filter', 'threshold', 'filterType', ...
+    'nonlinearity', 'quantize', 'quantizeType', 'patchSize'});
 
 end
 

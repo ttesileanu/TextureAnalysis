@@ -12,8 +12,10 @@ function [image, varargout] = preprocessImage(image0, varargin)
 %   averaging. See the options below for more control over the filtering.
 %
 %   The function can also perform histogram equalization (see 'equalize'
-%   option below), quantization (see 'quantize' option), and can perform
-%   these functions in a per-patch fashio (see 'patchSize' option).
+%   option below), quantization (see 'quantize' option), apply a per-pixel
+%   non-linear filter (see 'nonlinearity' option), and can perform the
+%   first two of these functions in a per-patch fashion (see 'patchSize'
+%   option).
 %
 %   [image, mask1, mask2, ..., maskN, origImage] = ...
 %       preprocessImage(image0, mask1, mask2, ..., maskN, ...) preprocesses
@@ -69,6 +71,11 @@ function [image, varargout] = preprocessImage(image0, varargin)
 %       This is passed to `filterImage` to set the type of filtering that
 %       is performed.
 %       (default: use `filterImage`s default)
+%    'nonlinearity': [], or vector
+%       If non-empty, this instructs preprocessImage to perform a per-pixel
+%       nonlinear filtering of the image. This happens after equalization
+%       but before quantization. See `applyNonlinearity`.
+%       (default: [])
 %    'patchSize': [], int, or [int, int]
 %       Patch size to use for `quantize` and/or `equalize`. See the
 %       documentation for those two functions for details. If empty, the
@@ -118,6 +125,7 @@ parser.addParameter('doLog', true, @(b) islogical(b) && isscalar(b));
 parser.addParameter('filterType', [], @(s) isempty(s) || (ischar(s) && isvector(s)));
 parser.addParameter('equalize', true, @(b) islogical(b) && isscalar(b));
 parser.addParameter('equalizeType', [], @(s) isempty(s) || (ischar(s) && isvector(s)));
+parser.addParameter('nonlinearity', [], @(v) isempty(v) || (isvector(v) && isnumeric(v) && isreal(v)));
 parser.addParameter('quantizeType', [], @(s) isempty(s) || (ischar(s) && isvector(s) && ...
     ismember(s, {'deterministic', 'stochastic'})));
 parser.addParameter('threshold', [], @(x) isempty(x) || (isnumeric(x) && isscalar(x) && x > 0));
@@ -224,6 +232,12 @@ else
 end
 equalizedImage = image;
 
+% apply per-pixel nonlinearity
+if ~isempty(params.nonlinearity)
+    image = applyNonlinearity(image, params.nonlinearity);
+end
+nonlinearImage = image;
+
 % color quantization
 if ~isempty(params.quantize) && isfinite(params.quantize)
     switch params.quantizeType
@@ -239,6 +253,7 @@ images.logImage = logImage;
 images.averagedImage = averagedImage;
 images.filteredImage = filteredImage;
 images.equalizedImage = equalizedImage;
+images.nonlinearImage = nonlinearImage;
 
 % update the crops
 crops.averaged = [1 1 size(averagedImage)*params.blockAF];
