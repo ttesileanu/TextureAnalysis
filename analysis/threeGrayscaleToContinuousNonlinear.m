@@ -266,11 +266,11 @@ load(fullfile('save', 'three_psycho_via_continuous_extended.mat'));
 
 %% Load natural image stats
 
-% natural_stats0 = open(fullfile('save', 'natural_nosky_continuous_with_focus.mat'));
-% res_choice = 4;
-
-natural_stats0 = open(fullfile('save', 'natural_nosky_ternarized_continuous_with_focus.mat'));
+natural_stats0 = open(fullfile('save', 'natural_nosky_continuous_with_focus.mat'));
 res_choice = 4;
+
+% natural_stats0 = open(fullfile('save', 'natural_nosky_ternarized_continuous_with_focus.mat'));
+% res_choice = 4;
 
 %% Preprocessing
 
