@@ -98,28 +98,47 @@ tex_axes = {};
 directions = {};
 thresholds = [];
 stdev_ratios = [];
-use_mc = true;
+% XXX jwb doesn't have any single-plane measurements
+subjects = setdiff(fieldnames(data_ext0.ds_merged), {'avg', 'jwb'});
+thresholds_by_subject = cell(1, length(subjects));
+stdev_ratios_by_subject = cell(1, length(subjects));
 for i = 1:length(sub_edirs)
     crt_edir = sub_edirs{i};
     crt_edir_data = data_ext0.ds_merged.avg.edirs.(crt_edir);
     crt_group = crt_edir_data.cgroup_names{1};
     crt_uvecs = crt_edir_data.uvecs;
     crt_ndirs = size(crt_uvecs, 1);
-    if ~use_mc
-        % use combined (_all) data
-        % XXX should use _comth instead of _all!
-        crt_thresh = crt_edir_data.thresh_mags_all;
-        % XXX are these actually stdev ratios?
-        crt_thresh_hi = crt_edir_data.thresh_mags_ebhi_all;
-        crt_thresh_lo = crt_edir_data.thresh_mags_eblo_all;
-    else
-        % use data from MC
-        crt_thresh = crt_edir_data.thresh_mags_mc;
-        crt_thresh_hi = crt_edir_data.thresh_mags_ebhi_mc;
-        crt_thresh_lo = crt_edir_data.thresh_mags_eblo_mc;
-    end
     
+    % get averaged data
+    crt_thresh = crt_edir_data.thresh_mags_all;
+    crt_thresh_hi = crt_edir_data.thresh_mags_ebhi_all;
+    crt_thresh_lo = crt_edir_data.thresh_mags_eblo_all;
     crt_stdev_ratios = crt_thresh_hi./crt_thresh_lo;
+    
+    thresholds = [thresholds crt_thresh(:)']; %#ok<AGROW>
+    stdev_ratios = [stdev_ratios crt_stdev_ratios(:)']; %#ok<AGROW>
+
+    % get per-subject data
+    for j = 1:length(subjects)
+        thresh_field = ['thresh_mags_' subjects{j}];
+        thresh_hi_field = ['thresh_mags_ebhi_' subjects{j}];
+        thresh_lo_field = ['thresh_mags_eblo_' subjects{j}];
+        
+        if all(isfield(crt_edir_data, {thresh_field, thresh_hi_field, thresh_lo_field}))        
+            crt_thresh_subj = crt_edir_data.(thresh_field);
+            crt_thresh_hi_subj = crt_edir_data.(thresh_hi_field);
+            crt_thresh_lo_subj = crt_edir_data.(thresh_lo_field);
+            crt_stdev_ratios_subj = crt_thresh_hi_subj./crt_thresh_lo_subj;
+        else
+            crt_thresh_subj = nan(size(crt_thresh));
+            crt_thresh_hi_subj = nan(size(crt_thresh_hi));
+            crt_thresh_lo_subj = nan(size(crt_thresh_lo));
+            crt_stdev_ratios_subj = nan(size(crt_stdev_ratios));
+        end
+        
+        thresholds_by_subject{j} = [thresholds_by_subject{j} crt_thresh_subj(:)'];
+        stdev_ratios_by_subject{j} = [stdev_ratios_by_subject{j} crt_stdev_ratios(:)'];
+    end
     
     groups = [groups repmat({crt_group}, 1, crt_ndirs)]; %#ok<AGROW>
     
@@ -128,10 +147,7 @@ for i = 1:length(sub_edirs)
     crt_axes_cell = mat2cell(crt_axes, ones(crt_ndirs, 1), 3);
     
     tex_axes = [tex_axes crt_axes_cell(:)']; %#ok<AGROW>
-    directions = [directions repmat({'pos'}, 1, length(crt_uvecs))]; %#ok<AGROW>
-    
-    thresholds = [thresholds crt_thresh(:)']; %#ok<AGROW>
-    stdev_ratios = [stdev_ratios crt_stdev_ratios(:)']; %#ok<AGROW>
+    directions = [directions repmat({'pos'}, 1, length(crt_uvecs))]; %#ok<AGROW>    
 end
 
 %% Compare CSV data with the extended data
@@ -266,7 +282,8 @@ load(fullfile('save', 'three_psycho_via_continuous_extended.mat'));
 
 %% Load natural image stats
 
-natural_stats0 = open(fullfile('save', 'natural_nosky_continuous_with_focus.mat'));
+% natural_stats0 = open(fullfile('save', 'natural_nosky_continuous_with_focus.mat'));
+natural_stats0 = open(fullfile('save', 'natural_nosky_continuous_with_focus_contrastadapt.mat'));
 res_choice = 4;
 
 % natural_stats0 = open(fullfile('save', 'natural_nosky_ternarized_continuous_with_focus.mat'));
@@ -493,15 +510,56 @@ end
 
 % exclude directions for which the psychophysics yielded no thresholds
 mask = (~isnan(thresholds) & ~isnan(predicted_thresholds));
-% exclude A_1 directions because we equalized natural image patches, so
-% that direction is not properly represented by our analysis
+% exclude A_1 directions because we equalized/contrast-adapted natural
+% image patches, so that direction is not properly represented by our
+% analysis
 mask(strcmp(groups, 'A_1')) = false;
 % exclude directions for which the psycophysics has infinite error bars
 % mask(isnan(stdev_ratios)) = false;
 
 fig = figure;
 fig.Units = 'inches';
-fig.Position = [fig.Position(1:2) 10 7];
+fig.Position = [fig.Position(1:2) 9 7];
+
+masked_groups = groups(mask);
+unique_groups = fliplr(unique(masked_groups));
+n_unique_groups = length(unique_groups);
+n_prism = size(unique(prism, 'rows'), 1);
+prism_colors = prism(n_prism);
+n_lines = size(unique(lines, 'rows'), 1);
+line_colors = lines(n_lines);
+if n_unique_groups <= n_prism
+    group_colors = prism_colors(1:n_unique_groups, :);
+elseif n_unique_groups <= n_prism + n_lines
+    group_colors = [prism_colors ; ...
+                    line_colors(1:(n_unique_groups - n_prism), :)];
+else
+    group_colors = parula(n_unique_groups);
+end
+threshold_colors = zeros(sum(mask), 3);
+for i = 1:n_unique_groups
+    for k = 1:3
+        threshold_colors(strcmp(masked_groups, unique_groups{i}), k) = group_colors(i, k);
+    end
+end
+
+hold on;
+masked_predicted_thresholds = predicted_thresholds(mask);
+masked_thresholds = thresholds(mask);
+for i = 1:n_unique_groups
+    sub_mask_group = strcmp(masked_groups, unique_groups{i});
+    sub_preds = masked_predicted_thresholds(sub_mask_group);
+    sub_thresh = masked_thresholds(sub_mask_group);
+    
+    crt_color = 0.7 + 0.3*group_colors(i, :);
+    
+    for j = 1:length(sub_preds)
+        for k = j+1:length(sub_preds)
+            line(sub_preds([j k]), sub_thresh([j k]), 'linewidth', 0.5, ...
+                'color', crt_color);
+        end
+    end
+end
 
 thresholds_std_pos = thresholds.*(stdev_ratios - 1);
 thresholds_std_neg = thresholds - thresholds./stdev_ratios;
@@ -509,17 +567,19 @@ h = errorbar(predicted_thresholds(mask), thresholds(mask), ...
     thresholds_std_neg(mask), thresholds_std_pos(mask), ...
     'marker', 'none', 'color', [0.5 0.5 0.5], 'linestyle', 'none');
 h.CapSize = 0;
-hold on;
-smartscatter(predicted_thresholds(mask), thresholds(mask), 'color', [1 0 0], ...
+th_h = smartscatter(predicted_thresholds(mask), thresholds(mask), 'color', threshold_colors, ...
     'density', false);
+% smartscatter(predicted_thresholds(mask), thresholds(mask), 'color', [1 0 0], ...
+%     'density', false);
 
 t_min = min(thresholds(mask));
 t_max = max(thresholds(mask));
 
 ylim([0.8*t_min 1.2*t_max]);
+axis equal;
 
-drawfitline(predicted_thresholds(mask), thresholds(mask), 'showci', false, ...
-    'corrtype', 'spearman');
+% drawfitline(predicted_thresholds(mask), thresholds(mask), 'showci', false, ...
+%     'corrtype', 'spearman');
 drawfitline(predicted_thresholds(mask), thresholds(mask), 'line', [1 0], ...
     'style', {'--k'}, 'legendloc', 'northwest');
 xlabel('Predicted thresholds');
@@ -538,7 +598,156 @@ end
 beautifygraph;
 preparegraph;
 
-safe_print(fullfile('figs', 'G3vsCont', ['cont_pred_thresholds' save_tag]));
+safe_print(fullfile('figs', 'G3vsContContrastAdapt', ['cont_pred_thresholds' save_tag]));
+
+%% Compare predicted to actual thresholds, centroids and ellipses, by subject
+
+mask_by_subject = cell(size(subjects));
+all_groups = [];
+for i = 1:length(subjects)
+    % exclude directions for which the psychophysics yielded no thresholds
+    mask_by_subject{i} = (~isnan(thresholds_by_subject{i}) & ...
+        ~isnan(predicted_thresholds));
+    % exclude A_1 directions because we equalized/contrast-adapted natural
+    % image patches, so that direction is not properly represented by our
+    % analysis
+    mask_by_subject{i}(strcmp(groups, 'A_1')) = false;
+    % exclude directions for which the psycophysics has infinite error bars
+    mask_by_subject{i}(isnan(stdev_ratios_by_subject{i})) = false;
+    
+    all_groups = [all_groups groups(mask_by_subject{i})]; %#ok<AGROW>
+end
+unique_groups = fliplr(unique(all_groups));
+n_unique_groups = length(unique_groups);
+n_prism = size(unique(prism, 'rows'), 1);
+prism_colors = prism(n_prism);
+n_lines = size(unique(lines, 'rows'), 1);
+line_colors = lines(n_lines);
+if n_unique_groups <= n_prism
+    group_colors = prism_colors(1:n_unique_groups, :);
+elseif n_unique_groups <= n_prism + n_lines
+    group_colors = [prism_colors ; ...
+                    line_colors(1:(n_unique_groups - n_prism), :)];
+else
+    group_colors = parula(n_unique_groups);
+end
+group_markers = {{'+', 80}, {'o', 80}, {'*', 80}, {'.', 300}, ...
+    {'x', 80}, {'s', 80}, {'d', 80}, {'^', 80}, {'v', 80}, ...
+    {'>', 80}, {'<', 80}, {'p', 80}, {'h', 80}};
+
+fig = figure;
+fig.Units = 'inches';
+fig.Position = [fig.Position(1:2) 7.5 7];
+
+hold on;
+
+t_min_by_subject = zeros(length(subjects), 1);
+t_max_by_subject = zeros(length(subjects), 1);
+
+mean_corrs = zeros(length(subjects), 1);
+group_handles = zeros(n_unique_groups, 1);
+
+for k = 1:length(subjects)
+    mask = mask_by_subject{k};
+    masked_groups = groups(mask);
+    threshold_colors = zeros(sum(mask), 3);
+    for i = 1:n_unique_groups
+        for j = 1:3
+            threshold_colors(strcmp(masked_groups, unique_groups{i}), j) = group_colors(i, j);
+        end
+    end
+
+    masked_predicted_thresholds = predicted_thresholds(mask);
+    masked_thresholds = thresholds_by_subject{k}(mask);
+    all_mean_preds = zeros(n_unique_groups, 1);
+    all_mean_thresh = zeros(n_unique_groups, 1);
+    for i = 1:n_unique_groups
+        sub_mask_group = strcmp(masked_groups, unique_groups{i});
+        sub_preds = masked_predicted_thresholds(sub_mask_group);
+        sub_thresh = masked_thresholds(sub_mask_group);
+        
+        if isempty(sub_preds)
+            continue;
+        end
+        
+        crt_color0 = group_colors(i, :);
+        crt_color = 0.7 + 0.3*crt_color0;
+        
+        all_mean_preds(i) = mean(sub_preds);
+        all_mean_thresh(i) = mean(sub_thresh);
+        
+        if sum(sub_mask_group) > 1
+            crt_cov = cov([sub_preds(:) sub_thresh(:)]);
+            ellipse(all_mean_preds(i), all_mean_thresh(i), crt_cov, 'color', crt_color);
+        end
+        
+        crt_marker = group_markers{mod(i-1, length(group_markers))+1};
+        
+        crt_h = scatter(all_mean_preds(i), all_mean_thresh(i), crt_marker{2}, crt_marker{1}, ...
+            'markerfacecolor', 0.8*crt_color0, ...
+            'markeredgecolor', 0.8*crt_color0, ...
+            'markerfacealpha', 0.6, ...
+            'markeredgealpha', 0.6, ...
+            'linewidth', 2);
+        if k == 1
+            group_handles(i) = crt_h;
+        end
+    end
+    
+    corr_mask = (isfinite(all_mean_preds) & isfinite(all_mean_thresh));
+    mean_corrs(k) = corr(all_mean_preds(corr_mask), all_mean_thresh(corr_mask));
+    
+%     for i = 1:length(thresholds_by_subject{k})
+%         if ~mask(i)
+%             continue;
+%         end
+%         text(predicted_thresholds(i)+0.01, thresholds_by_subject{k}(i), ...
+%             groups{i}, ...
+%             'fontsize', 6);
+%         %         [groups{i} '[' arrayfun(@int2str, tex_axes{i}) ']'], ...
+%     end
+
+%     t_min_by_subject(k) = min(masked_thresholds);
+%     t_max_by_subject(k) = max(masked_thresholds);
+
+    t_min_by_subject(k) = min(all_mean_thresh(corr_mask));
+    t_max_by_subject(k) = max(all_mean_thresh(corr_mask));
+end
+
+[~, leg_h] = legend(group_handles, unique_groups, 'location', 'southeast');
+for i = 1:n_unique_groups
+    crt_h = leg_h(length(leg_h)/2 + i);
+    crt_h.Children.MarkerSize = group_markers{i}{2}/10;
+    crt_h.Children.LineWidth = 1;
+end
+
+% thresholds_std_pos = thresholds.*(stdev_ratios - 1);
+% thresholds_std_neg = thresholds - thresholds./stdev_ratios;
+% h = errorbar(predicted_thresholds(mask), thresholds(mask), ...
+%     thresholds_std_neg(mask), thresholds_std_pos(mask), ...
+%     'marker', 'none', 'color', [0.5 0.5 0.5], 'linestyle', 'none');
+% h.CapSize = 0;
+% th_h = smartscatter(predicted_thresholds(mask), thresholds(mask), 'color', threshold_colors, ...
+%     'density', false);
+% % smartscatter(predicted_thresholds(mask), thresholds(mask), 'color', [1 0 0], ...
+% %     'density', false);
+
+t_min = min(t_min_by_subject);
+t_max = max(t_max_by_subject);
+t_range = [0.9*t_min 1.1*t_max];
+
+plot(t_range, t_range, '--k');
+xlabel('Predicted thresholds');
+ylabel('Actual thresholds');
+
+axis equal;
+xlim(t_range);
+ylim(t_range);
+
+beautifygraph;
+preparegraph;
+
+safe_print(fullfile('figs', 'G3vsContContrastAdapt', ['cont_pred_thresholds_means_' save_tag]));
 
 %% Compare predicted to actual thresholds, separate fits by order
 
