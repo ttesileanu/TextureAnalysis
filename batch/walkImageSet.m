@@ -41,12 +41,15 @@ function res = walkImageSet(fct, imageNames, path, varargin)
 %    'doLog': logical
 %       When true, the images are converted to a logarithmic space (this is
 %       the default). See `preprocessImage`.
-%    'equalize': logical
-%       if `true`, the image is histogram-equalized after the filtering
-%       (and before a potential quantization).
+%    'equalize': logical or string
+%       If set to 'equalize', the image is histogram-equalized after the
+%       filtering (and before a potential quantization). If set to
+%       'contrast', the image is run through a contrast adaptation
+%       algorithm instead (see contrastAdapt.m). Neither is performed if
+%       this option is set to `false`.
 %    'equalizeType': char
-%       This is passed to `equalize` to set the type of histogram
-%       equalization that is used.
+%       This is passed to `equalize` or `contrastAdapt` to set the type of
+%       histogram equalization or contrast adaptation that is used.
 %    'filter': [], or matrix
 %       Whitening filter to use after log and block-averaging, but before
 %       equalization and/or quantization. If empty, no whitening is
@@ -126,7 +129,7 @@ checkNumber = @(x) isempty(x) || (isscalar(x) && isreal(x) && isnumeric(x));
 parser.addOptional('blockAF', 1, checkNumber);
 
 parser.addParameter('filter', [], @(m) isempty(m) || (ismatrix(m) && isreal(m) && isnumeric(m)));
-parser.addParameter('equalize', [], checkBool);
+parser.addParameter('equalize', 'equalize', @(b) isequal(b, 'false') || ismember(b, {'equalize', 'contrast'}));
 parser.addParameter('equalizeType', [], checkStr);
 parser.addParameter('patchSize', [], checkPatchSize);
 parser.addParameter('averageType', [], checkStr);

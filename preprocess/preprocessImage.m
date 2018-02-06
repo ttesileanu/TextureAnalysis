@@ -55,14 +55,17 @@ function [image, varargout] = preprocessImage(image0, varargin)
 %       Set to `false` to skip the conversion of the image to logarithmic
 %       space.
 %       (default: true)
-%    'equalize': logical
-%       if `true`, the image is histogram-equalized after the filtering
-%       (and before a potential quantization).
+%    'equalize': logical or string
+%       If set to 'equalize', the image is histogram-equalized after the
+%       filtering (and before a potential quantization). If set to
+%       'contrast', the image is run through a contrast adaptation
+%       algorithm instead (see contrastAdapt.m). Neither is performed if
+%       this option is set to `false`.
 %       (default: true)
 %    'equalizeType': char
-%       This is passed to `equalize` to set the type of histogram
-%       equalization that is used.
-%       (default: use the `equalize` default)
+%       This is passed to `equalize` or `contrastAdapt` to set the type of
+%       histogram equalization or contrast adaptation that is used.
+%       (default: use the `equalize` or `contrastAdapt` default)
 %    'filter': [], or matrix
 %       Whitening filter to use after log and block-averaging, but before
 %       equalization and/or quantization. If empty, no whitening is
@@ -123,7 +126,7 @@ parser.addParameter('patchSize', [], @(p) isempty(p) || (isnumeric(p) && isscala
 parser.addParameter('averageType', [], @(s) isempty(s) || (ischar(s) && isvector(s)));
 parser.addParameter('doLog', true, @(b) islogical(b) && isscalar(b));
 parser.addParameter('filterType', [], @(s) isempty(s) || (ischar(s) && isvector(s)));
-parser.addParameter('equalize', true, @(b) islogical(b) && isscalar(b));
+parser.addParameter('equalize', 'equalize', @(b) isequal(b, 'false') || ismember(b, {'equalize', 'contrast'}));
 parser.addParameter('equalizeType', [], @(s) isempty(s) || (ischar(s) && isvector(s)));
 parser.addParameter('nonlinearity', [], @(v) isempty(v) || (isvector(v) && isnumeric(v) && isreal(v)));
 parser.addParameter('quantizeType', [], @(s) isempty(s) || (ischar(s) && isvector(s) && ...
@@ -206,20 +209,27 @@ end
 filteredImage = image;
 
 % histogram equalization
-if params.equalize
+if ~islogical(params.equalize)
     if isempty(params.patchSize)
         if ~isempty(params.equalizeType)
-            error([mfilename ':badeqtype'], 'Non-default equalization types require a patch size.');
+            error([mfilename ':badeqtype'], 'Non-default equalization/contrast adaptation types require a patch size.');
         end
-        [image, eqCrop] = equalize(image);
-    else        
-        if isempty(params.equalizeType)
-            quantOpts = {};
-        else
-            quantOpts = {params.equalizeType};
+        eqOpts = {};
+    else
+        eqOpts = {params.patchSize};
+        if strcmp(params.equalizeType, 'perpixel')
+            eqOpts = [eqOpts {'perpixel', true}];
+        elseif ~isempty(params.equalizeType)
+            error([mfilename ':badeqtype2'], 'Unknown equalizeType.');
         end
-        [image, eqCrop] = equalize(image, params.patchSize, quantOpts{:});
     end
+    switch params.equalize
+        case 'equalize'
+            eqFct = @equalize;
+        case 'contrast'
+            eqFct = @contrastAdapt;
+    end
+    [image, eqCrop] = eqFct(image, eqOpts{:});
     
     % crop the masks, if necessary
     for i = 1:numel(masks)
