@@ -38,7 +38,11 @@ images = parseImageNameFile('Natural_Images_Large_NoSky_Index.txt', 'NaturalImag
 
 chubb_nonlin = open('data/chubb_nonlinearities.mat');
 
-res_nonlinear = cell(length(N_values), 4);
+% first and second nonlinearities are identical
+chubb_mask = [2 3 4];
+chubb_nonlin.pvals = chubb_nonlin.pvals(:, chubb_mask);
+
+res_nonlinear = cell(length(N_values), size(chubb_nonlin.pvals, 2));
 for i = 1:length(N_values)
     crtN = N_values(i);
     crtR = size(filters{i}, 1);
@@ -53,12 +57,15 @@ for i = 1:length(N_values)
         % to keep things reproducible, we fix the random number generator seed
         rng('default');
         res_nonlinear{i, j} = analyzeImageSet(images, 'NaturalImages', crtN, ...
-            'filter', filters{i}, 'nonlinearity', chubb_nonlin.pvals(:, j));
+            'filter', filters{i}, 'nonlinearity', chubb_nonlin.pvals(:, j), ...
+            'equalize', 'contrast');
+        res_nonlinear{i, j}.nonlinearity = chubb_nonlin.pvals(:, j);
     end
 end
 
 %% Save the nonlinearized continuous stats
 
 res = res_nonlinear;
-save(fullfile('save', 'natural_nosky_nonlinear.mat'), 'res', 'R_values', 'N_values', 'NR_values');
+% save(fullfile('save', 'natural_nosky_nonlinear.mat'), 'res', 'R_values', 'N_values', 'NR_values');
+save(fullfile('save', 'natural_nosky_nonlinear_contrastadapt.mat'), 'res', 'R_values', 'N_values', 'NR_values');
 clear('res');
