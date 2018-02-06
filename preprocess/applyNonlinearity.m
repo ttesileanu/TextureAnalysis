@@ -26,6 +26,9 @@ image_int = floor(image);
 image_map0 = map(image_int);
 image_map1 = map(image_int + 1);
 
+% XXX this fails if image is 1-dimensional and it's oriented differently
+% than the map vector
+
 image_frac = image - image_int;
 image = (1 - image_frac) .* image_map0 + image_frac .* image_map1;
 
