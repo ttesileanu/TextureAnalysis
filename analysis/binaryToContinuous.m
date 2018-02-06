@@ -7,7 +7,8 @@ data0 = open(fullfile('data', 'PPandNIstats.mat'));
 %% Load natural image stats
 
 % natural_stats0 = open(fullfile('save', 'natural_nosky_multiscale_60_AF_1_2_3_4_5_6.mat'));
-natural_stats0 = open(fullfile('save', 'natural_nosky_continuous_with_focus.mat'));
+% natural_stats0 = open(fullfile('save', 'natural_nosky_continuous_with_focus.mat'));
+natural_stats0 = open(fullfile('save', 'natural_nosky_continuous_with_focus_contrastadapt.mat'));
 natural_stats_bin0 = open(fullfile('save', 'natural_nosky_binary_with_focus.mat'));
 % keep only blockAF > 1
 natural_stats = natural_stats0.res(natural_stats0.N_values > 1);
@@ -16,7 +17,7 @@ natural_stats_bin = natural_stats_bin0.res(natural_stats_bin0.N_values > 1);
 %% Find scalings between binary and continuous stats
 
 % use the scalings?
-use_ni_scalings = true;
+use_ni_scalings = false;
 
 ni_scalings = repmat({ones(1, 10)}, size(natural_stats));
 if use_ni_scalings
