@@ -102,10 +102,14 @@ large_cov = cov(ni_all_ev);
 % how many locations along each axis
 n_locs_binary = 8;
 
-% one axis in each of the coordinate directions
-% XXX should have two directions (pos & neg) for each group!
-binary_map_groups = {'A_1', 'AC_1_1', 'AB_1_1', 'AD_1_1', 'BC_1_1', ...
+% one axis in each of the coordinate directions, but each must appear twice
+% (for + and - directions)!
+binary_map_groups0 = {'A_1', 'AC_1_1', 'AB_1_1', 'AD_1_1', 'BC_1_1', ...
     'ABC_1_1_1', 'BCD_1_1_1', 'ABD_1_1_1', 'ACD_1_1_1', 'ABCD_1_1_1_1'};
+binary_map_groups = flatten(repmat(binary_map_groups0, 2, 1));
+binary_map_axes = flatten([repmat({[1 0]}, 1, length(binary_map_groups0)) ; ...
+    repmat({[0 1]}, 1, length(binary_map_groups0))]);
+
 binary_map_locs = cell(size(binary_map_groups));
 
 % number of patches to generate at each location
@@ -119,7 +123,8 @@ patch_size = 64;
 progress = TextProgress('generating binary patches', 'prespace', 32, 'length', 10);
 for i = 1:length(binary_map_groups)
     % generate patches in this direction
-    generator = PatchAxisGenerator(binary_map_groups{i}, [1 0], patch_size);
+    generator = PatchAxisGenerator(binary_map_groups{i}, binary_map_axes{i}, ...
+        patch_size);
     generator.nLocations = n_locs_binary;
     
     crt_patches = cell(1, n_locs_binary);
@@ -292,6 +297,82 @@ for i = 1:length(ternary_map_groups)
 end
 progress.done('done');
 
+%% Diagnose the behavior of Chubbified stats near iid random patches
+
+patch_rnd = ternary_map_patches{1}{1}(:, :, 1); % AB_1_1, [0 1 0]
+patch_plus = ternary_map_patches{1}{2}(:, :, 1);
+patch_minus = ternary_map_patches{7}{2}(:, :, 1); % AB_1_1, [2/3, -1/3, 2/3]
+
+patches = {patch_rnd, patch_plus, patch_minus};
+evs = cell(size(patches));
+for i = 1:length(patches)
+    crt_ev = zeros(1, 10*size(chubb_nonlin.pvals, 2));
+    for j = 1:size(chubb_nonlin.pvals, 2)
+        crt_patch_nl = applyNonlinearity(patches{i}, chubb_nonlin.pvals(:, j));
+        [~, crt_sub_ev] = processBlock(crt_patch_nl, inf);
+        crt_ev(10*(j-1)+1:10*j) = crt_sub_ev;
+    end
+    evs{i} = crt_ev;
+end
+
+dot_norm = @(v, w) dot(v, w)/(norm(v)*norm(w));
+
+diff_ev_plus = evs{2} - evs{1};
+diff_ev_minus = evs{3} - evs{1};
+
+%% Plot coordinate axes in PC1/2 space
+
+% calculate PCA for natural image patches
+all_pc_coeffs = pca(ni_all_ev);
+
+ni_all_ev_proj_nonmc = ni_all_ev*all_pc_coeffs;
+
+figure;
+hold on;
+smartscatter(ni_all_ev_proj_nonmc(:, 1), ni_all_ev_proj_nonmc(:, 2), 'alpha', 0.1);
+
+% bin_axes_to_show = 1:length(binary_map_groups);
+% focus on only second-order axes
+bin_axes_to_show = find(cellfun(@(s) length(s) == 6, binary_map_groups));
+binary_interpolated = mapInterpolate(binary_map_stats, binary_map_locs, 2);
+trajectory_locs = linspace(0, 1, 10);
+for i0 = 1:length(bin_axes_to_show)
+    i = bin_axes_to_show(i0);
+    crt_trajectory = binary_interpolated{i}.function(trajectory_locs);
+    crt_trajectory_proj = crt_trajectory*all_pc_coeffs;
+    plot(crt_trajectory_proj(:, 1), crt_trajectory_proj(:, 2), 'k');
+    text(crt_trajectory_proj(end, 1), crt_trajectory_proj(end, 2), binary_map_groups{i});
+end
+
+ternary_interpolated = mapInterpolate(ternary_map_stats, ternary_map_locs, 2);
+% focus on only second-order axes
+tern_axes_to_show = find(cellfun(@(s) length(s) == 6, ternary_map_groups));
+%tern_axes_to_show = 1:length(ternary_map_groups);
+for i0 = 1:length(tern_axes_to_show)
+    i = tern_axes_to_show(i0);
+    crt_trajectory = ternary_interpolated{i}.function(trajectory_locs);
+    crt_trajectory_proj = crt_trajectory*all_pc_coeffs;
+    plot(crt_trajectory_proj(:, 1), crt_trajectory_proj(:, 2), 'b');
+    text(crt_trajectory_proj(end, 1), crt_trajectory_proj(end, 2), ternary_map_groups{i});
+end
+
+origin_projected = origin(:)'*all_pc_coeffs;
+plot(origin_projected(1), origin_projected(2), 'kx', 'linewidth', 2);
+
+xlabel('PC1');
+ylabel('PC2');
+
+beautifygraph;
+preparegraph;
+
+% !!! Origin of discrete graylevel patches will not match that from
+%     continuous ones. The mapped 30d position of a random continuous patch
+%     is related to the means of the Chubb nonlinearities. For a binary
+%     patch, only the average between the values of the nonlinearities at 0
+%     and at 1 will matter; for a ternary patch, the value at 1/2 will be
+%     included in the average. And so on, so that we converge towards the
+%     continuous answer in the limit n_grayscale_levels -> infinity.
+
 %% Plot the measured binary and ternary thresholds in PC1/2 space
 
 % find locations of binary thresholds
@@ -328,10 +409,16 @@ ternary_threshold_locs_projected_mat = cell2mat(ternary_threshold_locs_projected
 h_tern = scatter(ternary_threshold_locs_projected_mat(:, 1), ...
     ternary_threshold_locs_projected_mat(:, 2), [], [0 0.7 0], '.');
 
+origin_projected = origin(:)'*all_pc_coeffs;
+plot(origin_projected(1), origin_projected(2), 'kx', 'linewidth', 2);
+
 xlabel('PC1');
 ylabel('PC2');
 
 legend([h_bin h_tern], {'binary', 'ternary'});
+
+beautifygraph;
+preparegraph;
 
 %% Find threshold predictions
 
