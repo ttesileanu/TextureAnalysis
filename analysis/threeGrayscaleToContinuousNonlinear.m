@@ -416,6 +416,38 @@ preparegraph;
 
 safe_print(fullfile('figs', 'G3vsCont', ['thresholds_in_10d' save_tag]), 'png');
 
+%% Plot coordinate axes in PC1/2 space
+
+% calculate PCA for natural image patches
+all_pc_coeffs = pca(natural_stats.ev);
+
+ni_all_ev_proj_nonmc = natural_stats.ev*all_pc_coeffs;
+
+figure;
+hold on;
+smartscatter(ni_all_ev_proj_nonmc(:, 1), ni_all_ev_proj_nonmc(:, 2), 'alpha', 0.1);
+
+ternary_interpolated = mapInterpolate(three_g_to_cont_stats, all_dot_locs, 2);
+% focus on only second-order axes
+tern_axes_to_show = find(cellfun(@(s) length(s) == 6, groups));
+trajectory_locs = linspace(0, 1, 10);
+%tern_axes_to_show = 1:length(ternary_map_groups);
+for i0 = 1:length(tern_axes_to_show)
+    i = tern_axes_to_show(i0);
+    crt_trajectory = ternary_interpolated{i}.function(trajectory_locs);
+    crt_trajectory_proj = crt_trajectory*all_pc_coeffs;
+    plot(crt_trajectory_proj(:, 1), crt_trajectory_proj(:, 2), 'b');
+    text(crt_trajectory_proj(end, 1), crt_trajectory_proj(end, 2), groups{i});
+end
+
+plot(0, 0, 'kx', 'linewidth', 2);
+
+xlabel('PC1');
+ylabel('PC2');
+
+beautifygraph;
+preparegraph;
+
 %% Optimize match between predicted and measured thresholds
 
 ignore_mask = true(size(thresholds));
