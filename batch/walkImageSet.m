@@ -84,6 +84,8 @@ function res = walkImageSet(fct, imageNames, path, varargin)
 %    'progressStart': double
 %       How long to wait before displaying progress information for the
 %       first time. Set to infinity to never display progress.
+%    'args': cell array
+%       Additional arguments to pass to the walker function `fct`.
 %
 %   See also: preprocessImage.
 
@@ -139,6 +141,7 @@ parser.addParameter('nonlinearity', [], @(v) isempty(v) || (isvector(v) && isnum
 parser.addParameter('quantize', [], checkNumber);
 parser.addParameter('quantizeType', [], checkStr);
 parser.addParameter('threshold', [], checkNumber);
+parser.addParameter('args', {}, @(c) iscell(c) && (isvector(c) || isempty(c)));
 
 parser.addParameter('progressEvery', 10, checkNumber);
 parser.addParameter('progressStart', 20, checkNumber);
@@ -182,6 +185,8 @@ for i = 1:imageCount
     % call the walker function
     details = crtImages;
     details.crops = crtCrops;
+    details.args = params.args;
+    details.params = params;
     crtRes = fct(i, crtImage, crtProcessedMasks{:}, details);
     
     if ~isempty(crtRes)        
