@@ -431,6 +431,55 @@ trafo_matrix = sqrtm(large_cov);
     optimizePredictedThresholds(ternary_thresholds, ternary_interpolated, ...
     trafo_matrix, [0 0.5], 'ignore_mask', strcmp(ternary_map_groups, 'A_1'));
 
+%% Check how similar two directions are
+
+ternary_interpolated = mapInterpolate(ternary_map_stats, ternary_map_locs, 2);
+
+% axes to consider
+idx1 = 1;   % AB_1_1 [0, 1, 0]
+idx2 = 13;  % AB_1_2 [0, 1, 0]
+
+% points along first axis
+axis_t = linspace(0, 1, 10);
+
+% find closest points on second axis
+distances1 = zeros(1, length(axis_t));
+distances2 = zeros(1, length(axis_t));
+distances12 = zeros(1, length(axis_t));
+point0a = ternary_interpolated{idx1}.function(0);
+point0b = ternary_interpolated{idx2}.function(0);
+for i = 1:length(axis_t)
+    point1 = ternary_interpolated{idx1}.function(axis_t(i));
+    % find the location on the second axis that maps to the closest point
+    crt_t2 = fminbnd(@(t2) norm(point1 - ternary_interpolated{idx2}.function(t2)), ...
+        0, 2);
+    point2 = ternary_interpolated{idx2}.function(crt_t2);
+    distances1(i) = norm(point1 - point0a);
+    distances2(i) = norm(point2 - point0b);
+    distances12(i) = norm(point2 - point1);
+end
+
+% XXX we could calculate this directly from interpolation coefficients
+vector1 = (ternary_interpolated{idx1}.function(0.01) - point0a)/0.01;
+vector2 = (ternary_interpolated{idx2}.function(0.01) - point0b)/0.01;
+angle12 = acos(dot(vector1, vector2) / (norm(vector1)*norm(vector2)));
+
+%% What does the natural image distribution look like along the two directions?
+
+normalize = @(v) v/norm(v);
+all_ev_proj1 = normalize(ni_all_ev*vector1(:));
+all_ev_proj2 = normalize(ni_all_ev*vector2(:));
+
+figure;
+multihist({all_ev_proj1 - mean(all_ev_proj1), all_ev_proj2 - mean(all_ev_proj2)}, 50, 'width', 0.5, 'offset', [0 0.5])
+% multihist({all_ev_proj1, all_ev_proj2}, 50, 'width', 0.5, 'offset', [0 0.5])
+xlabel('Mean-centered projection');
+
+legend(groups([idx1, idx2]));
+
+beautifygraph;
+preparegraph;
+
 %% 
 
 crt_group_idx = 1;
