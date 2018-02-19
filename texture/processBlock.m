@@ -7,7 +7,9 @@ function [P, ev, entropy, pattern_ix] = processBlock(I, nLevels)
 %   (see getStatistics).
 %
 %   processBlock(I, nLevels) calculates the statistics for nLevels gray
-%   levels. XXX This isn't yet implemented (unless nLevels is 2 or inf).
+%   levels. Note that if `nLevels` is different from 2 or inf, functions
+%   from Jonathan's framework are required to be on the path (specifically,
+%   these are gtc_define, mtc_define, glider_mapubi, and mtc_probs2cgs).
 %
 %   processBlock(I, inf) calculates the statistics for full grayscale
 %   images. These are combinations of 1-, 2-, 3-, and 4-point correlation
@@ -17,36 +19,21 @@ function [P, ev, entropy, pattern_ix] = processBlock(I, nLevels)
 %   Returns:
 %    P:
 %       Probabilities of gliders of each type. The encoding for binary
-%       statistics is as follows:
-%           0               00             8               00
-%                           00                             01
-%
-%           1               10             9               10
-%                           00                             01 
-%
-%           2               01             10              01
-%                           00                             01  
-%
-%           3               11             11              11
-%                           00                             01  
-%
-%           4               00             12              00
-%                           10                             11 
-%
-%           5               10             13              10
-%                           10                             11  
-%
-%           6               01             14              01
-%                           10                             11 
-%
-%           7               11             15              11
-%                           10                             11
+%       statistics can be found in the docstring for `getStatistics` and is
+%       mirrored in the full-grayscale (nLevels = inf) case.
 %    ev:
-%       Probabilities projected onto the 10-dimensional space of
-%       independent parameters (see getStatistics).
+%       Probabilities projected onto a space of independent parameters.
+%       For binary or continuous statistics (nLevels == 2 or nLevels == inf),
+%       these are the 10 dimensions from `getStatistics`. For finite
+%       number of gray levels larger than 2, the dimensions go through the
+%       texture groups in the order from `mtc.coord_groups`, with `nLevels
+%       - 1` values for each group representing all the probability values
+%       except for the last 1 (which is redundant, since they add up to 1).
+%       The `mtc` structure here can be obtained by running
+%           `processBlock('mtc', nLevels).
 %    entropy:
-%       Entropy of the discrete probability distribution identified by P.
-%       (in bits)
+%       Entropy of the discrete probability distribution identified by P
+%       (in bits). This is only returned when nLevels == 2.
 %    pattern_ix:
 %       Image in terms of the glider configurations. pattern_ix(i, j)
 %       identifies the glider at I(i:i+1, j:j+1) using the code described
@@ -54,13 +41,87 @@ function [P, ev, entropy, pattern_ix] = processBlock(I, nLevels)
 %
 %   See also: getStatistics.
 
-if nargin < 2
-    nLevels = 2;
-end
-if isfinite(nLevels) && nLevels ~= 2
-    error([mfilename ':notimp'], 'Only binary and arbitrary grayscale images are implemented for now.');
+% these are used in conjunction with Jonahtan's code when nLevels isn't inf or 2
+persistent gtc;
+persistent mtcs;
+
+% default number of levels is 2
+% if nargin < 2
+%     nLevels = 2;
+% end
+
+% figure out whether we need to generate gtc or mtc structures
+need_gtc = false;
+need_mtc = false;
+
+% are we explicitly asking for gtc and mtc structures?
+if ischar(I) && isvector(I)
+    if strcmp(I, 'gtc')
+        need_gtc = true;
+    end
+    if strcmp(I, 'mtc')
+        % we need to generate the gtc in order to get mtc
+        need_gtc = true;
+        need_mtc = true;
+    end
+else
+    % we need gtc and mtc if we're working with images with finite number
+    % of gray levels that's larger than 2
+    if isfinite(nLevels) && nLevels > 2
+        need_gtc = true;
+        need_mtc = true;
+    end
 end
 
+% generate gtc if needed
+checks = [0 0 ; 0 1 ; 1 0 ; 1 1]; % used also in glider_mapubi below
+if need_gtc && isempty(gtc)
+    gtc = gtc_define(checks);
+end
+
+% generate mtc if needed
+if need_mtc
+    if length(mtcs) < nLevels
+        mtcs{nLevels} = [];
+    end
+    if isempty(mtcs{nLevels})
+        mtcs{nLevels} = mtc_define(nLevels, gtc);
+    end
+end
+
+% if this is a request for gtc or mtc, answer it
+if ischar(I) && isvector(I)
+    switch I
+        case 'gtc'
+            P = gtc;
+            return;
+        case 'mtc'
+            P = mtcs{nLevels};
+            return
+        otherwise
+            error([mfilename ':badreq'], 'Unknown request.');
+    end
+end
+
+% if this is a request to process an image patch, do it
+if isfinite(nLevels) && nLevels > 2
+    % set up the persistent structures for Jonathan's code
+    
+    % calculate stats for current patch
+    P = glider_mapubi(round(I*(nLevels-1)), checks, nLevels);
+%     P = glider_mapubi(round(I*(nLevels-1)), checks, nLevels, struct('mapubi_bc', true));
+    P = flatten(P/sum(P));
+    
+    % calculate independent stats
+    evmat = mtc_probs2cgs(P, mtcs{nLevels});
+    % remove one of the columns, since it is always equal to 1 minus the others
+    ev = flatten(evmat(:, 1:end-1)');
+    
+    return;
+end
+
+% use the simpler code for 2 gray levels, and the continuous stats code for
+% nLevels == inf
 if nLevels == 2
     patterns = cat(3, ...
         I(1:end-1,1:end-1), ...  % Upper left
@@ -143,15 +204,6 @@ end
 
 %   7               11             15              11
 %                   10                             11
-
-
-% Restrict to non-overlapping patches (to avoid overcounting pixels)
-%pattern_ix = pattern_ix(1:2:end,1:2:end);
-
-%bar(0:15,P); pause(0.1);
-
-%figure(2); bar(0:15,P); drawnow;
-% Define the statistics:
 
 if nargin > 1
     stats = getStatistics(nLevels);
