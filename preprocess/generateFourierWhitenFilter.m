@@ -16,6 +16,8 @@ function Ffilter = generateFourierWhitenFilter(imageNames, path, ...
 %   used in a convolution to whiten an image.
 %
 %   Options:
+%    'doLog':
+%       Passed to `walkImageSet`.
 %    'progressEvery': float
 %       How often to display progress information (in seconds), after the
 %       'progressStart' period (see below) elapsed.
@@ -30,6 +32,7 @@ parser.FunctionName = mfilename;
 
 parser.addParameter('progressEvery', [], @(x) isnumeric(x) && isscalar(x));
 parser.addParameter('progressStart', [], @(x) isnumeric(x) && isscalar(x));
+parser.addParameter('doLog', [], @(b) islogical(b) && isscalar(b));
 
 % parse -- just for error checking, since we directly pass the arguments to
 % walkImageSet, anyway
