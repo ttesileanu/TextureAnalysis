@@ -119,11 +119,17 @@ end
 % these can be used either for the density plot or for subsampling
 x_scaled = x/params.kernelscale(1);
 y_scaled = y/params.kernelscale(2);
-% figure out locations of bin centers
+% figure out the range of the data
 x_min = min(x_scaled);
 x_max = max(x_scaled);
 y_min = min(y_scaled);
 y_max = max(y_scaled);
+% add some edges
+edge_x = (x_max - x_min)*0.1;
+edge_y = (y_max - y_min)*0.1;
+x_min = x_min - edge_x;
+y_min = y_min - edge_y;
+% figure out locations of bin centers
 stepx = (x_max - x_min)/params.densitybins;
 stepy = (y_max - y_min)/params.densitybins;
 locs{1} = (x_min + stepx/2):stepx:(x_max - stepx/2);
