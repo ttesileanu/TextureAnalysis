@@ -126,7 +126,7 @@ parser.addParameter('patchSize', [], @(p) isempty(p) || (isnumeric(p) && isscala
 parser.addParameter('averageType', [], @(s) isempty(s) || (ischar(s) && isvector(s)));
 parser.addParameter('doLog', true, @(b) islogical(b) && isscalar(b));
 parser.addParameter('filterType', [], @(s) isempty(s) || (ischar(s) && isvector(s)));
-parser.addParameter('equalize', 'equalize', @(b) isequal(b, 'false') || ismember(b, {'equalize', 'contrast'}));
+parser.addParameter('equalize', 'equalize', @(b) isequal(b, false) || ismember(b, {'equalize', 'contrast'}));
 parser.addParameter('equalizeType', [], @(s) isempty(s) || (ischar(s) && isvector(s)));
 parser.addParameter('nonlinearity', [], @(v) isempty(v) || (isvector(v) && isnumeric(v) && isreal(v)));
 parser.addParameter('quantizeType', [], @(s) isempty(s) || (ischar(s) && isvector(s) && ...

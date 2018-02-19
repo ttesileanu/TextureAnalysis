@@ -120,7 +120,7 @@ parser.addParameter('doLog', [], checkBool);
 parser.addParameter('threshold', [], checkNumber);
 parser.addParameter('filter', [], @(m) isempty(m) || (ismatrix(m) && isreal(m) && isnumeric(m)));
 parser.addParameter('filterType', [], checkStr);
-parser.addParameter('equalize', 'equalize', @(b) isequal(b, 'false') || ismember(b, {'equalize', 'contrast'}));
+parser.addParameter('equalize', 'equalize', @(b) isequal(b, false) || ismember(b, {'equalize', 'contrast'}));
 parser.addParameter('equalizeType', [], checkStr);
 parser.addParameter('patchSize', [], checkPatchSize);
 parser.addParameter('nonlinearity', [], @(v) isempty(v) || (isvector(v) && isnumeric(v) && isreal(v)));

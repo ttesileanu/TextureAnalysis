@@ -131,7 +131,7 @@ checkNumber = @(x) isempty(x) || (isscalar(x) && isreal(x) && isnumeric(x));
 parser.addOptional('blockAF', 1, checkNumber);
 
 parser.addParameter('filter', [], @(m) isempty(m) || (ismatrix(m) && isreal(m) && isnumeric(m)));
-parser.addParameter('equalize', 'equalize', @(b) isequal(b, 'false') || ismember(b, {'equalize', 'contrast'}));
+parser.addParameter('equalize', 'equalize', @(b) isequal(b, false) || ismember(b, {'equalize', 'contrast'}));
 parser.addParameter('equalizeType', [], checkStr);
 parser.addParameter('patchSize', [], checkPatchSize);
 parser.addParameter('averageType', [], checkStr);
