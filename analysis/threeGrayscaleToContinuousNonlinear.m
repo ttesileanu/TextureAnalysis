@@ -451,8 +451,10 @@ preparegraph;
 %% Check how similar two directions are
 
 % axes to consider
-idx1 = 1;   % AB_1_1 [0, 1, 0]
-idx2 = 13;  % AB_1_2 [0, 1, 0]
+% idx1 = 1;   % AB_1_1 [0, 1, 0]
+% idx2 = 13;  % AB_1_2 [0, 1, 0]
+idx1 = 4;   % AB_1_1 [0.86, 0.23, -0.09]
+idx2 = 16;  % AB_1_2 [0.86, 0.23, -0.09]
 
 % points along first axis
 axis_t = linspace(0, 1, 10);
