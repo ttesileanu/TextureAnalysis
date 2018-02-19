@@ -60,10 +60,6 @@ end
 
 images = parseImageNameFile('Natural_Images_Large_NoSky_Index.txt', 'NaturalImages');
 
-% XXX
-images = images(1:10);
-% XXX
-
 res_continuous = cell(1, length(N_values));
 for i = 1:length(N_values)
     crtN = N_values(i);
