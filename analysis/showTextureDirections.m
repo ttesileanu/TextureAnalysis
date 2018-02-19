@@ -6,8 +6,10 @@
 % groups = {'AB_1_1', 'AD_1_1', 'AB_1_2', 'AD_1_2'};
 % tex_axes = {[0 1 0], [0 1 0], [0 1 0], [0 1 0]};
 % tex_axes = repmat({[0.8604    0.2279   -0.0883]}, 1, length(groups));
-groups = {'AB_1_1', 'AB_1_1', 'AB_1_2', 'AB_1_2'};
-tex_axes = {[0, 1, 0], [2/3, -1/3, 2/3], [0, 1, 0], [2/3, -1/3, 2/3]};
+% groups = {'AB_1_1', 'AB_1_1', 'AB_1_2', 'AB_1_2'};
+groups = {'AB_1_1', 'AB_1_2'};
+% tex_axes = {[0, 1, 0], [2/3, -1/3, 2/3], [0, 1, 0], [2/3, -1/3, 2/3]};
+tex_axes = {[0, 0, 1], [0, 0, 1]};
 n_locs = 8;
 patch_size = 64;
 
@@ -16,6 +18,9 @@ locations = cell(size(groups));
 
 patch_count = 1;
 progress = TextProgress('generating ternary patches', 'prespace', 28, 'length', 20);
+
+evs = cell(size(patches));
+
 for i = 1:length(groups)
     % generate patches in this direction
     generator = PatchAxisGenerator(groups{i}, tex_axes{i}, patch_size);
@@ -24,6 +29,7 @@ for i = 1:length(groups)
     j = 1;
     while generator.next
         patches{i, j} = generator.samples;
+        [~, evs{i, j}] = processBlock(patches{i, j}, 3);
         j = j + 1;
         progress.update(100*patch_count/numel(patches));
         patch_count = patch_count + 1;
