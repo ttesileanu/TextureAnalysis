@@ -2,16 +2,26 @@
 
 %% Generate ternary patches
 
+% AD_1_2 long axis:  [0.3985 0.7147 -0.1132]
+%        short axis: [1 0 0]
+% same for AB_1_2
+% AD_1_1 long axis:  [0 1 0]
+%        short axis: [0.8604 0.2279 -0.0883]
+% AB_1_1 long axis:  [0.1140 0.9302 -0.0442]
+%        short axis: [1 0 0]
+
 % AB_1_1, AD_1_1 vs. AB_1_2, AD_1_2
 % groups = {'AB_1_1', 'AD_1_1', 'AB_1_2', 'AD_1_2'};
 % tex_axes = {[0 1 0], [0 1 0], [0 1 0], [0 1 0]};
 % tex_axes = repmat({[0.8604    0.2279   -0.0883]}, 1, length(groups));
 % groups = {'AB_1_1', 'AB_1_1', 'AB_1_2', 'AB_1_2'};
-groups = {'AB_1_1', 'AB_1_2'};
+groups = {'AB_1_1', 'AB_1_1', 'AB_1_2', 'AB_1_2'};
 % tex_axes = {[0, 1, 0], [2/3, -1/3, 2/3], [0, 1, 0], [2/3, -1/3, 2/3]};
-tex_axes = {[0, 0, 1], [0, 0, 1]};
+tex_axes = {[0.1140, 0.9302, -0.0442], [1, 0, 0], ...
+    [0.3985, 0.7147, -0.1132], [1, 0, 0]};
 n_locs = 8;
 patch_size = 64;
+max_loc = 0.74;
 
 patches = cell(length(groups), n_locs);
 locations = cell(size(groups));
@@ -25,6 +35,7 @@ for i = 1:length(groups)
     % generate patches in this direction
     generator = PatchAxisGenerator(groups{i}, tex_axes{i}, patch_size);
     generator.nLocations = n_locs;
+    generator.maxLocation = max_loc;
     
     j = 1;
     while generator.next
