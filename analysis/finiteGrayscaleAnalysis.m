@@ -428,11 +428,13 @@ fig.Units = 'inches';
 fig.Position = [fig.Position(1:2) 9 7];
 hold on;
 
+masked_predictions = predictions(mask);
 masked_thresholds = ternary_thresholds(mask);
 masked_axes = ternary_axes(mask);
 for i = 1:n_unique_groups
     sub_mask_group = strcmp(masked_groups, unique_groups{i});
     sub_thresh = masked_thresholds(sub_mask_group);
+    sub_preds = masked_predictions(sub_mask_group);
     sub_axes = masked_axes(sub_mask_group);
     
     crt_color = 0.5 + 0.5*group_colors(i, :);
@@ -440,9 +442,16 @@ for i = 1:n_unique_groups
     smartscatter(sub_thresh, inv_norms, 'density', false, ...
         'color', crt_color);
     crt_mask = isfinite(sub_thresh) & isfinite(inv_norms);
-    [rho, pval] = corr(flatten(sub_thresh(crt_mask)), flatten(inv_norms(crt_mask)));
+    rho = corr(flatten(sub_thresh(crt_mask)), flatten(inv_norms(crt_mask)));
+    
+    
+    crt_mask = isfinite(sub_preds) & isfinite(inv_norms);
+    rho_preds = corr(flatten(sub_preds(crt_mask)), flatten(inv_norms(crt_mask)));
+%     disp([unique_groups{i} ': corr(preds, inv_norms) = ' num2str(rho_preds, '%.2f') ...
+%         ', p = ' num2str(pval_preds, '%.2g')]);
+    
     disp([unique_groups{i} ': corr(thresh, inv_norms) = ' num2str(rho, '%.2f') ...
-        ', p = ' num2str(pval, '%.2g')]);
+        ', corr(preds, inv_norms) = ' num2str(rho_preds, '%.2f')]);
 end
     
 %% Show the thresholds in each of the planes
