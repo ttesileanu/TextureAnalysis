@@ -481,6 +481,51 @@ vector1 = (ternary_interpolated{idx1}.function(0.01) - point0a)/0.01;
 vector2 = (ternary_interpolated{idx2}.function(0.01) - point0b)/0.01;
 angle12 = acos(dot(vector1, vector2) / (norm(vector1)*norm(vector2)));
 
+%% Check how similar some directions are
+
+idx1 = find(strcmp(groups, 'AB_1_1'), 1);
+idx2 = find(strcmp(groups, 'AB_1_2'), 1);
+
+for i0 = 1:12
+    % 1 --> 1, 2 --> 12, 3 --> 11, ...
+    j0 = mod(1 - i0, 12) + 1;
+    i = idx1 + i0 - 1;
+    j = idx2 + j0 - 1;
+    
+    point0a = ternary_interpolated{i}.function(0);
+    point0b = ternary_interpolated{j}.function(0);
+    
+    % XXX we could calculate this directly from interpolation coefficients
+    vector1 = (ternary_interpolated{i}.function(0.01) - point0a)/0.01;
+    vector2 = (ternary_interpolated{j}.function(0.01) - point0b)/0.01;
+    angle12 = acos(dot(vector1, vector2) / (norm(vector1)*norm(vector2)));
+    
+    disp(['Angle ' groups{i} ' ray ' int2str(i - idx1 + 1) ' vs. ' ...
+        groups{j} ' ray ' int2str(j - idx2 + 1) ': ' ...
+        num2str(180*angle12/pi)]);
+end
+
+
+% points along first axis
+% axis_t = linspace(0, 1, 10);
+% 
+% % find closest points on second axis
+% distances1 = zeros(1, length(axis_t));
+% distances2 = zeros(1, length(axis_t));
+% distances12 = zeros(1, length(axis_t));
+% point0a = ternary_interpolated{idx1}.function(0);
+% point0b = ternary_interpolated{idx2}.function(0);
+% for i = 1:length(axis_t)
+%     point1 = ternary_interpolated{idx1}.function(axis_t(i));
+%     % find the location on the second axis that maps to the closest point
+%     crt_t2 = fminbnd(@(t2) norm(point1 - ternary_interpolated{idx2}.function(t2)), ...
+%         0, 2);
+%     point2 = ternary_interpolated{idx2}.function(crt_t2);
+%     distances1(i) = norm(point1 - point0a);
+%     distances2(i) = norm(point2 - point0b);
+%     distances12(i) = norm(point2 - point1);
+% end
+
 %% What does the natural image distribution look like along the two directions?
 
 normalize = @(v) v/norm(v);

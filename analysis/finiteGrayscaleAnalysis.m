@@ -112,6 +112,7 @@ preparegraph;
 ni_cov = cov(ni_ev_full);
 % scaling_mat = sqrtm(ni_cov);
 scaling_mat = sqrtm(ni_cov + 1e-10*eye(size(ni_cov)));
+% scaling_mat = ni_cov;
 
 % get mapping from the 99 probabilities to texture groups
 mtc = processBlock('mtc', 3);
@@ -229,7 +230,7 @@ end
 beautifygraph;
 preparegraph;
 
-%% Compare distribution in A_B_1_1 and AB_1_2 directions
+%% Compare distribution in AB_1_1 and AB_1_2 directions
 
 fig = figure;
 fig.Units = 'inches';
@@ -247,7 +248,9 @@ ni_ev_full_centered = ni_ev_full - 1/3;
 hist_edges = linspace(-1, 1, 20);
 for i0 = 1:12
     % 1 --> 7, 2 --> 6, 3 --> 5, ...
-    j0 = mod(1 - i0 + 6, 12) + 1;
+%     j0 = mod(1 - i0 + 6, 12) + 1;
+    % 1 --> 1, 2 --> 12, 3 --> 11, ...
+    j0 = mod(1 - i0, 12) + 1;
     i = idx1 + i0 - 1;
     j = idx2 + j0 - 1;
     
@@ -268,6 +271,14 @@ for i0 = 1:12
     bar(edges1(1:end-1), hist1);
     hold on;
     bar(edges2(1:end-1), -hist2);
+    
+    yl = ylim;
+    
+    text(0, yl(2)*2/3, [ternary_groups{idx1} '(' int2str(i - idx1 + 1) ')']);
+    text(0, yl(1)*2/3, [ternary_groups{idx2} '(' int2str(j - idx2 + 1) ')']);
+%     legend({['+: ' ternary_groups{idx1} '(' int2str(i - idx1 + 1) ')'], ...
+%         ['-: ' ternary_groups{idx2} '(' int2str(j - idx2 + 1) ')']}, ...
+%         'location', 'south', 'box', 'off', 'fontsize', 8);
     
     yrng = max(ylim);
     ylim([-yrng yrng]);
@@ -444,15 +455,72 @@ for i = 1:n_unique_groups
     crt_mask = isfinite(sub_thresh) & isfinite(inv_norms);
     rho = corr(flatten(sub_thresh(crt_mask)), flatten(inv_norms(crt_mask)));
     
-    
     crt_mask = isfinite(sub_preds) & isfinite(inv_norms);
     rho_preds = corr(flatten(sub_preds(crt_mask)), flatten(inv_norms(crt_mask)));
 %     disp([unique_groups{i} ': corr(preds, inv_norms) = ' num2str(rho_preds, '%.2f') ...
 %         ', p = ' num2str(pval_preds, '%.2g')]);
     
-    disp([unique_groups{i} ': corr(thresh, inv_norms) = ' num2str(rho, '%.2f') ...
-        ', corr(preds, inv_norms) = ' num2str(rho_preds, '%.2f')]);
+%     disp([unique_groups{i} ': corr(thresh, inv_norms) = ' num2str(rho, '%.2f') ...
+%         ', corr(preds, inv_norms) = ' num2str(rho_preds, '%.2f')]);
+    disp([unique_groups{i} ': corr(thresh, inv_norms) = ' num2str(rho, '%.2f')]);
 end
+
+%% Show location of tex_axes
+
+figure;
+
+hold on;
+
+max_t2 = sqrt(3)/2;
+angle_range = linspace(0, 2*pi, 100);
+
+% draw circles for orientation (radius 1 and 1/2)
+plot(cos(angle_range), sin(angle_range), ':', 'color', [0.4 0.4 0.4]);
+plot(0.5*cos(angle_range), 0.5*sin(angle_range), ':', 'color', [0.4 0.4 0.4]);
+
+% draw the probability triangle
+plot([-1/2 1 -1/2 -1/2], [-max_t2 0 max_t2 -max_t2], 'color', [0.5 0.7 1]);
+
+% draw the main axes
+plot([0 1.5], [0 0], ':', 'color', [1 0.6 0.6], 'linewidth', 1);
+plot([0 -1/2*1.5], [0 1.5*max_t2], ':', 'color', [1 0.6 0.6], 'linewidth', 1);
+plot([0 -1/2*1.5], [0 -1.5*max_t2], ':', 'color', [1 0.6 0.6], 'linewidth', 1);
+
+% label the corners
+text(1.07, -0.1, '[0,1,0]', 'fontsize', 12);
+text(-1.1,  max_t2+0.05, '[0,0,1]', 'fontsize', 12);
+text(-1.1, -max_t2-0.01, '[1,0,0]', 'fontsize', 12);
+
+axis equal;
+
+for i = 1:12
+    crt_axis = ternary_axes{i};
+    
+    % this is a litle roundabout, but easier conceptually
+    crt_t1 = (3*crt_axis(2) - 1)/2;
+    crt_t2 = (crt_axis(3) - crt_axis(1)) * max_t2;
+    
+    plot(crt_t1, crt_t2, 'ks', 'linewidth', 1)
+end
+
+% [1, 0, 0] -> [-1/2, -sqrt(3)/2]
+% [0, 1, 0] -> [1, 0]
+% [0, 0, 1] -> [-1/2,  sqrt(3)/2]
+%
+% d([1, 0, 0], [0, 1, 0]) = sqrt(3)
+% d([0, 0, 1], [0, 1, 0]) = sqrt(3)
+% d([1, 0, 0], [0, 0, 1]) = sqrt(3)
+%
+% --> equilateral triangle
+
+% norm(t1, t2)^2 = (3*a2-1)^2/4 + 3/4*(a3 - a1)^2
+%                = 3/4*(a1^2 + 3*a2^2 + a3^2) - 3/2*a1*a3 + 1/4 - 3*a2/2
+%                = 3/4*norm(a)^2 + 1/4 - 3/2*(a2*(1-a2) + a1*a3)
+%                = (...)
+%                = 3/2*norm(a)^2 - 1/2 + 3/4*(1-sum(a))*(1 + a1 - a2 + a3)
+
+beautifygraph;
+preparegraph;
     
 %% Show the thresholds in each of the planes
 
