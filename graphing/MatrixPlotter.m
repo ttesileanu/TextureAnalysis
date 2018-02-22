@@ -70,6 +70,11 @@ classdef MatrixPlotter < handle
             
             good = true;
         end
+        
+        function ax = get_axes(obj)
+            % Get a copy of the axes objects.
+            ax = obj.ax_;
+        end
     end
     
     methods (Access=private)
