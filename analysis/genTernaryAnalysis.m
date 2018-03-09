@@ -44,7 +44,8 @@ filters = cell(1, length(N_values));
 for i = 1:length(N_values)
     crtN = N_values(i);
     crtR = R_values(i);
-    filterFilename = fullfile('filters', ['filter' int2str(crtN) 'x' int2str(crtR) '_nolog.mat']);
+%     filterFilename = fullfile('filters', ['filter' int2str(crtN) 'x' int2str(crtR) '_nolog.mat']);
+    filterFilename = fullfile('filters', ['filter' int2str(crtN) 'x' int2str(crtR) '.mat']);
     crtFilter = open(filterFilename);
     fields = fieldnames(crtFilter);
     isfilter = @(f) isnumeric(f) && ismatrix(f) && all(size(f) == [crtR crtR]);
@@ -75,8 +76,10 @@ for i = 1:length(N_values)
     rng('default');
 %     res_ternary{i} = analyzeImageSet(images, 'NaturalImages', crtN, 'nLevels', 3, ...
 %         'filter', filters{i}, 'doLog', false);
+%     res_ternary{i} = analyzeImageSet(images, 'NaturalImages', crtN, 'nLevels', 3, ...
+%         'filter', filters{i}, 'doLog', false, 'equalize', 'contrast');
     res_ternary{i} = analyzeImageSet(images, 'NaturalImages', crtN, 'nLevels', 3, ...
-        'filter', filters{i}, 'doLog', false, 'equalize', 'contrast');
+        'filter', filters{i}, 'equalize', 'contrast');
 end
 
 %% Perform focus analysis
@@ -97,25 +100,25 @@ disp(['Focus analysis for ternary results took ' num2str(toc, '%.2f') ' seconds.
 
 res = res_ternary;
 % save(fullfile('save', 'natural_nosky_ternary_nolog.mat'), 'res', 'R_values', 'N_values', 'NR_values');
-save(fullfile('save', 'natural_nosky_ternary_nolog_contrastadapt.mat'), 'res', 'R_values', 'N_values', 'NR_values');
+save(fullfile('save', 'natural_nosky_ternary_contrastadapt.mat'), 'res', 'R_values', 'N_values', 'NR_values');
 clear('res');
 
 %% Load ternary stats
 
 % load(fullfile('save', 'natural_nosky_ternary_nolog.mat'));
-load(fullfile('save', 'natural_nosky_ternary_nolog_contrastadapt.mat'));
+load(fullfile('save', 'natural_nosky_ternary_contrastadapt.mat'));
 res_ternary = res;
 clear('res');
 
 %% Save the ternary stats with focus
 
 res = res_ternary_with_focus;
-save(fullfile('save', 'natural_nosky_ternary_nolog_contrastadapt_with_focus.mat'), 'res', 'R_values', 'N_values', 'NR_values');
+save(fullfile('save', 'natural_nosky_ternary_contrastadapt_with_focus.mat'), 'res', 'R_values', 'N_values', 'NR_values');
 clear('res');
 
 %% Load ternary stats with focus
 
-load(fullfile('save', 'natural_nosky_ternary_nolog_contrastadapt_with_focus.mat'));
+load(fullfile('save', 'natural_nosky_ternary_contrastadapt_with_focus.mat'));
 res_ternary_with_focus = res;
 clear('res');
 

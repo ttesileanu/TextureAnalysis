@@ -3,7 +3,8 @@
 %% Load ternary stats
 
 % natural_stats0 = open(fullfile('save', 'natural_nosky_ternary_nolog.mat'));
-natural_stats0 = open(fullfile('save', 'natural_nosky_ternary_nolog_contrastadapt_with_focus.mat'));
+% natural_stats0 = open(fullfile('save', 'natural_nosky_ternary_nolog_contrastadapt_with_focus.mat'));
+natural_stats0 = open(fullfile('save', 'natural_nosky_ternary_contrastadapt_with_focus.mat'));
 natural_stats = natural_stats0.res{1};
 
 restrict_to_focus = true;
