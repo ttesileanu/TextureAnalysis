@@ -7,8 +7,17 @@ rng(3443);
 G = 3;
 n_samples = 1000;
 patch_size = 64;
+
+base_patch = rand(patch_size);
+
+noise_size = 0.3;
+% patches = arrayfun(@(p) min(max(base_patch + noise_size*(2*rand(patch_size)-1), 0), 1), ...
+%     1:n_samples, 'uniform', false);
+patches = arrayfun(@(p) min(max(base_patch + noise_size*randn(patch_size), 0), 1), ...
+    1:n_samples, 'uniform', false);
+
 % patches = arrayfun(@(p) randi([0, G], patch_size)/(G-1), 1:n_samples, 'uniform', false);
-patches = arrayfun(@(p) rand(patch_size), 1:n_samples, 'uniform', false);
+% patches = arrayfun(@(p) rand(patch_size), 1:n_samples, 'uniform', false);
 evsFiniteG = [];
 evsCont = [];
 progress = TextProgress;
@@ -143,7 +152,9 @@ base_patch = generator.samples;
 G = 3;
 n_samples = 1000;
 noise_size = 0.3;
-patchesFar = arrayfun(@(p) min(max(base_patch + noise_size*(2*rand(patch_size)-1), 0), 1), ...
+% patchesFar = arrayfun(@(p) min(max(base_patch + noise_size*(2*rand(patch_size)-1), 0), 1), ...
+%     1:n_samples, 'uniform', false);
+patchesFar = arrayfun(@(p) min(max(base_patch + noise_size*randn(patch_size), 0), 1), ...
     1:n_samples, 'uniform', false);
 evsFarFiniteG = [];
 evsFarCont = [];
@@ -351,93 +362,166 @@ rng(84594);
 
 patch_size = 64;
 axis_location = 0.5;
+% axis_location = 0;
 
 G = 3;
 n_samples = 1000;
+% noise_size = 0.3;
 noise_size = 0.3;
 % noise_size = 0;
 
-plane = 'AB_1_1';
-plane_mask = strcmp(ternary_groups, plane);
-n_axes = sum(plane_mask);
-noises = cell(1, n_axes);
+noise_type = 'uniform';
 
-masked_axes = ternary_axes(plane_mask);
+all_planes = {'A_1', 'AB_1_1', 'AB_1_2'};
+% all_planes = {'AB_1_1'};
+% all_planes = {'AB_1_1', 'AB_1_2'};
+all_noises = cell(size(all_planes));
+all_noiseless_ax_pos = cell(size(all_planes));
 
-for i = 1:length(noises)
-    crt_axis = masked_axes{i};
-   
-    generator = PatchAxisGenerator(plane, crt_axis, patch_size);
-    generator.locations = axis_location*sqrt(2)/sqrt(3*norm(crt_axis)^2 - 1);
-    generator.next;
-    base_patch = generator.samples;
-
-    crt_patches = arrayfun(@(p) min(max(base_patch + noise_size*(2*rand(patch_size)-1), 0), 1), ...
-        1:n_samples, 'uniform', false);
-    crt_evs = [];
-    progress = TextProgress([int2str(i) '/' int2str(length(noises))]);
-    for j = 1:n_samples
-        [~, crt_ev] = processBlock(quantize(crt_patches{j}, G), G);
-        if isempty(crt_evs)
-            crt_evs = zeros(n_samples, length(crt_ev));
-        end
-        crt_evs(j, :) = crt_ev; %#ok<SAGROW>
-        if mod(j, 10) == 0
-            progress.update(100*j/n_samples);
-        end
-    end
-    progress.done;
+for k = 1:length(all_planes)
+    plane = all_planes{k};
     
-    noises{i} = crt_evs;
+    disp(['Working on ' plane '...']);
+    
+    plane_mask = strcmp(ternary_groups, plane);
+    n_axes = sum(plane_mask);
+    noises = cell(1, n_axes);
+    noiseless_ax_pos = cell(1, n_axes);
+    
+    masked_axes = ternary_axes(plane_mask);
+    
+    for i = 1:length(noises)
+        crt_axis = masked_axes{i};
+        
+        generator = PatchAxisGenerator(plane, crt_axis, patch_size);
+        generator.locations = axis_location*sqrt(2)/sqrt(3*norm(crt_axis)^2 - 1);
+        generator.next;
+        base_patch = generator.samples;
+        
+        noiseless_ax_pos{i} = ones(1, G)/G*(1 - generator.locations) + ...
+            crt_axis*generator.locations;
+        
+        switch noise_type
+            case 'uniform'
+                crt_patches = arrayfun(@(p) min(max(base_patch + noise_size*(2*rand(patch_size)-1), 0), 1), ...
+                    1:n_samples, 'uniform', false);
+            case 'normal'
+                crt_patches = arrayfun(@(p) min(max(base_patch + noise_size*randn(patch_size), 0), 1), ...
+                    1:n_samples, 'uniform', false);
+            otherwise
+                error('Unknown noise type.');
+        end
+        crt_evs = [];
+        progress = TextProgress([int2str(i) '/' int2str(length(noises))]);
+        for j = 1:n_samples
+            [~, crt_ev] = processBlock(quantize(crt_patches{j}, G), G);
+            if isempty(crt_evs)
+                crt_evs = zeros(n_samples, length(crt_ev));
+            end
+            crt_evs(j, :) = crt_ev; %#ok<SAGROW>
+            if mod(j, 100) == 0
+                progress.update(100*j/n_samples);
+            end
+        end
+        progress.done;
+        
+        noises{i} = crt_evs;
+    end
+    
+    all_noises{k} = noises;
+    all_noiseless_ax_pos{k} = noiseless_ax_pos;
 end
 
 %% Draw the noise
 
-figure;
-
-hold on;
-
-max_t2 = sqrt(3)/2;
-angle_range = linspace(0, 2*pi, 100);
-
-% draw circles for orientation (radius 1 and 1/2)
-plot(cos(angle_range), sin(angle_range), ':', 'color', [0.4 0.4 0.4]);
-plot(0.5*cos(angle_range), 0.5*sin(angle_range), ':', 'color', [0.4 0.4 0.4]);
-
-% draw the probability triangle
-plot([-1/2 1 -1/2 -1/2], [-max_t2 0 max_t2 -max_t2], 'color', [0.5 0.7 1]);
-
-% draw the main axes
-plot([0 1.5], [0 0], ':', 'color', [1 0.6 0.6], 'linewidth', 1);
-plot([0 -1/2*1.5], [0 1.5*max_t2], ':', 'color', [1 0.6 0.6], 'linewidth', 1);
-plot([0 -1/2*1.5], [0 -1.5*max_t2], ':', 'color', [1 0.6 0.6], 'linewidth', 1);
-
-% label the corners
-text(1.07, -0.1, '[0,1,0]', 'fontsize', 12);
-text(-1.1,  max_t2+0.05, '[0,0,1]', 'fontsize', 12);
-text(-1.1, -max_t2-0.01, '[1,0,0]', 'fontsize', 12);
-
-axis equal;
-
-% get mapping from the 99 probabilities to texture groups
-mtc = processBlock('mtc', 3);
-unique_groups = cellfun(@(s) s.name, mtc.coord_groups, 'uniform', false);
-
-idx1 = find(strcmp(unique_groups, plane), 1);
-
-for i = 1:length(noises)
-    crt_noise = noises{i};
-    crt_noise_full = reshape(crt_noise, [], 2, 33);
-    crt_noise_full(:, 3, :) = 1 - sum(crt_noise_full, 2);
+for k = 1:length(all_planes)
+    plane = all_planes{k};
+    noises = all_noises{k};
+    noiseless_ax_pos = all_noiseless_ax_pos{k};
     
-    crt_locs = crt_noise_full(:, :, idx1);
+    fig = figure;
+    fig.Position = [fig.Position(1:2) fig.Position(3:4)/2];
     
-    % this is a litle roundabout, but easier conceptually
-    crt_t1 = (3*crt_locs(:, 2) - 1)/2;
-    crt_t2 = (crt_locs(:, 3) - crt_locs(:, 1)) * max_t2;
+    hold on;
     
-    plot(crt_t1, crt_t2, 'k.', 'linewidth', 1)
+    max_t2 = sqrt(3)/2;
+    angle_range = linspace(0, 2*pi, 100);
+    
+    % draw circles for orientation (radius 1 and 1/2)
+    plot(cos(angle_range), sin(angle_range), ':', 'color', [0.4 0.4 0.4]);
+    plot(0.5*cos(angle_range), 0.5*sin(angle_range), ':', 'color', [0.4 0.4 0.4]);
+    
+    % draw the probability triangle
+    plot([-1/2 1 -1/2 -1/2], [-max_t2 0 max_t2 -max_t2], 'color', [0.5 0.7 1]);
+    
+    % draw the main axes
+    plot([0 1.5], [0 0], ':', 'color', [1 0.6 0.6], 'linewidth', 1);
+    plot([0 -1/2*1.5], [0 1.5*max_t2], ':', 'color', [1 0.6 0.6], 'linewidth', 1);
+    plot([0 -1/2*1.5], [0 -1.5*max_t2], ':', 'color', [1 0.6 0.6], 'linewidth', 1);
+    
+    % label the corners
+    text(1.07, -0.1, '[0,1,0]', 'fontsize', 12);
+    text(-1.1,  max_t2+0.05, '[0,0,1]', 'fontsize', 12);
+    text(-1.1, -max_t2-0.01, '[1,0,0]', 'fontsize', 12);
+    
+    axis equal;
+    
+    % get mapping from the 99 probabilities to texture groups
+    mtc = processBlock('mtc', 3);
+    unique_groups = cellfun(@(s) s.name, mtc.coord_groups, 'uniform', false);
+    
+    idx1 = find(strcmp(unique_groups, plane), 1);
+    
+    % plot_type can be:
+    %  'dots': just black dots
+    %  'density': dots with density-dependent color
+    %  'ellipses': ellipses approximating noise dots
+    plot_type = 'ellipses';
+    
+    % whether to plot dots where the noiseless patches would be
+    plot_noiseless = true;
+    
+    for i = 1:length(noises)
+        crt_noise = noises{i};
+        crt_noise_full = reshape(crt_noise, [], 2, 33);
+        crt_noise_full(:, 3, :) = 1 - sum(crt_noise_full, 2);
+        
+        crt_locs = crt_noise_full(:, :, idx1);
+        
+        % this is a litle roundabout, but easier conceptually
+        crt_t1 = (3*crt_locs(:, 2) - 1)/2;
+        crt_t2 = (crt_locs(:, 3) - crt_locs(:, 1)) * max_t2;
+        
+        switch plot_type
+            case 'dots'
+                plot(crt_t1, crt_t2, 'k.', 'linewidth', 1);
+            case 'density'
+                smartscatter(crt_t1, crt_t2);
+            case 'ellipses'
+                crt_cov = cov([crt_t1(:) crt_t2(:)]);
+                crt_mu = [mean(crt_t1) ; mean(crt_t2)];
+%                 plot(crt_t1, crt_t2, '.', 'markersize', 2, 'color', [0.8 0.8 0.8]);
+                % multiply ellipse by 4 to generate 95% CI
+                ellipse(crt_mu(1), crt_mu(2), 4*crt_cov, 'r', 'linewidth', 1);
+            otherwise
+                error('Unrecognized plot_type.');
+        end
+        
+        if plot_noiseless
+            crt_loc_noiseless = noiseless_ax_pos{i};
+            
+            % this is a litle roundabout, but easier conceptually
+            crt_t1_noiseless = (3*crt_loc_noiseless(2) - 1)/2;
+            crt_t2_noiseless = (crt_loc_noiseless(3) - crt_loc_noiseless(1)) * max_t2;
+            
+            plot(crt_t1_noiseless, crt_t2_noiseless, 'b.', 'markersize', 10);
+        end
+    end
+    
+    title(plane);
+    
+    beautifygraph;
+    preparegraph;
+    
+    safe_print(['noise_effects_' plane], 'png');
 end
-
-beautifygraph;
-preparegraph;
