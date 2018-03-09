@@ -79,6 +79,20 @@ for i = 1:length(N_values)
         'filter', filters{i}, 'doLog', false, 'equalize', 'contrast');
 end
 
+%% Perform focus analysis
+
+tic;
+res_ternary_with_focus = cell(size(res_ternary));
+for i = 1:length(res_ternary_with_focus)
+    disp(['Working on focus analysis for ternary results ' int2str(i) ...
+          '/' int2str(length(res_ternary_with_focus)) '...']);
+    % focus analysis has a random component
+    % to keep things reproducible, we fix the random number generator seed
+    rng('default');
+    res_ternary_with_focus{i} = runFocusAnalysis(res_ternary{i});
+end
+disp(['Focus analysis for ternary results took ' num2str(toc, '%.2f') ' seconds.']);
+
 %% Save the ternary stats
 
 res = res_ternary;
@@ -91,6 +105,18 @@ clear('res');
 % load(fullfile('save', 'natural_nosky_ternary_nolog.mat'));
 load(fullfile('save', 'natural_nosky_ternary_nolog_contrastadapt.mat'));
 res_ternary = res;
+clear('res');
+
+%% Save the ternary stats with focus
+
+res = res_ternary_with_focus;
+save(fullfile('save', 'natural_nosky_ternary_nolog_contrastadapt_with_focus.mat'), 'res', 'R_values', 'N_values', 'NR_values');
+clear('res');
+
+%% Load ternary stats with focus
+
+load(fullfile('save', 'natural_nosky_ternary_nolog_contrastadapt_with_focus.mat'));
+res_ternary_with_focus = res;
 clear('res');
 
 %% Compare to John's results
