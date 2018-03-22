@@ -60,7 +60,7 @@ function [handles, colors] = smartscatter(x, y, varargin)
 parser = inputParser;
 parser.CaseSensitive = true;
 parser.FunctionName = mfilename;
-% keep unmatched options, to pass to scatter
+% keep unmatched key/value pairs to pass to scatter
 parser.KeepUnmatched = true;
 
 parser.addParameter('alpha', 0.6, @(x) isscalar(x) && isnumeric(x));

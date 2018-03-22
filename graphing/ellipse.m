@@ -74,6 +74,10 @@ s = sin(phi);
 
 r = a*e1*c + b*e2*s;
 
-plot(x0 + r(1, :), y0 + r(2, :), varargin{:});
+x = x0 + r(1, :);
+y = y0 + r(2, :);
+if isreal(x) && isreal(y)
+    plot(x, y, varargin{:});
+end
 
 end
