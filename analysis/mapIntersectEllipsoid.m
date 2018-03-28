@@ -26,6 +26,8 @@ function [intersects, mapped, details] = mapIntersectEllipsoid(interpolation, tr
 %    'fsolve_opts'
 %       Extra options to pass to FSOLVE. The same options are used for all
 %       directions.
+%    'force_positive'
+%       If true, the intersects are forced to be positive.
 %
 %   See also: FSOLVE.
 
@@ -40,6 +42,7 @@ default_opts = optimoptions('fsolve', 'display', 'none');
 % add possible parameters with their defaults
 parser.addParameter('guess', 0.1, @(v) isnumeric(v) && isvector(v));
 parser.addParameter('fsolve_opts', {default_opts}, @(c) iscell(c));
+parser.addParameter('force_positive', true, @(b) islogical(b) && isscalar(b));
 
 % handle showing of defaults.
 if nargin == 1 && strcmp(interpolation, 'defaults')
@@ -70,9 +73,16 @@ for i = 1:length(interpolation)
     crt_fct = interpolation{i}.function;
     crt_guess = params.guess(i);
     
-    [crt_x, crt_fval, crt_exitflag, crt_output, crt_jacob] = fsolve(...
-        @(x) trafo_norm(crt_fct(x)) - radius2, crt_guess, ...
-        params.fsolve_opts{:});
+    if ~params.force_positive
+        [crt_x, crt_fval, crt_exitflag, crt_output, crt_jacob] = fsolve(...
+            @(x) trafo_norm(crt_fct(x)) - radius2, crt_guess, ...
+            params.fsolve_opts{:});
+    else
+        [crt_sqrtx, crt_fval, crt_exitflag, crt_output, crt_jacob] = fsolve(...
+            @(sqrt_x) trafo_norm(crt_fct(sqrt_x^2)) - radius2, sqrt(crt_guess), ...
+            params.fsolve_opts{:});
+        crt_x = crt_sqrtx^2;
+    end
 
     intersects(i) = crt_x;
     mapped{i} = crt_fct(crt_x);
