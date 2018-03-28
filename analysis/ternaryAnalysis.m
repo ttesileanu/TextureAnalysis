@@ -60,7 +60,9 @@ rng(5435);
 noise_patch_size = 64;
 base_noise_patch = quantize(rand(noise_patch_size), 3);
 
-noise_size = 0.3;
+% noise_size = 0.3;
+% noise_size = 0.7;
+noise_size = 1.5;
 noise_patches = arrayfun(@(p) quantize(...
     min(max(base_noise_patch + noise_size*randn(noise_patch_size), 0), 1), 3), ...
     1:n_noise_samples, 'uniform', false);
@@ -87,14 +89,17 @@ use_noise = true;
 
 % get gain matrix from efficient coding
 ni_cov = cov(ni_ev_full);
+in_noise_amt_no_noise = 2.0;
+lag_choice_no_noise = 3e-5;
 if ~use_noise
     noise_cov_to_use = eye(size(ni_cov));
-    in_noise_amt = 2.0;
-    lag_choice = 3e-5;
+    in_noise_amt = in_noise_amt_no_noise;
+    lag_choice = lag_choice_no_noise;
 else
     noise_cov_to_use = noise_cov;
-    in_noise_amt = 0.5;
-    lag_choice = 5e-6;
+%     in_noise_amt = 0.5;
+    in_noise_amt = 2.0;
+    lag_choice = 1e-7;
 end
 gain = solveLinearEfficientCoding(ni_cov, in_noise_amt*noise_cov_to_use, ...
     eye(size(ni_cov, 1)), lag_choice);
@@ -104,7 +109,18 @@ predictions0 = gainsToThresholds(gain, cellfun(@(v) v - 1/3, ...
     ternaryextdir(ternary_avg.groups, ternary_avg.directions), 'uniform', false));
 
 % scale predictions to be as close as possible to measurements
-[~, predictions, pred_sse] = fitscale(predictions0, ternary_avg.thresholds, ...
+[~, predictions, pred_mse] = fitscale(predictions0, ternary_avg.thresholds, ...
+    'stds', diff(ternary_avg.threshold_intervals, [], 2), ...
+    'exclude', strcmp(ternary_avg.groups, 'A_1'));
+
+% also get thresholds without using the noise covariance matrix
+gain_no_noise = solveLinearEfficientCoding(ni_cov, ...
+    in_noise_amt_no_noise*eye(size(ni_cov)), ...
+    eye(size(ni_cov, 1)), lag_choice_no_noise);
+predictions0_no_noise = gainsToThresholds(gain_no_noise, cellfun(@(v) v - 1/3, ...
+    ternaryextdir(ternary_avg.groups, ternary_avg.directions), 'uniform', false));
+[~, predictions_no_noise, pred_mse_no_noise] = fitscale(...
+    predictions0_no_noise, ternary_avg.thresholds, ...
     'stds', diff(ternary_avg.threshold_intervals, [], 2), ...
     'exclude', strcmp(ternary_avg.groups, 'A_1'));
 
@@ -114,7 +130,8 @@ tic;
 % noise_sizes = linspace(0.1, 1, 50);
 noise_sizes = logspace(-1, 3, 50);
 lags = logspace(-10, -2, 50);
-sses = zeros(length(noise_sizes), length(lags));
+mses = zeros(length(noise_sizes), length(lags));
+progress = TextProgress;
 for i = 1:length(noise_sizes)
     crt_noise = noise_sizes(i);
     for j = 1:length(lags)
@@ -125,12 +142,14 @@ for i = 1:length(noise_sizes)
         crt_preds0 = gainsToThresholds(crt_gain, cellfun(@(v) v - 1/3, ...
             ternaryextdir(ternary_avg.groups, ternary_avg.directions), 'uniform', false));
 
-        [~, ~, sses(i, j)] = fitscale(crt_preds0, ternary_avg.thresholds, ...
+        [~, ~, mses(i, j)] = fitscale(crt_preds0, ternary_avg.thresholds, ...
             'stds', diff(ternary_avg.threshold_intervals, [], 2), ...
             'exclude', strcmp(ternary_avg.groups, 'A_1'));
     end
+    progress.update((i-1)*100/(length(noise_sizes)-1));
 end
-disp(['Took ' num2str(toc, '%.2f') ' seconds.']);
+progress.done;
+% disp(['Took ' num2str(toc, '%.2f') ' seconds.']);
 
 %% Get threshold predictions (old)
 
