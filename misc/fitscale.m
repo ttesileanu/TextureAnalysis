@@ -1,9 +1,12 @@
-function [a, predscaled, sse] = fitscale(pred, meas, varargin)
+function [a, predscaled, mse] = fitscale(pred, meas, varargin)
 % FITSCALE Find the best scaling factor to match a vector of predictions to
 % data.
 %   a = FITSCALE(pred, meas) finds the factor `a` such that
-%   norm(a*pred - meas) is minimized. Entries whether either predictions or
-%   measurements are infinite or NaN are ignored.
+%   norm(a*pred - meas) is minimized. Entries whether either measurements
+%   or their error bars (see below) are infinite or NaN are ignored. If
+%   some entries of the predictions are infinite or NaN when measurements
+%   and error bars aren't, these are also ignored, but the mean-squared
+%   error (see below) that is returned is infinite.
 %
 %   [a, predscaled] = FITSCALE(pred, meas) also returns the scaled
 %   predictions, predscaled = a*pred.
@@ -15,10 +18,12 @@ function [a, predscaled, sse] = fitscale(pred, meas, varargin)
 %   FITSCALE(..., 'exclude', mask) uses the binary `mask` to exclude some
 %   of the entries from `pred` and `meas` from the fit.
 %
-%   [..., sse] = FITSCALE(...) also returns the summed squared error
+%   [..., mse] = FITSCALE(...) also returns the mean squared error
 %   obtained with the optimal scaling coefficient. Specifically,
-%       sse = 1/2*sum( ((a*pred - meas) ./ stds) .^2 )
-%   If error bars aren't given, `stds` is assumed to be identically 1.
+%       mse = mean( ((a*pred - meas) ./ stds) .^2 )
+%   If error bars aren't given, `stds` is assumed to be identically 1. If
+%   any predictions are infinite or NaN at positions where measurements and
+%   their error bars are finite, the `mse` is returned as `inf`.
 
 % parse optional arguments
 parser = inputParser;
@@ -44,7 +49,10 @@ if isempty(params.stds)
 end
 
 % figure out which entries to care about
-mask = isfinite(pred) & isfinite(meas) & isfinite(params.stds) & ~params.exclude;
+meas_mask = isfinite(meas) & isfinite(params.stds) & ~params.exclude;
+pred_mask = isfinite(pred) & ~params.exclude;
+
+mask = meas_mask & pred_mask;
 
 % dividing by error bars maps to problem where error bars are constant
 prednorm = pred(mask) ./ params.stds(mask);
@@ -56,9 +64,15 @@ predscaled = a*pred;
 
 if nargout > 2
     if sum(mask) > 0
-        sse = 1/2*sum( ((predscaled(mask) - meas(mask)) ./ params.stds(mask)) .^2 );
+        % if we don't have predictions for any of the entries where we have
+        % good measurements, we're doing a bad fit
+        if sum(meas_mask & ~pred_mask) > 0
+            mse = inf;
+        else
+            mse = mean( ((predscaled(mask) - meas(mask)) ./ params.stds(mask)) .^2 );
+        end
     else
-        sse = nan;
+        mse = nan;
     end
 end
 
