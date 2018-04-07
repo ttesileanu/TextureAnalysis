@@ -3,12 +3,12 @@ function vecs = ternaryrec(mags, uvecs)
 % texture planes.
 %   vecs = ternaryrec(mags, uvecs) recomposes vectors decomposed into
 %   magnitude+direction by TERNARYDEC. The vectors are scaled such that the
-%   direction from the [1/3, 1/3, 1/3] origin of the coordinate system to
-%   the vector is preserved.
+%   direction from the [1/3, 1/3, ..., 1/3] origin of the coordinate system
+%   to the vector is preserved.
 %
-%   The directions `uvecs` can be given either as an n x 3 matrix, or as a
-%   cell array of 3d vectors. In either case, the output is returned as an
-%   n x 3 matrix.
+%   The directions `uvecs` can be given either as an n x 3k matrix, or as a
+%   cell array of 3k-dimensional vectors. In either case, the output is
+%   returned as an n x 3k matrix.
 %
 %   See also: TERNARYDEC.
 
