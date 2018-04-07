@@ -7,3 +7,5 @@ VOCImages
 figs/
 summaries/
 segGuiSettings.mat
+sandbox/
+/*.mat
