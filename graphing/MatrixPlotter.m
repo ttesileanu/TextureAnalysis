@@ -75,6 +75,11 @@ classdef MatrixPlotter < handle
             % Get a copy of the axes objects.
             ax = obj.ax_;
         end
+        
+        function fig = get_figure(obj)
+            % Get a copy of the figure object.
+            fig = obj.fig_;
+        end
     end
     
     methods (Access=private)
@@ -105,6 +110,8 @@ classdef MatrixPlotter < handle
             edge_x = (screen_x - fig_x)/2;
             edge_y = (screen_y - fig_y)/2;
             fig.Position = [edge_x edge_y fig_x fig_y];
+            
+            obj.fig_ = fig;
             
             % initialize the axis iteration
             obj.index = 0;
