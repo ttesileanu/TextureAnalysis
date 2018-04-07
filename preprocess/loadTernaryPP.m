@@ -1,8 +1,11 @@
-function results = loadTernaryPP(filename, varargin)
+function [results, raw_data] = loadTernaryPP(filename, varargin)
 % loadTernaryPP Load ternary psychophysics results.
 %   results = loadTernaryPP(filename) loads ternary psychophysics results
 %   from the given file. By default, the function uses across-subjects
 %   averages in the return values.
+%
+%   [results, raw_data] = loadTernaryPP(...) also returns the raw contents
+%   of the psychophysics file.
 %
 %   The results structure contains the following fields:
 %    'groups': [n_meas, 1] cell array
@@ -12,10 +15,11 @@ function results = loadTernaryPP(filename, varargin)
 %    'directions': [n_meas, 1] cell array
 %       Cell array of normalized axis directions in which the thresholds
 %       are measured. For single-group measurements, the axis is a
-%       unit-norm three-component pseudo-probability vector (i.e., summing
+%       unit-norm three-component quasi-probability vector (i.e., summing
 %       up to 1, but allowing negative components). For multi-group
-%       measurements, this is a cell array with one 3-component vector for
-%       each group.
+%       measurements, this is a 3*ngroup-component vector in which each
+%       group of 3 consecutive components adds up to 1. The normalization
+%       is that from TERNARYDEC.
 %    'thresholds': [n_meas, 1] vector
 %       The threshold measurements, with 0 mapping to the
 %       fully-uncorrelated center (i.e., all probability values equal to
@@ -31,6 +35,8 @@ function results = loadTernaryPP(filename, varargin)
 %       several times, one for each subject for which measurements exist.
 %       In that case, the 'subjects' field of the results structure
 %       indicates which subject the respective measurement refers to.
+%    'multi': [n_meas, 1] boolean vector
+%       True for multi-group measurements.
 %
 %   The function also accepts a number of options:
 %    'multi'
@@ -52,7 +58,7 @@ parser.FunctionName = mfilename;
 
 checkStr = @(s) isvector(s) && ischar(s);
 
-parser.addParameter('multi', false, @(b) isscalar(b) && islogical(b));
+parser.addParameter('multi', true, @(b) isscalar(b) && islogical(b));
 parser.addParameter('subjects', 'all', @(s) checkStr(s) || (iscell(s) && ...
     all(cellfun(checkStr, s))));
 parser.addParameter('exclude', {}, @(s) checkStr(s) || (iscell(s) && ...
@@ -131,16 +137,19 @@ results.thresholds = [];
 results.threshold_intervals = [];
 results.n_subjects = [];
 results.subjects = {};
+results.multi = [];
 
 % process the raw data
 for i = 1:length(sub_edirs)
     crt_edir_data = data.edirs.(sub_edirs{i});
     crt_groups = crt_edir_data.cgroup_names;
     
-    % handle multi-group and single-group data differently, for consistency
-    % with older code
+    % handle multi-group and single-group data differently
     if strcmp(crt_groups{1}, crt_groups{2})
         crt_groups = crt_groups{1};
+        crt_multi = false;
+    else
+        crt_multi = true;
     end
     
     % figure out which subjects to include
@@ -167,72 +176,85 @@ for i = 1:length(sub_edirs)
         crt_vecs_lo = crt_edir_data.(['thresh_vecs_eblo_' crt_subject]);
         crt_vecs_hi = crt_edir_data.(['thresh_vecs_ebhi_' crt_subject]);
         
-        if ischar(crt_groups)
+        if ~crt_multi
             % single-group
             
             % convert to 3 components
             crt_directions = ternary2to3legacy(crt_vecs);
             crt_directions_lo = ternary2to3legacy(crt_vecs_lo);
             crt_directions_hi = ternary2to3legacy(crt_vecs_hi);
-            
-            % normalize and extract thresholds
-            [crt_thresh, crt_normalized0] = ternarydec(crt_directions);
-            [crt_thresh_lo, crt_normalized_lo] = ternarydec(crt_directions_lo);
-            [crt_thresh_hi, crt_normalized_hi] = ternarydec(crt_directions_hi);
-            
-            % ensure that the normalized directions are the same
-            tol = 1e-10;
-            if any(abs(crt_normalized0(:) - crt_normalized_lo(:)) > tol)
-                error([mfilename ':baddata'], 'Mismatch between normalized directions in threshold vs. eblo vectors.');
-            end
-            if any(abs(crt_normalized0(:) - crt_normalized_hi(:)) > tol)
-                error([mfilename ':baddata'], 'Mismatch between normalized directions in threshold vs. ebhi vectors.');
-            end
-            
-            % but prefer directions from uvecs, because those aren't
-            % invalid in places where the thresholds are NaNs
-            [~, crt_normalized] = ternarydec(ternary2to3legacy(crt_edir_data.uvecs));
-            if any(abs(crt_normalized(:) - crt_normalized0(:)) > tol)
-                error([mfilename ':baddata'], 'Mismatch between normalized directions in threshold vs. uvec vectors.');
-            end
-            
-            if ~params.keepnan
-                % eliminate those measurements for which the threshold is NaN
-                mask = ~isnan(crt_thresh);
-                if sum(mask) == 0
-                    % completely skip subject, group pairs for which there
-                    % are no valid measurements
-                    continue;
-                end
-                crt_thresh = crt_thresh(mask);
-                crt_thresh_lo = crt_thresh_lo(mask);
-                crt_thresh_hi = crt_thresh_hi(mask);
-                crt_normalized = crt_normalized(mask, :);
-            end
-            
-            % turn directions into cell array
-            crt_ndirs = size(crt_normalized, 1);
-            crt_normalized_cell = mat2cell(crt_normalized, ones(crt_ndirs, 1), 3);
-            
-            % add everything to the results
-            results.groups = [results.groups ; repmat({crt_groups}, crt_ndirs, 1)];
-            results.directions = [results.directions ; crt_normalized_cell(:)];
-            results.thresholds = [results.thresholds ; crt_thresh(:)];
-            crt_thresh_intervals = [crt_thresh_lo crt_thresh_hi];
-            results.threshold_intervals = [results.threshold_intervals ; crt_thresh_intervals];
-            results.subjects = [results.subjects ; repmat({crt_subject}, crt_ndirs, 1)];
-            if strcmp(crt_subject, 'all')
-                crt_n_subj = crt_edir_data.nsubjs_avail;
-            else
-                crt_n_subj = 1;
-            end
-            results.n_subjects = [results.n_subjects ; repmat(crt_n_subj, crt_ndirs, 1)];
+            crt_uvecs = ternary2to3legacy(crt_edir_data.uvecs);
         else
             % multi-group
-            % XXX don't know exactly which directions are used in the
-            % multi-group cases
-            error([mfilename ':notimp'], 'Multi-group processing not yet implemented.');
+            crt_dirs = crt_edir_data.cgroup_dirs;
+            
+            crt_directions = ternarymix2to6(crt_vecs, crt_dirs);
+            crt_directions_lo = ternarymix2to6(crt_vecs_lo, crt_dirs);
+            crt_directions_hi = ternarymix2to6(crt_vecs_hi, crt_dirs);
+            crt_uvecs = ternarymix2to6(crt_edir_data.uvecs, crt_dirs);            
         end
+            
+        % normalize and extract thresholds
+        [crt_thresh, crt_normalized0] = ternarydec(crt_directions);
+        [crt_thresh_lo, crt_normalized_lo] = ternarydec(crt_directions_lo);
+        [crt_thresh_hi, crt_normalized_hi] = ternarydec(crt_directions_hi);
+        
+        % ensure that the normalized directions are the same
+        tol = 1e-10;
+        if any(abs(crt_normalized0(:) - crt_normalized_lo(:)) > tol)
+            error([mfilename ':baddata'], 'Mismatch between normalized directions in threshold vs. eblo vectors.');
+        end
+        if any(abs(crt_normalized0(:) - crt_normalized_hi(:)) > tol)
+            error([mfilename ':baddata'], 'Mismatch between normalized directions in threshold vs. ebhi vectors.');
+        end
+        
+        % but prefer directions from uvecs, because those aren't
+        % invalid in places where the thresholds are NaNs
+        [~, crt_normalized] = ternarydec(crt_uvecs);
+        if any(abs(crt_normalized(:) - crt_normalized0(:)) > tol)
+            error([mfilename ':baddata'], 'Mismatch between normalized directions in threshold vs. uvec vectors.');
+        end
+        
+        if ~params.keepnan
+            % eliminate those measurements for which the threshold is NaN
+            mask = ~isnan(crt_thresh);
+            if sum(mask) == 0
+                % completely skip subject, group pairs for which there
+                % are no valid measurements
+                continue;
+            end
+            crt_thresh = crt_thresh(mask);
+            crt_thresh_lo = crt_thresh_lo(mask);
+            crt_thresh_hi = crt_thresh_hi(mask);
+            crt_normalized = crt_normalized(mask, :);
+        end
+        
+        % turn directions into cell array
+        crt_ndirs = size(crt_normalized, 1);
+        crt_normalized_cell = num2cell(crt_normalized, 2);
+        
+        if crt_multi
+            % convert groups to single string
+            crt_group_str = [crt_groups{1} '[' int2str(crt_dirs(1)) '];' ...
+                crt_groups{2} '[' int2str(crt_dirs(2)) ']'];
+        else
+            crt_group_str = crt_groups;
+        end
+        
+        % add everything to the results
+        results.groups = [results.groups ; repmat({crt_group_str}, crt_ndirs, 1)];
+        results.directions = [results.directions ; crt_normalized_cell(:)];
+        results.thresholds = [results.thresholds ; crt_thresh(:)];
+        crt_thresh_intervals = [crt_thresh_lo crt_thresh_hi];
+        results.threshold_intervals = [results.threshold_intervals ; crt_thresh_intervals];
+        results.subjects = [results.subjects ; repmat({crt_subject}, crt_ndirs, 1)];
+        results.multi = [results.multi ; repmat(crt_multi, crt_ndirs, 1)];
+        if strcmp(crt_subject, 'all')
+            crt_n_subj = crt_edir_data.nsubjs_avail;
+        else
+            crt_n_subj = 1;
+        end
+        results.n_subjects = [results.n_subjects ; repmat(crt_n_subj, crt_ndirs, 1)];            
     end
 end
 
