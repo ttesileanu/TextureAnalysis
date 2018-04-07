@@ -52,7 +52,7 @@ preparegraph;
 
 % start with patch at origin, add uncorrelated noise
 % what is the covariance matrix of the resulting noise?
-n_noise_samples = 10000;
+n_noise_samples = 1000;
 
 % keep things reproducible
 rng(5435);
@@ -85,7 +85,7 @@ noise_cov = noise_cov / max(eig(noise_cov));
 %% Get threshold predictions
 
 % whether to use the noise estimate or not
-use_noise = true;
+use_noise = false;
 
 % get gain matrix from efficient coding
 ni_cov = cov(ni_ev_full);
@@ -211,6 +211,151 @@ preparegraph;
 
 ternaryPredictionMatchPerGroup(predictions, ternary_avg, 'ellipses', false, ...
     'exclude', strcmp(ternary_avg.groups, 'A_1'));
+
+%% Make plots for mixed texture groups
+
+ternaryPredictionMatchPerGroup(predictions, ternary_avg, 'ellipses', false, ...
+    'multi', 2);
+
+%% Make plots for each texture group, showing all subjects
+
+predictions_per_subject = matchThresholds(predictions, ...
+    ternary_avg.groups, ternary_avg.directions, ...
+    ternary_per_subject.groups, ternary_per_subject.directions);
+
+ternaryPredictionMatchPerGroup(predictions_per_subject, ternary_per_subject, 'ellipses', false, ...
+    'exclude', strcmp(ternary_per_subject.groups, 'A_1'));
+
+%% Make plots for texture group pairs, showing all subjects
+
+predictions_per_subject = matchThresholds(predictions, ...
+    ternary_avg.groups, ternary_avg.directions, ...
+    ternary_per_subject.groups, ternary_per_subject.directions);
+
+ternaryPredictionMatchPerGroup(predictions_per_subject, ternary_per_subject, 'ellipses', false, ...
+    'multi', 2);
+
+%% Interpolate error ellipses in every plane where a fit is possible
+
+ternary_avg_aug = struct;
+ternary_avg_aug.groups = {};
+ternary_avg_aug.directions = {};
+ternary_avg_aug.thresholds = [];
+ternary_avg_aug.threshold_intervals = [];
+
+predictions_aug = [];
+
+unique_groups = flipud(unique(ternary_avg.groups));
+n_per_group = 100;
+for i = 1:length(unique_groups)
+    crt_group = unique_groups{i};
+    crt_mask = strcmp(ternary_avg.groups, crt_group);
+    
+    crt_dirs = ternary_avg.directions(crt_mask);
+    
+    [crt_pred_aug, crt_pred_dirs_aug] = ternaryInterpolateEllipse(...
+        predictions(crt_mask), crt_dirs, n_per_group);
+    [crt_meas_aug, crt_meas_dirs_aug] = ternaryInterpolateEllipse(...
+        ternary_avg.thresholds(crt_mask), crt_dirs, n_per_group);
+    [crt_meas_lo_aug, crt_meas_lo_dirs_aug] = ternaryInterpolateEllipse(...
+        ternary_avg.threshold_intervals(crt_mask, 1), crt_dirs, n_per_group);
+    [crt_meas_hi_aug, crt_meas_hi_dirs_aug] = ternaryInterpolateEllipse(...
+        ternary_avg.threshold_intervals(crt_mask, 2), crt_dirs, n_per_group);
+    
+    if isempty(crt_pred_aug) || isempty(crt_meas_aug) || ...
+            isempty(crt_meas_lo_aug) || isempty(crt_meas_hi_aug)
+        % no fit in this plane
+        continue;
+    end
+    
+    crt_meas_int_aug = [crt_meas_lo_aug(:) crt_meas_hi_aug(:)];
+      
+    % the directions should all be the same
+    if norm(flatten(crt_pred_dirs_aug - crt_meas_dirs_aug)) > 1e-8 || ...
+            norm(flatten(crt_pred_dirs_aug - crt_meas_lo_dirs_aug)) > 1e-8 || ...
+            norm(flatten(crt_pred_dirs_aug - crt_meas_hi_dirs_aug)) > 1e-8
+        error('This shouldn''t happen.');
+    end
+    crt_dirs_aug = num2cell(crt_pred_dirs_aug, 2);
+    
+    crt_n = length(crt_meas_aug);
+    ternary_avg_aug.groups = [ternary_avg_aug.groups ; repmat({crt_group}, crt_n, 1)];
+    ternary_avg_aug.directions = [ternary_avg_aug.directions ; crt_dirs_aug];
+    ternary_avg_aug.thresholds = [ternary_avg_aug.thresholds ; crt_meas_aug];
+    ternary_avg_aug.threshold_intervals = [ternary_avg_aug.threshold_intervals ; crt_meas_int_aug];
+    
+    predictions_aug = [predictions_aug ; crt_pred_aug]; %#ok<AGROW>
+end
+
+%% Per-plane normalized error histograms
+
+histo_use_aug = true;
+
+if histo_use_aug
+    histo_data = ternary_avg_aug;
+    histo_pred = predictions_aug;
+    histo_nbins = 24;
+else
+    histo_data = ternary_avg;
+    histo_pred = predictions;
+    histo_nbins = 10;
+end
+
+histo_groups = {'AB_1_1', 'AB_1_2', 'AD_1_1', 'AD_1_2', 'ABCD_1_2_2_1', 'ABCD_1_1_2_2'};
+plotter = MatrixPlotter(length(histo_groups));
+histo_bins = linspace(-6, 6, histo_nbins);
+while plotter.next
+    crt_group = histo_groups{plotter.index};
+    crt_mask = strcmp(histo_data.groups, crt_group);
+    
+    crt_pred = histo_pred(crt_mask);
+    crt_meas = histo_data.thresholds(crt_mask);
+    crt_meas_int = histo_data.threshold_intervals(crt_mask, :);
+    
+    crt_log_pred = log10(crt_pred);
+    crt_log_thresh = log10(crt_meas);
+    crt_log_std = diff(log10(crt_meas_int), [], 2);
+    
+    crt_norm_err = (crt_log_pred - crt_log_thresh) ./ crt_log_std;
+    
+    hist(crt_norm_err, histo_bins);
+    title(crt_group);
+end
+
+%% Per-plane relative error histograms
+
+histo_use_aug = true;
+
+if histo_use_aug
+    histo_data = ternary_avg_aug; %#ok<*UNRCH>
+    histo_pred = predictions_aug;
+    histo_nbins = 24;
+else
+    histo_data = ternary_avg;
+    histo_pred = predictions;
+    histo_nbins = 10;
+end
+
+histo_groups = {'AB_1_1', 'AB_1_2', 'AD_1_1', 'AD_1_2'};
+plotter = MatrixPlotter(length(histo_groups));
+histo_bins = linspace(-1, 1, histo_nbins);
+while plotter.next
+    crt_group = histo_groups{plotter.index};
+    crt_mask = strcmp(histo_data.groups, crt_group);
+    
+    crt_pred = histo_pred(crt_mask);
+    crt_meas = histo_data.thresholds(crt_mask);
+    crt_meas_int = histo_data.threshold_intervals(crt_mask, :);
+    
+%     crt_log_pred = log10(crt_pred);
+%     crt_log_thresh = log10(crt_meas);
+%     crt_log_std = diff(log10(crt_meas_int), [], 2);
+    
+    crt_norm_err = 2*(crt_pred - crt_meas) ./ (crt_pred + crt_meas);
+    
+    hist(crt_norm_err, histo_bins);
+    title(crt_group);
+end
 
 %% SCRATCH
 
