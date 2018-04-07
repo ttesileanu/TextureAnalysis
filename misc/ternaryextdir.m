@@ -7,6 +7,10 @@ function v = ternaryextdir(group, direction)
 %   If `group` and `direction` are cell arrays, the function performs the
 %   extension for pairs of elements, returning a cell array of 99-component
 %   vectors.
+%
+%   This also works in the multi-group case: then the group contains two or
+%   more texture group strings separated by a semicolon, and the direction
+%   has 3*ngroups components.
 
 % handle cell array input
 if iscell(group) || iscell(direction)
@@ -18,7 +22,7 @@ if iscell(group) || iscell(direction)
 end
 
 % mapping from the 99 probabilities to texture groups
-groups = {...
+coord_groups = {...
     'A_1'       'A_1'       'A_1'       'AB_1_1'    'AB_1_1'    'AB_1_1' ...
     'AB_1_2'    'AB_1_2'    'AB_1_2'    'AC_1_1'    'AC_1_1'    'AC_1_1'  ...
     'AC_1_2'    'AC_1_2'    'AC_1_2'    'BC_1_1'    'BC_1_1'    'BC_1_1'  ...
@@ -41,8 +45,14 @@ groups = {...
     'ABCD_1_2_2_1'    'ABCD_1_2_2_1'    'ABCD_1_2_2_1' ...
     'ABCD_1_1_1_2'    'ABCD_1_1_1_2'    'ABCD_1_1_1_2'};
 
-v = 1/3*ones(length(groups), 1);
-crt_mask = strcmp(groups, group);
-v(crt_mask) = direction;
+v = 1/3*ones(length(coord_groups), 1);
+
+sep_groups = strtrim(strsplit(group, ';'));
+for k = 1:length(sep_groups)
+    crt_group = sep_groups{k};
+    crt_direction = direction(3*k-2:3*k);
+    crt_mask = strcmp(coord_groups, crt_group);
+    v(crt_mask) = crt_direction;
+end
 
 end
