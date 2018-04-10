@@ -30,7 +30,11 @@ function [a, predscaled, mse] = fitscale(pred, meas, varargin)
 %       Mask for positions in the `pred` and `meas` vectors to ignore when
 %       finding the optimal factor `a`.
 %    'stds'
-%       Error bars for each measurement.
+%       Error bars for each measurement. This can be a single vector, or a
+%       2-column matrix giving the low and high values for each point. In
+%       the latter case, the function does the right thing to calculate the
+%       standard deviation depending on the choice for the 'log' option
+%       below.
 %    'log'
 %       If true, the fit instead attempts to optimize the difference
 %       between `log(predscaled)` and `log(meas)`, where
@@ -55,7 +59,8 @@ else
     show_defaults = false;
 end
 
-parser.addParameter('stds', [], @(v) isnumeric(v) && isvector(v) && length(v) == length(meas));
+parser.addParameter('stds', [], @(v) isnumeric(v) && ((isvector(v) && length(v) == length(meas)) || ...
+    (ismatrix(v) && size(v, 1) == length(meas) && size(v, 2) == 2)));
 parser.addParameter('exclude', false(size(meas)), @(b) islogical(b) && isvector(b) && length(b) == length(meas));
 parser.addParameter('log', false, @(b) islogical(b) && isscalar(b));
 parser.addParameter('logslope', false, @(b) islogical(b) && isscalar(b));
@@ -73,6 +78,12 @@ params = parser.Results;
 % default to constant error bars
 if isempty(params.stds)
     params.stds = ones(size(meas));
+elseif ~isvector(params.stds)
+    if ~params.log
+        params.stds = diff(params.stds, [], 2);
+    else
+        params.stds = diff(log(params.stds), [], 2);
+    end
 end
 
 % figure out which entries to care about
