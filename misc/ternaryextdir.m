@@ -50,6 +50,11 @@ v = 1/3*ones(length(coord_groups), 1);
 sep_groups = strtrim(strsplit(group, ';'));
 for k = 1:length(sep_groups)
     crt_group = sep_groups{k};
+    % get rid of a direction specification (in square brackets), if present
+    sqbr_idx = find(crt_group == '[', 1);
+    if ~isempty(sqbr_idx)
+        crt_group = crt_group(1:sqbr_idx-1);
+    end
     crt_direction = direction(3*k-2:3*k);
     crt_mask = strcmp(coord_groups, crt_group);
     v(crt_mask) = crt_direction;
