@@ -62,7 +62,7 @@ end
 parser.addParameter('stds', [], @(v) isnumeric(v) && ((isvector(v) && length(v) == length(meas)) || ...
     (ismatrix(v) && size(v, 1) == length(meas) && size(v, 2) == 2)));
 parser.addParameter('exclude', false(size(meas)), @(b) islogical(b) && isvector(b) && length(b) == length(meas));
-parser.addParameter('log', false, @(b) islogical(b) && isscalar(b));
+parser.addParameter('log', true, @(b) islogical(b) && isscalar(b));
 parser.addParameter('logslope', false, @(b) islogical(b) && isscalar(b));
 
 if show_defaults
