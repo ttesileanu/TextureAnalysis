@@ -44,7 +44,7 @@ function [results, raw_data] = loadTernaryPP(filename, varargin)
 %       to focus on single-group planes.
 %    'subjects'
 %       Set to a string or cell array of strings to indicate which subjects
-%       should be included in the output. The default, 'all', returns only
+%       should be included in the output. The default, 'avg', returns only
 %       average values. You can also use '*' to return all subjects.
 %    'exclude'
 %       Cell array of subjects to exclude.
@@ -59,7 +59,7 @@ parser.FunctionName = mfilename;
 checkStr = @(s) isvector(s) && ischar(s);
 
 parser.addParameter('multi', true, @(b) isscalar(b) && islogical(b));
-parser.addParameter('subjects', 'all', @(s) checkStr(s) || (iscell(s) && ...
+parser.addParameter('subjects', 'avg', @(s) checkStr(s) || (iscell(s) && ...
     all(cellfun(checkStr, s))));
 parser.addParameter('exclude', {}, @(s) checkStr(s) || (iscell(s) && ...
     all(cellfun(checkStr, s))));
@@ -153,9 +153,10 @@ for i = 1:length(sub_edirs)
     end
     
     % figure out which subjects to include
-    if length(params.subjects) == 1 && ismember(params.subjects{1}, {'all', '*'})
+    if length(params.subjects) == 1 && ismember(params.subjects{1}, {'avg', '*'})
         if ~strcmp(params.subjects{1}, '*')
-            crt_subjects = params.subjects;
+            % the average is labeled 'all' in this dataset
+            crt_subjects = {'all'};
         else
             crt_subjects = crt_edir_data.subjs_avail_ids;
         end
@@ -257,5 +258,7 @@ for i = 1:length(sub_edirs)
         results.n_subjects = [results.n_subjects ; repmat(crt_n_subj, crt_ndirs, 1)];            
     end
 end
+
+results.multi = logical(results.multi);
 
 end
