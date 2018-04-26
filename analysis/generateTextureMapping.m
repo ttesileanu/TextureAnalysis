@@ -52,6 +52,15 @@ details.locs = cell(n, 1);
 details.patches = cell(n, 1);
 details.stats = cell(n, 1);
 
+% need to convert semi-colon separated group strings into cell arrays of strings
+split_group = @(g) cellfun(@strtrim, strsplit(g, ';'), 'uniform', false);
+groups = cellfun(split_group, groups, 'uniform', false);
+
+% need to convert ngroup*ngray-element directions into ngroup x ngray matrices
+split_dir = @(v, ngroup) reshape(v, [], ngroup)';
+directions = cellfun(@(v, g) split_dir(v, length(g)), directions, groups, ...
+    'uniform', false);
+
 % start a progress bar
 progress = TextProgress('generating patches', 'prespace', 24, 'length', 20);
 for i = 1:length(groups)
@@ -76,7 +85,7 @@ for i = 1:length(groups)
             crt_patch = crt_patches{j}(:, :, p);
             crt_ev = fct(crt_patch);
             if isempty(loc_ev)
-                loc_ev = zeros(params.nlocs, length(crt_ev));
+                loc_ev = zeros(params.nsamples, length(crt_ev));
             end
             loc_ev(p, :) = crt_ev; %#ok<AGROW>
         end
