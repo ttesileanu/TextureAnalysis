@@ -1,4 +1,4 @@
-function ellipse(x0, y0, a, b, theta, varargin)
+function status = ellipse(x0, y0, a, b, theta, varargin)
 % ELLIPSE Draw an ellipse.
 %   ELLIPSE(x0, y0, a, b, theta) draws an ellipse centered at x0, y0, with
 %   semiaxes a, b, such that the 'a' semiaxis makes an angle theta with the
@@ -78,6 +78,9 @@ x = x0 + r(1, :);
 y = y0 + r(2, :);
 if isreal(x) && isreal(y)
     plot(x, y, varargin{:});
+    status = true;
+else
+    status = false;
 end
 
 end
