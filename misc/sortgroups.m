@@ -13,20 +13,10 @@ function sorted = sortgroups(groups)
 
 % to perform the sorting, we normalize the naming of the groups
 sorted = groups;
+groups = normalizegroup(groups);
 
-% first remove all white space
-groups = cellfun(@(s) s(~isspace(s)), groups, 'uniform', false);
-
-group_count = zeros(length(groups), 1);
-for i = 1:length(groups)
-    crt_groups = strsplit(groups{i}, ';');
-    group_count(i) = length(crt_groups);
-    crt_normalized = cellfun(@normalize, crt_groups, 'uniform', false);
-    crt_norm_with_sep = cell(1, 2*group_count(i)-1);
-    crt_norm_with_sep(1:2:end) = crt_normalized;
-    crt_norm_with_sep(2:2:end) = {';'};
-    groups{i} = cell2mat(crt_norm_with_sep);
-end
+% find multi-groups
+group_count = cellfun(@(s) sum(s == ';'), groups);
 
 [~, order] = sort(groups);
 sorted = sorted(order);
@@ -35,28 +25,5 @@ group_count = group_count(order);
 % now make sure we put smaller tuples of groups before larger ones
 [~, order2] = sort(group_count);
 sorted = sorted(order2);
-
-end
-
-function group = normalize(group)
-% Normalize a group name.
-
-under_start = find(group == '_', 1);
-letters0 = group(1:under_start-1);
-letters = pad(letters0, 4, 'left');
-
-dir_start = find(group == '[', 1);
-if ~isempty(dir_start)
-    dir_end = find(group == ']', 1);
-    direction = group(dir_start:dir_end);
-else
-    dir_start = length(group) + 1;
-    direction = '[ ]';
-end
-
-under0 = group(under_start:dir_start-1);
-under = [repmat('_0', 1, 4-length(letters0)) under0];
-
-group = [letters under direction];
 
 end
