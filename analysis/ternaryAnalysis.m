@@ -24,8 +24,8 @@ ni_ev_full = expandev(natural_stats.ev, 3);
 
 %% Load the psychophysics data
 
-% ternary_avg = loadTernaryPP(fullfile('data', 'mtc_soid_xlsrun_summ.mat'));
-ternary_avg = loadTernaryPP(fullfile('data', 'mtc_soid_xlsrun_summ.mat'), 'subjects', 'mc');
+ternary_avg = loadTernaryPP(fullfile('data', 'mtc_soid_xlsrun_summ.mat'));
+% ternary_avg = loadTernaryPP(fullfile('data', 'mtc_soid_xlsrun_summ.mat'), 'subjects', 'mc');
 ternary_per_subject = loadTernaryPP(fullfile('data', 'mtc_soid_xlsrun_summ.mat'), ...
     'subjects', '*', 'keepnan', false);
 
@@ -86,7 +86,9 @@ noise_cov = noise_cov / max(eig(noise_cov));
 %% Get threshold predictions
 
 [gain, predictions, pred_details] = getTernaryPredictions(ni_ev_full, ...
-    ternary_avg, eye(size(ni_ev_full, 2)), eye(size(ni_ev_full, 2)), 3e-5);
+    ternary_avg, 2.0*eye(size(ni_ev_full, 2)), eye(size(ni_ev_full, 2)), 3e-5, ...
+    'fitscale_opts', {'exclude', ...
+    strcmp(ternary_avg.groups, 'A_1') & cellfun(@length, ternary_avg.groups) > 6});
 
 %% Get threshold predictions (OLD)
 % 
@@ -250,6 +252,34 @@ predictions_per_subject = matchThresholds(predictions, ...
 
 ternaryPredictionMatchPerGroup(predictions_per_subject, ternary_per_subject, 'ellipses', false, ...
     'multi', 2);
+
+%% Make plots for SfN abstract
+
+ternaryPredictionMatchPerGroup(predictions, ternary_avg, 'ellipses', false, ...
+    'exclude', cellfun(@(s) length(s) ~= 6, ternary_avg.groups), ...
+    'beautifyopts', {'ticks', 'off', 'ticklabels', false, ...
+        'titlesize', 12, 'titleweight', 'normal', 'noaxes', true, ...
+        'fontscale', 0.667}, 'triangleopts', {'fontscale', 0.667}, ...
+    'limits', 1.5, 'plotter_opts', {'fig_aspect', 1});
+fig = gcf;
+fig.Units = 'inches';
+fig.Position = [2 2 4 4];
+preparegraph;
+
+safe_print(fullfile('figs', 'sfn2018', 'second_order_match.pdf'));
+
+%%
+
+ternaryPredictionMatchPerGroup(predictions, ternary_avg, 'ellipses', false, ...
+    'multi', 2, 'beautifyopts', {'ticks', 'off', 'ticklabels', false, ...
+        'titlesize', 12, 'titleweight', 'normal', 'noaxes', true, ...
+        'fontscale', 0.667});
+fig = gcf;
+fig.Units = 'inches';
+fig.Position = [2 2 6 6];
+preparegraph;
+
+safe_print(fullfile('figs', 'sfn2018', 'mixed_plane_match.pdf'));
 
 %% Interpolate error ellipses in every plane where a fit is possible
 
