@@ -31,6 +31,17 @@ function [mags, uvecs] = ternarydec(vecs)
 % So, a^2*((v'*v) - 1/3) = 2/3
 %     a^2 = 2/(3*(v'*v) - 1)
 
+% nplanes > 1:
+% v0'*v0 = a^2*(v'*v) + 2/3*(1-a)*a*nplanes + 1/3*(1-a)^2*nplanes
+% (assuming sum(v) = nplanes)
+%       = a^2*(v'*v) + nplanes*(2/3*a - 2/3*a^2 + 1/3 - 2/3*a + 1/3*a^2)
+%       = a^2*(v'*v) + nplanes*(1 - a^2) / 3
+%       = a^2*((v'*v) - 1/3*nplanes) + 1/3*nplanes
+%      != (2 + nplanes) / 3
+%
+% So, a^2*((v'*v) - 1/3*nplanes) + 1/3*nplanes = 2/3 + 1/3*nplanes
+%     a^2 = 2/(3*(v'*v) - nplanes)
+
 if mod(size(vecs, 2), 3) ~= 0
     error([mfilename ':badsz'], 'The input argument must have a number of columns that is divisible by 3.');
 end
