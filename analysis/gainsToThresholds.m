@@ -17,6 +17,6 @@ end
 % hypersphere: t^2*v'*L'*L*v = 1
 % so t = 1 / sqrt(v'*(L'*L)*v) = 1/norm(L*v);
 
-thresholds = 1./ cellfun(@(v) norm(L*v(:)), directions);
+thresholds = 1 ./ cellfun(@(v) norm(L*v(:)), directions);
 
 end
