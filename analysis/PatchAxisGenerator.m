@@ -86,6 +86,7 @@ classdef PatchAxisGenerator < handle
         nLocations = 16;    % number of locations to use
         minLocation = 0;    % starting location
         maxLocation = [];   % ending location
+        mcIterations = 100; % number of iterations to use for Monte Carlo
     end
     
     properties (Access=private)
@@ -138,7 +139,8 @@ classdef PatchAxisGenerator < handle
             obj.btcMakemapsOpts_.nmaps = 1;
             obj.btcMakemapsOpts_.show = 0;
             obj.btcMakemapsOpts_.area = obj.patchSize;
-            obj.auxOpts_ = btc_auxopts; % won't need metropolis arguments here
+            obj.auxOpts_ = btc_auxopts;
+            obj.auxOpts_.metro_opts.numiters = obj.mcIterations;
             
             % set number of grayscale levels
             obj.mtcs_ = mtc_define(obj.nGray);
@@ -148,24 +150,47 @@ classdef PatchAxisGenerator < handle
                 obj.locations_ = obj.locations;
             else
                 if isempty(obj.maxLocation)
-                    % XXX this works for single texture group, but it
-                    %     doesn't make sense for multi-group
-                    
-                    % 1/n*(1-t) + a*t >= 0
-                    % 1/n + (a-1/n)*t >= 0
-                    %   a) if a>1/n, then t >= -1/n / (a-1/n) = -1/(a*n - 1)
-                    %       --> not a problem; can't happen for all coords
-                    %   b) if a<1/n, then t <= -1/n / (a-1/n) = 1/(1 - a*n)
-                    %       --> t <= min(1/(1-a*n)) over all axes
-                    %           t <= 1/max(1-a*n)
-                    %           t <= 1/(1 - min(a)*n)
-                    %   c) if all coordinates = 1/n, then we're just staying at
-                    %       the center
-                    minAxisCoord = min(obj.axis(:));
-                    if abs(minAxisCoord*obj.nGray - 1) > obj.tol_
-                        maxT = 1/(1 - minAxisCoord*obj.nGray);
+                    if length(obj.group) == 1
+                        % 1/n*(1-t) + a*t >= 0
+                        % 1/n + (a-1/n)*t >= 0
+                        %   a) if a>1/n, then t >= -1/n / (a-1/n) = -1/(a*n - 1)
+                        %       --> not a problem; can't happen for all coords
+                        %   b) if a<1/n, then t <= -1/n / (a-1/n) = 1/(1 - a*n)
+                        %       --> t <= min(1/(1-a*n)) over all axes
+                        %           t <= 1/max(1-a*n)
+                        %           t <= 1/(1 - min(a)*n)
+                        %   c) if all coordinates = 1/n, then we're just staying at
+                        %       the center
+                        minAxisCoord = min(obj.axis(:));
+                        if abs(minAxisCoord*obj.nGray - 1) > obj.tol_
+                            maxT = 1/(1 - minAxisCoord*obj.nGray);
+                        else
+                            maxT = 0;
+                        end
                     else
-                        maxT = 0;
+                        % bracketing between 0 and 1: see what works
+                        obj.current_ = 1;
+                        % first check the simple cases
+                        obj.locations_ = 1;
+                        if ~isempty(obj.samples('check'))
+                            maxT = 1;
+                        else
+                            l = 0;
+                            r = 1;
+                            % invariants: l always works, r always doesn't
+                            while r - l > obj.tol_
+                                m = (l + r) / 2;
+                                obj.locations_ = m;
+                                if isempty(obj.samples('check'))
+                                    r = m;
+                                else
+                                    l = m;
+                                end
+                            end
+                            % we pinpointed point where generation doesn't
+                            % work to within obj.tol_
+                            maxT = l;
+                        end
                     end
                 else
                     maxT = obj.maxLocation;
@@ -206,7 +231,6 @@ classdef PatchAxisGenerator < handle
                     'The ''next'' method must be called once before samples can be generated.');
             end
             
-            res = zeros([obj.patchSize(:)' n]);
             crtLocation = obj.locations_(obj.current_);
             crtCoords = ones(size(obj.axis))/obj.nGray*(1 - crtLocation) + ...
                 obj.axis*crtLocation;
@@ -217,7 +241,19 @@ classdef PatchAxisGenerator < handle
                 cgsStruct.(obj.group{k}) = crtCoords(k, :);
             end
             augCoords = mtc_augcoords(cgsStruct, obj.mtcs_, obj.btcDict_);
+            
+            if isempty(augCoords.method)
+                res = [];
+                return;
+            end
+            
+            if strcmp(n, 'check')
+                % just check that we could generate samples in principle
+                res = 1;
+                return;
+            end
 
+            res = zeros([obj.patchSize(:)' n]);
             for i = 1:n
                 res(:, :, i) = btc_makemaps(augCoords.method{1}, ...
                     obj.btcMakemapsOpts_, obj.btcDict_, obj.auxOpts_, []) / ...
