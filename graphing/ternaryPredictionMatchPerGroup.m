@@ -28,6 +28,16 @@ function ternaryPredictionMatchPerGroup(pred, meas, varargin)
 %       vector giving the multiplicities to draw, for instance [1] shows
 %       only single groups, [2] shows pairs, and [1, 2] shows both. Note
 %       that for now only single groups and pairs are supported.
+%    'beautifyopts'
+%       Options to pass to beautifygraph.
+%    'triangleopts'
+%       Options to pass to drawTernaryTriangle.
+%    'limits'
+%       The largest coordinate value to show in absolute value and in
+%       either direction. This can be a pair of numbers, in which case the
+%       first applies to single groups, and the second to mixed groups.
+%    'plotter_opts'
+%       Options to pass to MatrixPlotter.
 
 % parse optional arguments
 parser = inputParser;
@@ -48,6 +58,11 @@ parser.addParameter('ellipses', false, @(b) islogical(b) && isscalar(b));
 parser.addParameter('colorfct', @parula, @(f) isempty(f) || isa(f, 'function_handle'));
 parser.addParameter('multi', false, @(b) (islogical(b) && isscalar(b)) | ...
     (isnumeric(b) && isvector(b)));
+parser.addParameter('beautifyopts', {'box', 'on', 'tickdir', 'in', 'titlesize', 12}, ...
+    @(c) iscell(c) && (isempty(c) || isvector(c)));
+parser.addParameter('limits', [2 1], @(v) isnumeric(v) && isvector(v) && ismember(length(v), [1 2]));
+parser.addParameter('triangleopts', {}, @(c) iscell(c) && isvector(c));
+parser.addParameter('plotter_opts', {}, @(c) iscell(c) && isvector(c));
 
 if show_defaults
     parser.parse;
@@ -66,6 +81,11 @@ if islogical(params.multi)
     else
         params.multi = 1;
     end
+end
+
+% handle 1-element limits
+if length(params.limits) == 1
+    params.limits = repmat(params.limits, 1, 2);
 end
 
 % figure out whether we're doing errorbars
@@ -104,7 +124,8 @@ end
 unique_groups = sortgroups(unique(masked_groups(:)));
 
 % use the MatrixPlotter to make a figure containing a matrix of plots
-plotter = MatrixPlotter(length(unique_groups));
+plotter = MatrixPlotter(length(unique_groups), params.plotter_opts{:});
+plotter.ax_aspect = 1;
 while plotter.next
     i = plotter.index;
 
@@ -118,7 +139,7 @@ while plotter.next
     if crt_multi == 1
         % draw the background simplex triangle and unit and 1/2 radius circle,
         % for orientation
-        drawTernaryTriangle;
+        drawTernaryTriangle(params.triangleopts{:});
     elseif crt_multi == 2
         % draw axes through origin and guiding circles
         drawTernaryMixedBackground(crt_groups{:});
@@ -257,21 +278,17 @@ while plotter.next
     % arrange plot sizes and labels
     axis equal;
     
-%     xlim([-1.5 1.5]);
-%     ylim([-1.5 1.5]);
-    
     if crt_multi == 1
-        xlim([-2 2]);
-        ylim([-2 2]);
+        xlim([-params.limits(1) params.limits(1)]);
+        ylim([-params.limits(1) params.limits(1)]);
     else
-        xlim([-1 1]);
-        ylim([-1 1]);
+        xlim([-params.limits(2) params.limits(2)]);
+        ylim([-params.limits(2) params.limits(2)]);
     end
     
     title(crt_tuple);
     
-%    beautifygraph;
-    set(gca, 'box', 'on', 'xminortick', 'on', 'yminortick', 'on', 'linewidth', 1);
+    beautifygraph(params.beautifyopts{:});
 end
 
 fig = plotter.get_figure;
