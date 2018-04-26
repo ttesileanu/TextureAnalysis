@@ -36,11 +36,33 @@ classdef MatrixPlotter < handle
     end
     
     methods
-        function obj = MatrixPlotter(n_plots)
+        function obj = MatrixPlotter(n_plots, varargin)
             % MatrixPlotter Constructor.
             %   MatrixPlotter(n_plots) creates the figure, sized for the 
             %   given number of plots, and initializes the MatrixPlotter
             %   object.
+            
+            parser = inputParser;
+            parser.CaseSensitive = true;
+            parser.FunctionName = [mfilename '.constructor'];
+            
+            none = {'none'};
+            parser.addParameter('fig_aspect', none, @(x) isnumeric(x) && isscalar(x) && x > 0);
+            parser.addParameter('ax_aspect', none, @(x) isnumeric(x) && isscalar(x) && x > 0);
+            parser.addParameter('screen_edge', none, @(x) isnumeric(x) && isscalar(x) && x >= 0);
+            
+            % parse
+            parser.parse(varargin{:});
+            params = parser.Results;
+            
+            % update the properties
+            fields = fieldnames(params);
+            for i = 1:numel(fields)
+                crt_value = params.(fields{i});
+                if ~isequal(crt_value, none)
+                    obj.(fields{i}) = crt_value;
+                end
+            end
             
             obj.n_plots = n_plots;
             obj.createFigure_;
