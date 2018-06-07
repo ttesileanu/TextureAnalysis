@@ -30,6 +30,8 @@ function beautifygraph(varargin)
 %       Font size for title. This is further scaled by 'fontscale'.
 %    'labelsize'
 %       Font size for labels. This is further scaled by 'fontscale'.
+%    'ticksize'
+%       Font size for tick labels. This is further scaled by 'fontscale'.
 %    'ticklabels'
 %       Set to false to remove all tick labels.
 %    'noaxes'
@@ -56,6 +58,7 @@ parser.addParameter('fontnames', {'Helvetica', 'AvantGarde'}, ...
 parser.addParameter('titleweight', 'bold', @(s) ismember(s, {'bold', 'normal'}));
 parser.addParameter('titlesize', 14, @(x) isscalar(x) && isnumeric(x));
 parser.addParameter('labelsize', 12, @(x) isscalar(x) && isnumeric(x));
+parser.addParameter('ticksize', [], @(x) isscalar(x) && isnumeric(x));
 parser.addParameter('ticklabels', true, @(b) isscalar(b) && islogical(b));
 parser.addParameter('noaxes', false, @(b) isscalar(b) && islogical(b));
 
@@ -82,6 +85,15 @@ if params.changefonts
     set(params.axes, 'fontname', params.fontname{1});
     set([htitle, hxlabel, hylabel], 'fontname', params.fontname{2});
 end
+
+if ~isempty(params.ticksize)
+    xax = get(params.axes, 'xaxis');
+    set(xax, 'fontsize', params.ticksize*params.fontscale);
+    
+    yax = get(params.axes, 'yaxis');
+    set(yax, 'fontsize', params.ticksize*params.fontscale);
+end
+
 set([hxlabel, hylabel], 'fontsize', params.labelsize*params.fontscale);
 set(htitle, 'fontsize', params.titlesize*params.fontscale, 'fontweight', params.titleweight);
 % XXX can you rescale font for tick labels?

@@ -31,6 +31,8 @@ function [gain, predictions, details] = getTernaryPredictions(...
 %       and use the entire dataset.
 %    'fitscale_opts'
 %       Options to be passed to fitscale.
+%    'effcode_opts'
+%       Options to be passed to solveLinearEfficientCoding.
 %
 %   See also: solveLinearEfficientCoding, gainsToThresholds, fitscale.
 
@@ -41,6 +43,7 @@ parser.FunctionName = mfilename;
 
 parser.addParameter('bootstrap', 20, @(n) isnumeric(n) && isscalar(n) && n >= 1);
 parser.addParameter('fitscale_opts', {}, @(c) iscell(c) && isvector(c));
+parser.addParameter('effcode_opts', {}, @(c) iscell(c) && isvector(c));
 
 % 'exclude', strcmp(ternary_avg.groups, 'A_1') & cellfun(@length, ternary_avg.groups) > 6, ...
 
@@ -76,7 +79,7 @@ for i = 1:params.bootstrap
     
     ni_covs{i} = cov(ni_sample);
     
-    gains{i} = solveLinearEfficientCoding(ni_covs{i}, covIn, covOut, lagrange);
+    gains{i} = solveLinearEfficientCoding(ni_covs{i}, covIn, covOut, lagrange, params.effcode_opts{:});
     unscaled_predictions{i} = gainsToThresholds(gains{i}, directionsExt);
     
     progress.update(100*i/params.bootstrap);

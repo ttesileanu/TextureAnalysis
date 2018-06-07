@@ -29,6 +29,10 @@ function L = solveLinearEfficientCoding(S, covNoiseIn, covNoiseOut, lag, varargi
 %       tiny, we add a multiple of identity to the input noise covariance
 %       matrix before taking the square root. This parameter sets the
 %       multiple.
+%    'varsal'
+%       If `true`, solve the problem in the 'variance = salience' limit in
+%       which the input noise is considered dominant compared to both the
+%       signal and the output noise.
 
 % parse optional arguments
 parser = inputParser;
@@ -37,6 +41,7 @@ parser.FunctionName = mfilename;
 
 parser.addParameter('tol', 1e-6, @(x) isscalar(x) && isnumeric(x));
 parser.addParameter('covreg', 1e-8, @(x) isscalar(x) && isnumeric(x));
+parser.addParameter('varsal', false, @(b) islogical(b) && isscalar(b));
 
 if nargin == 1 && strcmp(S, 'defaults')
     parser.parse;
@@ -98,11 +103,17 @@ end
 
 % calculate gains in signal-PC coordinates
 rotatedGainsSquared = zeros(m, 1);
-discriminants = signalVars.^2 + (4/lag)*signalVars./noiseOutVars;
-mask = discriminants >= 0;
-rotatedGainsSquared(mask) = noiseOutVars(mask) .* ...
-    (-(2 + signalVars(mask)) + sqrt(discriminants(mask))) ./ (2*(1 + signalVars(mask)));
-
+if ~params.varsal
+    discriminants = signalVars.^2 + (4/lag)*signalVars./noiseOutVars;
+    mask = discriminants >= 0;
+    rotatedGainsSquared(mask) = noiseOutVars(mask) .* ...
+        (-(2 + signalVars(mask)) + sqrt(discriminants(mask))) ./ (2*(1 + signalVars(mask)));
+else
+    discriminants = noiseOutVars .* signalVars / lag;
+    mask = discriminants >= 0;
+    rotatedGainsSquared(mask) = sqrt(discriminants(mask));
+end
+    
 rotatedGains = sqrt(max(rotatedGainsSquared, 0));
 
 Lrotated= full(spdiags(rotatedGains, 0, m, n));

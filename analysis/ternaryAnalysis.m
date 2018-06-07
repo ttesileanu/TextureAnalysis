@@ -4,13 +4,15 @@
 
 % natural_stats0 = open(fullfile('save', 'natural_nosky_ternary_nolog.mat'));
 % natural_stats0 = open(fullfile('save', 'natural_nosky_ternary_nolog_contrastadapt_with_focus.mat'));
-natural_stats0 = open(fullfile('save', 'natural_nosky_ternary_contrastadapt_with_focus.mat'));
+% natural_stats0 = open(fullfile('save', 'natural_nosky_ternary_contrastadapt_with_focus.mat'));
+natural_stats0 = open(fullfile('save', 'natural_nosky_ternary_with_focus.mat'));
 natural_stats = natural_stats0.res{1};
 
 restrict_to_focus = true;
 
 % restrict to in-focus patches, if possible
 if restrict_to_focus && isfield(natural_stats, 'focus')
+    disp('Restricting to in-focus patches.');
     mask = (natural_stats.focus.clusterIds == natural_stats.focus.focusCluster);
     fields = {'objIds', 'ev', 'pxPerPatch', 'patchLocations', 'patchLocationsOrig', 'imgIds'};
     for i = 1:length(fields)
@@ -85,10 +87,15 @@ noise_cov = noise_cov / max(eig(noise_cov));
 
 %% Get threshold predictions
 
+% [gain, predictions, pred_details] = getTernaryPredictions(ni_ev_full, ...
+%     ternary_avg, 2.0*eye(size(ni_ev_full, 2)), eye(size(ni_ev_full, 2)), 3e-5, ...
+%     'fitscale_opts', {'exclude', ...
+%     strcmp(ternary_avg.groups, 'A_1') | cellfun(@length, ternary_avg.groups) > 6});
 [gain, predictions, pred_details] = getTernaryPredictions(ni_ev_full, ...
     ternary_avg, 2.0*eye(size(ni_ev_full, 2)), eye(size(ni_ev_full, 2)), 3e-5, ...
     'fitscale_opts', {'exclude', ...
-    strcmp(ternary_avg.groups, 'A_1') & cellfun(@length, ternary_avg.groups) > 6});
+    strcmp(ternary_avg.groups, 'A_1') | cellfun(@length, ternary_avg.groups) > 6}, ...
+    'effcode_opts', {'varsal', true});
 
 %% Get threshold predictions (OLD)
 % 
@@ -252,6 +259,53 @@ predictions_per_subject = matchThresholds(predictions, ...
 
 ternaryPredictionMatchPerGroup(predictions_per_subject, ternary_per_subject, 'ellipses', false, ...
     'multi', 2);
+
+%% Make plots for paper -- single groups
+
+ternaryPredictionMatchPerGroup(predictions, ternary_avg, 'ellipses', false, ...
+    'exclude', cellfun(@(s) length(s) ~= 6, ternary_avg.groups), ...
+    'beautifyopts', {'ticks', 'off', 'ticklabels', false, ...
+        'titlesize', 12, 'titleweight', 'normal', 'noaxes', true, ...
+        'fontscale', 0.667}, 'triangleopts', {'fontscale', 0.667, 'edgelabels', 'digit'}, ...
+    'limits', 1.5, 'plotter_opts', {'fig_aspect', 1, 'fix_shape', [1 4], ...
+        'fix_size', [6 1.5], 'fix_size_units', 'inches'});
+% fig = gcf;
+% fig.Units = 'inches';
+% fig.Position = [2 2 6 1.5];
+preparegraph;
+
+safe_print(fullfile('figs', 'draft', 'second_order_match.pdf'));
+
+%% Make plots for paper -- mixed groups
+
+fig = figure;
+fig.Units = 'inches';
+fig.Position = [2 2 6 5];
+
+ax = zeros(22, 1);
+% row_numbers = [3 3 5 6 5];
+% row_shifts = [3 3 0.5 0 0.5];
+row_numbers = [2 2 6 6 6];
+row_shifts = [4 4 0 0 0];
+row_starts = [1 1+cumsum(row_numbers(1:end-1))];
+fig_x = 1/max(row_numbers);
+fig_y = 1/length(row_numbers);
+for i = 1:length(ax)
+    crt_ax = axes;
+    crt_row = find(i >= row_starts, 1, 'last');
+    crt_shift = row_shifts(crt_row);
+    crt_col = i - row_starts(crt_row); % 0-based!!
+    crt_ax.OuterPosition = [(crt_shift + crt_col)*fig_x 1 - crt_row*fig_y fig_x fig_y];
+    ax(i) = crt_ax;
+end
+
+ternaryPredictionMatchPerGroup(predictions, ternary_avg, 'ellipses', false, ...
+    'multi', 2, 'beautifyopts', {'ticks', 'off', 'ticklabels', false, ...
+        'titlesize', 12, 'titleweight', 'normal', 'noaxes', true, ...
+        'fontscale', 0.667}, 'plotter_opts', {'fix_axes', ax});
+preparegraph;
+
+safe_print(fullfile('figs', 'draft', 'mixed_plane_match.pdf'));
 
 %% Make plots for SfN abstract
 

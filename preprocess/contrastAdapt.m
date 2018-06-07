@@ -1,9 +1,10 @@
 function [imgOut, crop] = contrastAdapt(img, varargin)
 % contrastAdapt Do contrast adaptation on an image, globally and/or locally.
 %   imgOut = contrastAdapt(img) performs contrast adaptation on the image
-%   by z-scoring its intensity values. A random result (drawn i.i.d. from
-%   a normal distribution with mean and standard deviation equal to 0.5) is
-%   returned if the standard deviation is exactly zero.
+%   by z-scoring its intensity values, and then rescaling the result to map
+%   [-1, 1] to [0, 1]. A random result (drawn i.i.d. from a normal
+%   distribution with mean and standard deviation equal to 0.5) is returned
+%   if the standard deviation is exactly zero.
 %
 %   imgOut = contrastAdapt(img, patchSize) splits the image into
 %   non-overlapping patches of size `patchSize` and then performs z-scoring
@@ -69,7 +70,8 @@ if ~params.perpixel
             if patch_std == 0
                 patch = randn(size(patch));
             else
-                patch = (patch - mean(patch(:))) / patch_std;
+%                 patch = (patch - mean(patch(:))) / patch_std;
+                patch = (patch - median(patch(:))) / patch_std;
             end
                         
             imgOut(rows, cols) = 0.5*(1 + patch);
@@ -93,7 +95,8 @@ else
             if patch_std == 0
                 imgOut(i, j) = 0.5*(1 + randn);
             else
-                imgOut(i, j) = 0.5*(1 + (img(i, j) - mean(patch(:))) / patch_std);
+%                 imgOut(i, j) = 0.5*(1 + (img(i, j) - mean(patch(:))) / patch_std);
+                imgOut(i, j) = 0.5*(1 + (img(i, j) - median(patch(:))) / patch_std);
             end
         end
     end

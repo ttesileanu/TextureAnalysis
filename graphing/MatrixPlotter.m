@@ -17,7 +17,11 @@ classdef MatrixPlotter < handle
     properties
         fig_aspect = 3/2;   % approximate aspect ratio of figure
         ax_aspect = 3/2;    % approximate aspect ratio of each axes object
-        screen_edge = 0.15;  % fraction of sreen that should be left unused
+        screen_edge = 0.15; % fraction of sreen that should be left unused
+        fix_shape = [];     % force shape, [nrows, ncols]
+        fix_size = [];      % force a size for the figure, [figx, figy]
+        fix_size_units = [];% units to use to force size
+        fix_axes = [];      % force the use of a given set of axes
     end
     
     properties (SetAccess=private)
@@ -50,6 +54,10 @@ classdef MatrixPlotter < handle
             parser.addParameter('fig_aspect', none, @(x) isnumeric(x) && isscalar(x) && x > 0);
             parser.addParameter('ax_aspect', none, @(x) isnumeric(x) && isscalar(x) && x > 0);
             parser.addParameter('screen_edge', none, @(x) isnumeric(x) && isscalar(x) && x >= 0);
+            parser.addParameter('fix_shape', none, @(v) isnumeric(v) && isvector(v) && length(v) == 2 && all(v > 0));
+            parser.addParameter('fix_size', none, @(v) isnumeric(v) && isvector(v) && length(v) == 2 && all(v > 0));
+            parser.addParameter('fix_size_units', none, @(s) ischar(s) && isvector(s));
+            parser.addParameter('fix_axes', none, @(v) isvector(v));
             
             % parse
             parser.parse(varargin{:});
@@ -79,16 +87,22 @@ classdef MatrixPlotter < handle
                 return;
             end
             
-            % generate the next axes
-            ax = axes;
-            px = mod(obj.index, obj.nx_);
-            py = floor(obj.index/obj.nx_);
-            
-            ax.OuterPosition = [px/obj.nx_ 1-(py+1)/obj.ny_ 1/obj.nx_ 1/obj.ny_];
-
-            % store the axes and return
-            obj.index = obj.index + 1;
-            obj.ax_(obj.index) = ax;
+            if isempty(obj.fix_axes)
+                % generate the next axes
+                ax = axes;
+                px = mod(obj.index, obj.nx_);
+                py = floor(obj.index/obj.nx_);
+                
+                ax.OuterPosition = [px/obj.nx_ 1-(py+1)/obj.ny_ 1/obj.nx_ 1/obj.ny_];
+                
+                % store the axes and return
+                obj.index = obj.index + 1;
+                obj.ax_(obj.index) = ax;
+            else
+                % activate the proper axis
+                obj.index = obj.index + 1;
+                axes(obj.ax_(obj.index));
+            end
             
             good = true;
         end
@@ -108,32 +122,57 @@ classdef MatrixPlotter < handle
         function createFigure_(obj)
             % Calculate appropriate size and create the figure.
             
-            % figure out how to place plots
-            obj.nx_ = ceil(sqrt(obj.fig_aspect/obj.ax_aspect*obj.n_plots));
-            obj.ny_ = ceil(obj.n_plots / obj.nx_);
-
-            % figure out maximum figure size
-            screenRects = get(groot, 'ScreenSize');
-            screen_x = screenRects(3);
-            screen_y = screenRects(4);
-            max_x = screen_x*(1 - obj.screen_edge);
-            max_y = screen_y*(1 - obj.screen_edge);
-            
-            % figure out the size of the figure and of each axis
-            fig = figure;
-            ax_x = max_x/obj.nx_;
-            ax_y = ax_x/obj.ax_aspect;
-            if ax_y > max_y/obj.ny_
-                ax_y = max_y/obj.ny_;
-                ax_x = ax_y*obj.ax_aspect;
+            if isempty(obj.fix_axes)
+                if isempty(obj.fix_shape)
+                    % figure out how to place plots
+                    obj.nx_ = ceil(sqrt(obj.fig_aspect/obj.ax_aspect*obj.n_plots));
+                    obj.ny_ = ceil(obj.n_plots / obj.nx_);
+                else
+                    obj.nx_ = obj.fix_shape(2);
+                    obj.ny_ = obj.fix_shape(1);
+                end
+                
+                % figure out maximum figure size
+                screenRects = get(groot, 'ScreenSize');
+                screen_x = screenRects(3);
+                screen_y = screenRects(4);
+                
+                fig = figure;
+                if isempty(obj.fix_size)
+                    max_x = screen_x*(1 - obj.screen_edge);
+                    max_y = screen_y*(1 - obj.screen_edge);
+                    
+                    % figure out the size of the figure and of each axis
+                    ax_x = max_x/obj.nx_;
+                    ax_y = ax_x/obj.ax_aspect;
+                    if ax_y > max_y/obj.ny_
+                        ax_y = max_y/obj.ny_;
+                        ax_x = ax_y*obj.ax_aspect;
+                    end
+                    fig_x = ax_x*obj.nx_;
+                    fig_y = ax_y*obj.ny_;
+                else
+                    fig_x = obj.fix_size(1);
+                    fig_y = obj.fix_size(2);
+                    
+                    if ~isempty(obj.fix_size_units)
+                        old_units = fig.Units;
+                        fig.Units = obj.fix_size_units;
+                        fig.Position = [0 0 fig_x fig_y];
+                        fig.Units = old_units;
+                        fig_x = fig.Position(3);
+                        fig_y = fig.Position(4);
+                    end
+                end
+                edge_x = (screen_x - fig_x)/2;
+                edge_y = (screen_y - fig_y)/2;
+                fig.Position = [edge_x edge_y fig_x fig_y];
+                
+                obj.fig_ = fig;
+            else
+                obj.fig_ = gcf;
+                obj.ax_ = obj.fix_axes;
             end
-            fig_x = ax_x*obj.nx_;
-            fig_y = ax_y*obj.ny_;
-            edge_x = (screen_x - fig_x)/2;
-            edge_y = (screen_y - fig_y)/2;
-            fig.Position = [edge_x edge_y fig_x fig_y];
-            
-            obj.fig_ = fig;
             
             % initialize the axis iteration
             obj.index = 0;

@@ -22,6 +22,11 @@ function ternaryPredictionMatchPerGroup(pred, meas, varargin)
 %       Colormap function giving the colors to use when there are several
 %       subjects. colorfct(n) should return an n x 3 matrix of RGB colors.
 %       Set to empty to disable per-subject coloring.
+%    'predcolor'
+%       3-component RGB vector giving the color of the predictions.
+%    'meascolor'
+%       3-component RGB vector giving the color of the measurements when
+%       'colorfct' isn't used.
 %    'multi'
 %       How to deal with mixed groups. If set to `false`, mixed groups are
 %       ignored. If set to `true`, all groups are drawn. It can also be a
@@ -54,6 +59,14 @@ end
 parser.addParameter('exclude', false(size(meas.thresholds)), @(b) islogical(b) && isvector(b) && length(b) == length(meas.thresholds));
 parser.addParameter('errorbars', true, @(b) islogical(b) && isscalar(b));
 parser.addParameter('errcolor', [0.5 0.5 0.5], @(v) isvector(v) && isnumeric(v) && length(v) == 3);
+% parser.addParameter('predcolor', [1 0.6 0.6], @(v) isvector(v) && isnumeric(v) && length(v) == 3);
+% parser.addParameter('meascolor', [0 0 0], @(v) isvector(v) && isnumeric(v) && length(v) == 3);
+% parser.addParameter('predcolor', [0 0.4470 0.7410], @(v) isvector(v) && isnumeric(v) && length(v) == 3);
+% parser.addParameter('meascolor', [1 0.6 0.6], @(v) isvector(v) && isnumeric(v) && length(v) == 3);
+parser.addParameter('predcolor', [0 0.3438 0.7410], @(v) isvector(v) && isnumeric(v) && length(v) == 3);
+parser.addParameter('meascolor', [0.8 0.3 0.3], @(v) isvector(v) && isnumeric(v) && length(v) == 3);
+parser.addParameter('predsize', 8, @(x) isnumeric(x) && isscalar(x) && x > 0);
+parser.addParameter('meassize', 5, @(x) isnumeric(x) && isscalar(x) && x > 0);
 parser.addParameter('ellipses', false, @(b) islogical(b) && isscalar(b));
 parser.addParameter('colorfct', @parula, @(f) isempty(f) || isa(f, 'function_handle'));
 parser.addParameter('multi', false, @(b) (islogical(b) && isscalar(b)) | ...
@@ -225,15 +238,16 @@ while plotter.next
             crt_meas_color = subj_colors(k, :);
         else
             subj_mask = true(size(circle_mask));
-            crt_meas_color = [0 0 0];
+            crt_meas_color = params.meascolor;
         end
         
         h_meas_cross0 = plot(projected_meas(~circle_mask & subj_mask, 1), ...
             projected_meas(~circle_mask & subj_mask, 2), ...
-            'x', 'linewidth', 1, 'color', crt_meas_color);
+            'x', 'linewidth', 1, 'markersize', params.meassize, ...
+            'color', crt_meas_color);
         h_meas_circ0 = plot(projected_meas(circle_mask & subj_mask, 1), ...
             projected_meas(circle_mask & subj_mask, 2), ...
-            'o', 'linewidth', 1, 'markersize', 3, 'color', crt_meas_color);
+            'o', 'linewidth', 1, 'markersize', params.meassize/2, 'color', crt_meas_color);
         if isempty(h_meas_cross)
             h_meas_cross = h_meas_cross0;
         end
@@ -261,7 +275,7 @@ while plotter.next
 
     % draw predictions
     h_pred = plot(projected_pred(:, 1), projected_pred(:, 2), ...
-        'r.'); %#ok<NASGU>
+        '.', 'color', params.predcolor, 'markersize', params.predsize); %#ok<NASGU>
     
     % draw ellipses
     if params.ellipses
@@ -269,7 +283,7 @@ while plotter.next
         crt_mask = all(isfinite(projected_pred), 2);
         if size(projected_pred, 1) > 2
             pred_M = fit_ellipse(projected_pred(crt_mask, :));
-            ellipse(0, 0, inv(pred_M), 'color', [1 0.6 0.6]);
+            ellipse(0, 0, inv(pred_M), 'color', params.predcolor);
         end
     end
     

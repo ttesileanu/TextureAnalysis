@@ -79,7 +79,9 @@ for i = 1:length(N_values)
 %     res_ternary{i} = analyzeImageSet(images, 'NaturalImages', crtN, 'nLevels', 3, ...
 %         'filter', filters{i}, 'doLog', false, 'equalize', 'contrast');
     res_ternary{i} = analyzeImageSet(images, 'NaturalImages', crtN, 'nLevels', 3, ...
-        'filter', filters{i}, 'equalize', 'contrast');
+        'filter', filters{i});
+%     res_ternary{i} = analyzeImageSet(images, 'NaturalImages', crtN, 'nLevels', 3, ...
+%         'filter', filters{i}, 'equalize', 'contrast');
 end
 
 %% Perform focus analysis
@@ -100,7 +102,15 @@ disp(['Focus analysis for ternary results took ' num2str(toc, '%.2f') ' seconds.
 
 res = res_ternary;
 % save(fullfile('save', 'natural_nosky_ternary_nolog.mat'), 'res', 'R_values', 'N_values', 'NR_values');
-save(fullfile('save', 'natural_nosky_ternary_contrastadapt.mat'), 'res', 'R_values', 'N_values', 'NR_values');
+% save(fullfile('save', 'natural_nosky_ternary_contrastadapt.mat'), 'res', 'R_values', 'N_values', 'NR_values');
+save(fullfile('save', 'natural_nosky.mat'), 'res', 'R_values', 'N_values', 'NR_values');
+clear('res');
+
+%% Save the ternary stats with focus
+
+res = res_ternary_with_focus;
+% save(fullfile('save', 'natural_nosky_ternary_contrastadapt_with_focus.mat'), 'res', 'R_values', 'N_values', 'NR_values');
+save(fullfile('save', 'natural_nosky_ternary_with_focus.mat'), 'res', 'R_values', 'N_values', 'NR_values');
 clear('res');
 
 %% Load ternary stats
@@ -108,12 +118,6 @@ clear('res');
 % load(fullfile('save', 'natural_nosky_ternary_nolog.mat'));
 load(fullfile('save', 'natural_nosky_ternary_contrastadapt.mat'));
 res_ternary = res;
-clear('res');
-
-%% Save the ternary stats with focus
-
-res = res_ternary_with_focus;
-save(fullfile('save', 'natural_nosky_ternary_contrastadapt_with_focus.mat'), 'res', 'R_values', 'N_values', 'NR_values');
 clear('res');
 
 %% Load ternary stats with focus
