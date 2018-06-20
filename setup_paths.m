@@ -14,13 +14,13 @@ addpath(fullfile(PWD, 'analysis'));
 addpath(fullfile(PWD, 'batch'));
 addpath(fullfile(PWD, 'filters'));
 addpath(fullfile(PWD, 'graphing'));
-addpath(fullfile(PWD, 'gui'));
+%addpath(fullfile(PWD, 'gui'));
 addpath(fullfile(PWD, 'indices'));
+addpath(fullfile(PWD, 'load'));
 addpath(fullfile(PWD, 'misc'));
+addpath(fullfile(PWD, 'patch'));
 addpath(fullfile(PWD, 'preprocess'));
-%addpath(fullfile(PWD, 'save'));
-addpath(fullfile(PWD, 'sandbox'));
-addpath(fullfile(PWD, 'segment'));
-addpath(fullfile(PWD, 'texture'));
+%addpath(fullfile(PWD, 'sandbox'));
+%addpath(fullfile(PWD, 'segment'));
 
 end
