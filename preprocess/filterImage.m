@@ -24,26 +24,26 @@ crop = [1 1 size(image)];
 
 switch method
     case 'patch'
-        patchifier = ImagePatchifier({size(image)}, size(filter));
-        nPatches = patchifier.gridSize;
-        while patchifier.next
-            crtCoords = patchifier.getPatchCoordinates;
-            rows = crtCoords(1):crtCoords(3);
-            cols = crtCoords(2):crtCoords(4);
-            image(rows, cols) = real(ifft2(fft2(image(rows, cols)) .* filter));
-        end
+%         patchifier = ImagePatchifier({size(image)}, size(filter));
+%         nPatches = patchifier.gridSize;
+%         while patchifier.next
+%             crtCoords = patchifier.getPatchCoordinates;
+%             rows = crtCoords(1):crtCoords(3);
+%             cols = crtCoords(2):crtCoords(4);
+%             image(rows, cols) = real(ifft2(fft2(image(rows, cols)) .* filter));
+%         end
         
         % XXX the manual version is about 15-20% faster...
-%         nPatches = floor(size(image) ./ size(filter));
-%         for i = 1:nPatches(1)
-%             ys = 1 + (i-1)*size(filter, 1);    % patch starts here
-%             rows = (ys:ys+size(filter, 1)-1);  % all patch rows
-%             for j = 1:nPatches(2)
-%                 xs = 1 + (j-1)*size(filter, 2);   % patch starts here
-%                 cols = (xs:xs+size(filter, 2)-1); % all patch columns
-%                 image(rows, cols) = real(ifft2(fft2(image(rows, cols)) .* filter));
-%             end
-%         end
+        nPatches = floor(size(image) ./ size(filter));
+        for i = 1:nPatches(1)
+            ys = 1 + (i-1)*size(filter, 1);    % patch starts here
+            rows = (ys:ys+size(filter, 1)-1);  % all patch rows
+            for j = 1:nPatches(2)
+                xs = 1 + (j-1)*size(filter, 2);   % patch starts here
+                cols = (xs:xs+size(filter, 2)-1); % all patch columns
+                image(rows, cols) = real(ifft2(fft2(image(rows, cols)) .* filter));
+            end
+        end
         
         % trim overflow
         crop(3:4) = nPatches .* size(filter);
