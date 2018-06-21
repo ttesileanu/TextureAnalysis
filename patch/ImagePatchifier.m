@@ -109,7 +109,7 @@ classdef ImagePatchifier < handle
                 obj.stride = stride;
             end
             
-            obj.gridSize = floor((obj.imSize - obj.patchSize) ./ obj.stride);
+            obj.gridSize = 1 + floor((obj.imSize - obj.patchSize) ./ obj.stride);
             obj.gridIndex = [obj.gridSize(1) 0];
         end
         
