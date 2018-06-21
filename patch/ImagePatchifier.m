@@ -37,15 +37,27 @@ classdef ImagePatchifier < handle
     %   catch
     %       disp('Can''t get patch before calling ''next''. ');
     %   end
+    %
+    %   4. Current patch region
+    %
+    %   patchifier = ImagePatchifier(randn(32), 16);
+    %   patchifier.next;
+    %   disp('First patch at ');
+    %   disp(patchifier.getPatchCoordinates);
+    %
+    %   5. Generate coordinates only
+    %
+    %   patchifier = ImagePatchifier({[33 17]}, 8);
+    %   disp(patchifier.patchLocations);
     
     properties
         image = [];         % image we're working on
+        imSize = [];        % size of image we're working on
         patchSize = [];     % patch size we're using
         stride = [];        % stride we're using
-%        numPatches = [];    % total number of patches
         gridSize = [];      % number of patches in each direction
-        patchLocations = [];% numPatches x 2 matrix of patch locations in image
-        gridIndices = [];   % numPatches x 2 matrix of grid indices
+%         patchLocations = [];% numPatches x 2 matrix of patch locations in image
+%         gridIndices = [];   % numPatches x 2 matrix of grid indices
         gridIndex = [];     % row&column index of current grid position
     end
     
@@ -67,8 +79,19 @@ classdef ImagePatchifier < handle
             %   ImagePatchifier(image, patchSize, stride) uses the given
             %   stride for generating patches. Just like `patchSize`,
             %   `stride` can be a scalar or a two-element vector.
+            %
+            %   ImagePatchifier({imSize}, ...) generates image coordinates
+            %   using only the image size, without reference to the actual
+            %   image data. When using this format, calling the `get`
+            %   function produces an error.
             
-            obj.image = image;
+            if ~iscell(image)
+                obj.image = image;
+                obj.imSize = size(image);
+            else
+                obj.image = [];
+                obj.imSize = image{1};
+            end
             
             % handle scalar and two-element patch size
             if isscalar(patchSize)
@@ -86,28 +109,30 @@ classdef ImagePatchifier < handle
                 obj.stride = stride;
             end
             
-            locStruct = generatePatchLocations(size(image), patchSize, obj.stride);
-            obj.patchLocations = locStruct.patchLocations;
-            obj.gridIndices = locStruct.gridIndices;
-            obj.gridSize = locStruct.nPatches;
-            obj.current_ = 0;
+            obj.gridSize = floor((obj.imSize - obj.patchSize) ./ obj.stride);
+            obj.gridIndex = [obj.gridSize(1) 0];
         end
         
         function ok = next(obj)
             % Go to the next location, return false if done.
                         
-            if obj.current_ >= size(obj.patchLocations, 1)
-                ok = false;
+            if obj.gridIndex(1) < obj.gridSize(1)
+                obj.gridIndex(1) = obj.gridIndex(1) + 1;
             else
-                obj.current_ = obj.current_ + 1;
-                obj.gridIndex = obj.gridIndices(obj.current_, :);
-                ok = true;
+                obj.gridIndex(1) = 1;
+                obj.gridIndex(2) = obj.gridIndex(2) + 1;
             end
+            ok = (obj.gridIndex(2) <= obj.gridSize(2));
         end
         
         function patch = get(obj)
             % Get the patch at the current location.
-            p = obj.patchLocations(obj.current_, :);
+
+            if isempty(obj.image)
+                error('ImagePatchifier:getnoimg', 'get requires actual image data.');
+            end
+
+            p = 1 + (obj.gridIndex - 1) .* obj.stride;
             patch = obj.image(p(1):p(1) + obj.patchSize(1) - 1, ...
                 p(2):p(2) + obj.patchSize(2) - 1);
         end
@@ -115,7 +140,27 @@ classdef ImagePatchifier < handle
         function n = numPatches(obj)
             % Return the number of patches.
             
-            n = size(obj.patchLocations, 1);
+            n = prod(obj.gridSize);
+        end
+        
+        function coords = getPatchCoordinates(obj)
+            % Get the coordinates for the current patch, in the form
+            % [row1, col1, row2, col2].
+            
+            p = 1 + (obj.gridIndex - 1) .* obj.stride;
+            coords = [p p+obj.patchSize-1];
+        end
+        
+        function locs = patchLocations(obj)
+            % Get matrix of patch locations.
+            locStruct = generatePatchLocations(obj.imSize, obj.patchSize, obj.stride);
+            locs = locStruct.patchLocations;
+        end
+        
+        function idxs = gridIndices(obj)
+            % Get matrix of grid indices.
+            locStruct = generatePatchLocations(obj.imSize, obj.patchSize, obj.stride);
+            idxs = locStruct.gridIndices;
         end
     end
     
