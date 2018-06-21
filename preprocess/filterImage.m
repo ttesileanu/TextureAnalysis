@@ -33,7 +33,7 @@ switch method
             image(rows, cols) = real(ifft2(fft2(image(rows, cols)) .* filter));
         end
         
-        % XXX the manual version is about 10% faster...
+        % XXX the manual version is about 15-20% faster...
 %         nPatches = floor(size(image) ./ size(filter));
 %         for i = 1:nPatches(1)
 %             ys = 1 + (i-1)*size(filter, 1);    % patch starts here
