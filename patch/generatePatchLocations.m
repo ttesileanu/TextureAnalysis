@@ -141,7 +141,7 @@ if isscalar(params.stride)
     params.stride = [params.stride params.stride];
 elseif isempty(params.stride)
     % empty stride is the same as it being equal to patchSize
-    params.stride = params.patchSize;
+    params.stride = patchSize;
 end
 
 if ~isempty(patchSize)
