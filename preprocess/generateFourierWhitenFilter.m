@@ -19,6 +19,7 @@ function Ffilter = generateFourierWhitenFilter(images, patchSize, varargin)
 %    'preprocessing':
 %       A cell array of preprocessing functions that will be applied to
 %       each image, in the same format as for walkImages.
+%    Any other key-value arguments are directly passed to walkImages.
 %
 %   See also: walkImages.
 

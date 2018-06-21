@@ -102,6 +102,7 @@ for i = 1:imageCount
         
         % an empty result leads to skipping
         if isempty(crtImage) || isempty(crtCrop)
+            % XXX warn?
             skipImage = true;
             break;
         end
