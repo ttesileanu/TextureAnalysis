@@ -93,6 +93,13 @@ parser.addParameter('minPatchUsed', 0, @(x) isnumeric(x) && isscalar(x) && x >= 
 parser.addParameter('maskCrop', [], @(c) isempty(c) || (isvector(c) && isreal(c) && numel(c) == 4 && all(c >= 1)));
 parser.addParameter('mask', [], @(m) isempty(m) || (ismatrix(m) && isreal(m) && ~ischar(m)));
 
+% display defaults
+if nargin == 1 && strcmp(imSize, 'defaults')
+    parser.parse;
+    disp(parser.Results);
+    return;
+end
+
 % parse
 parser.parse(varargin{:});
 params = parser.Results;

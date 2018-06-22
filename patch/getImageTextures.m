@@ -39,6 +39,12 @@ function res = getImageTextures(image, nLevels, patchSize, varargin)
 %
 %   See also: generatePatchLocations.
 
+% defaults
+if nargin == 1 && strcmp(image, 'defaults')
+    disp('All arguments are forwarded to generatePatchLocations.');
+    return;
+end
+
 % find patch locations
 [res, ~, patchSize, matchedMask] = generatePatchLocations(size(image), ...
     patchSize, varargin{:});

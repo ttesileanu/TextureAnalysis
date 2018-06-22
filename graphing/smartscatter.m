@@ -80,6 +80,7 @@ parser.addParameter('densityrange', 1, @(s) isnumeric(s) && isscalar(s));
 parser.addParameter('densityfunction', @(v) v, @(f) isa(f, 'function_handle'));
 parser.addParameter('densitybins', 30, @(n) isnumeric(n) && isscalar(n) && n > 1);
 
+% display defaults if asked to
 if nargin == 1 && strcmp(x, 'defaults')
     parser.parse;
     disp(parser.Results);

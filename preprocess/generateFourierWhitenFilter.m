@@ -35,6 +35,7 @@ parser.addParameter('preprocessing', {}, @(c) iscell(c) && (isempty(c) || isvect
 if nargin == 1 && strcmp(images, 'defaults')
     parser.parse;
     disp(parser.Results);
+    return;
 end
 
 % parse

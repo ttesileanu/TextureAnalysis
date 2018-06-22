@@ -103,6 +103,13 @@ parser.addParameter('style', {'k', 'linewidth', 2}, @(c) iscell(c));
 parser.addParameter('r2bootstrap', 0, @(n) isscalar(n) && isnumeric(n));
 parser.addParameter('permutation', 0, @(n) isscalar(n) && isnumeric(n));
 
+% display defaults if asked to
+if nargin == 1 && strcmp(x, 'defaults')
+    parser.parse;
+    disp(parser.Results);
+    return;
+end
+
 % parse
 parser.parse(varargin{:});
 params = parser.Results;

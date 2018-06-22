@@ -43,6 +43,13 @@ parser.addOptional('patchSize', [], @(p) isempty(p) || (isnumeric(p) && isscalar
 parser.addParameter('perpixel', false, @(b) islogical(b) && isscalar(b));
 parser.addParameter('jitter', [], @(x) isempty(x) || (isnumeric(x) && isscalar(x) && x >= 0));
 
+% defaults
+if nargin == 1 && strcmp(img, 'defaults')
+    parser.parse;
+    disp(parser.Results);
+    return;
+end
+
 % parse
 parser.parse(varargin{:});
 params = parser.Results;

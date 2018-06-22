@@ -42,6 +42,13 @@ parser.KeepUnmatched = true;
 parser.addParameter('patchSize', [], @(v) isempty(v) || (isnumeric(v) && ...
     isvector(v) && ismember(length(v), [1 2])));
 
+% defaults
+if nargin == 1 && strcmp(image, 'defaults')
+    parser.parse;
+    disp(parser.Results);
+    return;
+end
+
 % parse
 parser.parse(varargin{:});
 params = parser.Results;

@@ -42,6 +42,25 @@ function results = walkImages(pipeline, images, varargin)
 %
 %   See also: loadLUMImage.
 
+% parse optional arguments
+parser = inputParser;
+parser.CaseSensitive = true;
+parser.FunctionName = mfilename;
+
+parser.addParameter('quiet', false, @(b) islogical(b) && isscalar(b));
+parser.addParameter('storeImages', false, @(b) islogical(b) && isscalar(b));
+
+% display defaults
+if nargin == 1 && strcmp(pipeline, 'defaults')
+    parser.parse;
+    disp(parser.Results);
+    return;
+end
+
+% parse
+parser.parse(varargin{:});
+params = parser.Results;
+
 % handle the various ways of inputting images
 if length(images) == 2 && isscalar(images{1}) && isnumeric(images{1}) && ...
         isa(images{2}, 'function_handle')
@@ -52,18 +71,6 @@ else
     generate = false;
     imageCount = length(images);
 end
-
-% parse optional arguments
-parser = inputParser;
-parser.CaseSensitive = true;
-parser.FunctionName = mfilename;
-
-parser.addParameter('quiet', false, @(b) islogical(b) && isscalar(b));
-parser.addParameter('storeImages', false, @(b) islogical(b) && isscalar(b));
-
-% parse
-parser.parse(varargin{:});
-params = parser.Results;
 
 % display a progress bar if allowed
 if ~params.quiet

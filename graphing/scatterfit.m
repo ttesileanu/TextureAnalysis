@@ -27,6 +27,13 @@ parser.addParameter('scatteropts', {}, @(c) iscell(c) && isvector(c));
 parser.addParameter('fitopts', {}, @(c) iscell(c) && isvector(c));
 parser.addParameter('nodraw', false, @(b) isscalar(b) && islogical(b));
 
+% display defaults if asked to
+if nargin == 1 && strcmp(x, 'defaults')
+    parser.parse;
+    disp(parser.Results);
+    return;
+end
+
 % parse
 parser.parse(varargin{:});
 params = parser.Results;
