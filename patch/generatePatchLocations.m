@@ -203,7 +203,7 @@ if ~isempty(params.mask)
     locsOrig = locsOrig(locsMask, :);
     pxPerPatch = pxPerPatch(locsMask, :);
 else
-    locsOrig = locs;
+    locsOrig = [locs bsxfun(@plus, locs, patchSize(:)' - 1)];
     pxPerPatch = repmat(prod(patchSize), size(locs, 1), 1);
 end
 
