@@ -58,8 +58,7 @@ parser.addParameter('masks', {}, @(c) iscell(c));
 parser.addParameter('stride', [], @(v) isempty(v) || ...
     (isnumeric(v) && isvector(v) && ismember(length(v), [1, 2]) && all(v > 0)));
 parser.addParameter('maxPatchesPerImage', inf, @(n) isnumeric(n) && isscalar(n) && n >= 0);
-parser.addParameter('minPatchUsed', [], @(n) isempty(n) || ...
-    (isnumeric(n) && isscalar(n) && n >= 0 && n <= 1));
+parser.addParameter('minPatchUsed', 0, @(n) isnumeric(n) && isscalar(n) && n >= 0 && n <= 1);
 parser.addParameter('covariances', true, @(b) islogical(b) && isscalar(b));
 parser.addParameter('preprocessing', {}, @(c) iscell(c) && (isempty(c) || isvector(c)));
 
@@ -76,7 +75,7 @@ params = parser.Results;
 unmatched = parser.Unmatched;
 
 % set up the arguments to pass to getImageTexturesByObject
-analysisArgs = {'pathcSize', patchSize, 'stride', params.stride, ...
+analysisArgs = {'patchSize', patchSize, 'stride', params.stride, ...
     'maxPatchesPerImage', params.maxPatchesPerImage, 'minPatchUsed', params.minPatchUsed};
 
 % process the images
