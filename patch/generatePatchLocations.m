@@ -85,13 +85,11 @@ parser = inputParser;
 parser.CaseSensitive = true;
 parser.FunctionName = mfilename;
 
-parser.addOptional('stride', [], @(v) isnumeric(v) && isvector(v) && length(v) >= 1 && length(v) <= 2);
+parser.addOptional('stride', [], @(v) isempty(v) || (isnumeric(v) && ...
+    isvector(v) && length(v) >= 1 && length(v) <= 2));
 
 parser.addParameter('maxPatchesPerImage', inf, @(x) isnumeric(x) && isscalar(x) && x >= 0);
 parser.addParameter('minPatchUsed', 0, @(x) isnumeric(x) && isscalar(x) && x >= 0 && x <= 1);
-parser.addParameter('overlapping', false, ...
-    @(b) (isscalar(b) && (islogical(b) || (isnumeric(b) && b >= 0))) || ...
-         (isnumeric(b) && isvector(b) && all(b) >= 0 && length(b) == 2));
 parser.addParameter('maskCrop', [], @(c) isempty(c) || (isvector(c) && isreal(c) && numel(c) == 4 && all(c >= 1)));
 parser.addParameter('mask', [], @(m) isempty(m) || (ismatrix(m) && isreal(m) && ~ischar(m)));
 
