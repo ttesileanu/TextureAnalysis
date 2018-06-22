@@ -4,8 +4,9 @@
 %% Select downsampling factor (N) and patch size (R)
 
 % [N, R] pairs
-valuesNR = {[1, 32], [1, 48], [1, 64], [2, 32], [2, 48], [2, 64], ...
-    [4, 32], [4, 48], [4, 64]};
+% valuesNR = {[1, 32], [1, 48], [1, 64], [2, 32], [2, 48], [2, 64], ...
+%     [4, 32], [4, 48], [4, 64]};
+valuesNR = {[1, 32]};
 
 valuesN = cellfun(@(x) x(1), valuesNR);
 valuesR = cellfun(@(x) x(2), valuesNR);
@@ -97,15 +98,17 @@ disp(['Generating the binary stats took ' num2str(toc, '%.2f') ' seconds.']);
 %% Perform focus analysis
 
 tic;
+resultsFocus = cell(1, length(valuesN));
 for i = 1:length(results)
     disp(['Working on focus analysis for binary results ' int2str(i) ...
           '/' int2str(length(results)) '...']);
     % focus analysis has a random component
     % to keep things reproducible, we fix the random number generator seed
     rng('default');
-    results{i} = runFocusAnalysis(results{i});
+    resultsFocus{i} = runFocusAnalysis(results{i});
 end
 disp(['Focus analysis for binary stats took ' num2str(toc, '%.2f') ' seconds.']);
+results = resultsFocus;
 
 %% Save the binary stats
 
