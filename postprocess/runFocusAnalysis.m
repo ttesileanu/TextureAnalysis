@@ -112,8 +112,8 @@ focus.clusterIds = focus.gMix.cluster(res.ev);
 focus.clusterDistances = focus.gMix.mahal(res.ev);
 
 % for every image, compute average of cluster IDs over all patches
-focus.imageClusters = zeros(length(res.imgIds), 1);
-for i = 1:length(res.imgIds)
+focus.imageClusters = zeros(length(res.imageNames), 1);
+for i = 1:length(res.imageNames)
     crtMask = (res.imgIds == i);
     focus.imageClusters(i) = mean(focus.clusterIds(crtMask));
 end

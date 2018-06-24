@@ -20,6 +20,7 @@ addpath(fullfile(PWD, 'load'));
 addpath(fullfile(PWD, 'misc'));
 addpath(fullfile(PWD, 'patch'));
 addpath(fullfile(PWD, 'preprocess'));
+addpath(fullfile(PWD, 'postprocess'));
 %addpath(fullfile(PWD, 'sandbox'));
 %addpath(fullfile(PWD, 'segment'));
 
