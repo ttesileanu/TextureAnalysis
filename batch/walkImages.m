@@ -7,11 +7,22 @@ function results = walkImages(pipeline, images, varargin)
 %   function application into a structure.
 %
 %   Each element of the `pipeline` except the last should be a function
-%   that takes one image and returns two arguments: an image, and a
-%   cropping/scaling matrix [row1, col1, row2, col2] identifying the region
-%   in the input image (for this particular function) corresponding to the
-%   resulting image. If the image that is returned is an empty matrix for
-%   any function within the `pipeline`, the current image is ignored.
+%   that takes one 2d or 3d image (the third dimenion represents patches in
+%   the case in which the image was already split into patches) and returns
+%   two arguments:
+%     (a) in the 2d case, an image, and a cropping/scaling matrix
+%         [row1, col1, row2, col2] identifying the region in the input
+%         image (for this particular function) corresponding to the
+%         resulting image.
+%     (b) in the 3d case, a 3d (i.e., patchified) image, and either an
+%         npatches x 4 matrix of patch coordinates in the format
+%         [row1, col1, row2, col2] (if this is the first function that
+%         patchified the image), or an empty matrix to keep the same
+%         patches as in the input.
+%   If the image that is returned is an empty matrix for any function
+%   within the `pipeline`, the current image is ignored. An empty crop or
+%   list of patch locations implies using the patches from the previous
+%   pipeline function.
 %
 %   The last element of the processing `pipeline` should be a function of
 %   the form
@@ -27,7 +38,7 @@ function results = walkImages(pipeline, images, varargin)
 %
 %   The `images` can be input as
 %     * file names, in which case they are loaded using loadLUMImage;
-%     * matrices, in which case they are used as-is;
+%     * arrays, in which case they are used as-is;
 %     * a pair, `{n, imageGenerator}`, in which case `n` images are
 %       generated on the fly by calling the `imageGenerator`; the ith
 %       image is generated using `imageGenerator(i)`.
@@ -108,20 +119,39 @@ for i = 1:imageCount
         [crtImage, crtCrop] = pipeline{j}(crtImage);
         
         % an empty result leads to skipping
-        if isempty(crtImage) || isempty(crtCrop)
-            % XXX warn?
+        if isempty(crtImage)
             skipImage = true;
+            if ~params.quiet
+                if ~generate && ischar(images{i})
+                    crtName = ['(' images{i} ')'];
+                else
+                    crtName = '';
+                end
+                warning('Image  #%d %s skipped because of empty output at stage #d.', ...
+                    i, crtName, j);
+            end
             break;
         end
         
-        % update the crop
-        scaleRows = (crop(3) - crop(1) + 1) / oldSize(1);
-        scaleCols = (crop(4) - crop(2) + 1) / oldSize(2);
-        % I *think* this is right...
-        crop(1) = crop(1) + scaleRows*(crtCrop(1) - 1);
-        crop(2) = crop(2) + scaleCols*(crtCrop(2) - 1);
-        crop(3) = crop(1) + scaleRows*(crtCrop(3) - crtCrop(1) + 1) - 1;
-        crop(4) = crop(2) + scaleCols*(crtCrop(4) - crtCrop(1) + 1) - 1;
+        % keep old crop if new one is empty
+        if ~isempty(crtCrop)
+            % can only generate a new crop if the previous image was 2d
+            if ~isvector(crop)
+                error([mfilename ':badcrop'], 'Cannot recrop patchified images.');
+            end
+            % for 2d images, make sure crop is row vector
+            if isvector(crtCrop)
+                crtCrop = crtCrop(:)';
+            end
+            % update the crop
+            scaleRows = (crop(3) - crop(1) + 1) / oldSize(1);
+            scaleCols = (crop(4) - crop(2) + 1) / oldSize(2);
+            % I *think* this is right...
+            crop(1) = crop(1) + scaleRows*(crtCrop(1, :) - 1);
+            crop(2) = crop(2) + scaleCols*(crtCrop(2, :) - 1);
+            crop(3) = crop(1) + scaleRows*(crtCrop(3, :) - crtCrop(1, :) + 1) - 1;
+            crop(4) = crop(2) + scaleCols*(crtCrop(4, :) - crtCrop(1, :) + 1) - 1;
+        end
     end
     
     % only continue if we haven't gotten any empty results
