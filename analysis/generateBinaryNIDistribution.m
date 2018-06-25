@@ -26,13 +26,14 @@ for i = 1:length(valuesN)
     % set up the preprocessing pipeline
     preprocessPipeline = {
         @logTransform, ...
-        @(image) blockAverage(image, crtN)};
+        @(image) blockAverage(image, crtN), ...
+        @(image) patchify(image, crtR)};
     
     % image quantization has a small random component that matters for
     % patches that have many identical pixel values
     % to keep things reproducible, we fix the random number generator seed
     rng('default');
-    filters{i} = generateFourierWhitenFilter(images, crtR, 'preprocessing', preprocessPipeline);
+    filters{i} = generateFourierWhitenFilter(images, 'preprocessing', preprocessPipeline);
 end
 disp(['Filter generation took ' num2str(toc, '%.2f') ' seconds.']);
 
@@ -82,16 +83,16 @@ for i = 1:length(valuesN)
     preprocessPipeline = {
         @logTransform, ...
         @(image) blockAverage(image, crtN), ...
+        @(image) patchify(image, crtR), ...
         @(image) filterImage(image, filters{i}), ...
-        @(image) equalizeImage(image, 'patchSize', crtR), ...
+        @equalizeImage, ...
         @(image) quantizeImage(image, 2)};
     
     % image quantization has a small random component that matters for
     % patches that have many identical pixel values
     % to keep things reproducible, we fix the random number generator seed
     rng('default');
-    results{i} = generateTextureDistribution(images, 2, crtR, ...
-        'preprocessing', preprocessPipeline);
+    results{i} = generateTextureDistribution(images, 2, 'preprocessing', preprocessPipeline);
 end
 disp(['Generating the binary stats took ' num2str(toc, '%.2f') ' seconds.']);
 
