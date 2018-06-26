@@ -28,13 +28,16 @@ function results = walkImages(pipeline, images, varargin)
 %   the form
 %       fct(i, image, crop)
 %   taking the index in the image set of the current image being processed,
-%   `i`, the image data itself, `image`, and a cropping/scaling matrix in
-%   the format [row1, col1, row2, col2] identifying the region in the
-%   initial image (before any of the functions from `pipeline` were applied)
-%   corresponding to the final image (the one that's passed to `fct`). The
-%   function should return either an empty matrix (in which case the result
-%   is discarded), or a structure. All the fields in the structures
-%   returned for each image are combined into the output `results`.
+%   `i`, the image data itself, `image`, and, when the image is 2d, a
+%   cropping/scaling matrix in the format [row1, col1, row2, col2]
+%   identifying the region in the initial image (before any of the functions
+%   from `pipeline` were applied) corresponding to the final image (the one
+%   that's passed to `fct`). If the image is 3d (i.e., patchified), the
+%   `crop` argument is an nPatches x 4 matrix giving the locations of all
+%   the patches in the initial image. The function should return either an
+%   empty matrix (in which case the result is discarded), or a structure.
+%   All the fields in the structures returned for each image are combined
+%   into the output `results`.
 %
 %   The `images` can be input as
 %     * file names, in which case they are loaded using loadLUMImage;
@@ -147,10 +150,12 @@ for i = 1:imageCount
             scaleRows = (crop(3) - crop(1) + 1) / oldSize(1);
             scaleCols = (crop(4) - crop(2) + 1) / oldSize(2);
             % I *think* this is right...
-            crop(1) = crop(1) + scaleRows*(crtCrop(1, :) - 1);
-            crop(2) = crop(2) + scaleCols*(crtCrop(2, :) - 1);
-            crop(3) = crop(1) + scaleRows*(crtCrop(3, :) - crtCrop(1, :) + 1) - 1;
-            crop(4) = crop(2) + scaleCols*(crtCrop(4, :) - crtCrop(1, :) + 1) - 1;
+            newCrop = zeros(size(crtCrop, 1), length(crop)); 
+            newCrop(:, 1) = crop(1) + scaleRows*(crtCrop(:, 1) - 1);
+            newCrop(:, 2) = crop(2) + scaleCols*(crtCrop(:, 2) - 1);
+            newCrop(:, 3) = crop(1) + scaleRows*(crtCrop(:, 3) - crtCrop(:, 1) + 1) - 1;
+            newCrop(:, 4) = crop(2) + scaleCols*(crtCrop(:, 4) - crtCrop(:, 2) + 1) - 1;
+            crop = newCrop;
         end
     end
     
