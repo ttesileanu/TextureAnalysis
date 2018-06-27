@@ -5,9 +5,13 @@ function [img, crop] = quantizeImage(img, n)
 %   are clipped to 0 or 1.
 %
 %   [imgOut, crop] = quantizeImage(...) returns a cropping area, always
-%   equal to [1 1 size(img)].
+%   equal to [1 1 size(img)] if `img` is a matrix, and [] otherwise.
 
 img = min(max(floor(n*img)/(n-1), 0), 1);
-crop = [1 1 size(img)];
+if ismatrix(img)
+    crop = [1 1 size(img)];
+else
+    crop = [];
+end
 
 end
