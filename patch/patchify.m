@@ -14,10 +14,7 @@ function [patched, locations] = patchify(image, patchSize, varargin)
 %   patches as an nPatches x 4 array in which each row has the form
 %   [row1, col1, row2, col2].
 %
-%   Other options are passed directly to `generatePatchLocations`. Note
-%   that unlike that function, PATCHIFY always returns the patch locations
-%   in `image` coordinates, even if the patches are selected according to a
-%   mask.
+%   Other options are passed directly to `generatePatchLocations`.
 %
 %   See also: generatePatchLocations.
 
@@ -31,7 +28,7 @@ locations = [patchStruct.patchLocations ...
 
 for i = 1:nPatches
     crtLoc = locations(i, :);
-    patched(:, :, i) = image(crtLoc(1):crtLoc(3), crtLoc(2):crtLoc(4))  ;
+    patched(:, :, i) = image(crtLoc(1):crtLoc(3), crtLoc(2):crtLoc(4));
 end
 
 end
