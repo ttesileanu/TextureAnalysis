@@ -67,17 +67,17 @@ params = parser.Results;
 % get sharpness for each patch -- need to load the images
 t0 = tic;
 if ~params.skipSharpness
-    allImgIds = unique(res.imgIds);
+    allImageIds = unique(res.imageIds);
     focus = struct;
     focus.sharpness = zeros(size(res.ev, 1), 1);
     % cumbersome to use walkImages here, so doing it manually...
     if ~params.quiet
         progress = TextProgress('checking patch sharpness');
     end
-    for i = 1:length(allImgIds)
-        crtImgId = allImgIds(i);
+    for i = 1:length(allImageIds)
+        crtImgId = allImageIds(i);
         crtImg = loadLUMImage(res.imageNames{crtImgId});
-        crtPatchMask = (res.imgIds == crtImgId);
+        crtPatchMask = (res.imageIds == crtImgId);
         crtPatchLocs = res.patchLocations(crtPatchMask, :);
         crtSharpness = zeros(size(crtPatchLocs, 1), 1);
         for j = 1:size(crtPatchLocs, 1)
@@ -87,7 +87,7 @@ if ~params.skipSharpness
         end
         focus.sharpness(crtPatchMask) = crtSharpness;
         if ~params.quiet
-            progress.update(100*i/length(allImgIds));
+            progress.update(100*i/length(allImageIds));
         end
     end
     if ~params.quiet
@@ -114,7 +114,7 @@ focus.clusterDistances = focus.gMix.mahal(res.ev);
 % for every image, compute average of cluster IDs over all patches
 focus.imageClusters = zeros(length(res.imageNames), 1);
 for i = 1:length(res.imageNames)
-    crtMask = (res.imgIds == i);
+    crtMask = (res.imageIds == i);
     focus.imageClusters(i) = mean(focus.clusterIds(crtMask));
 end
 
