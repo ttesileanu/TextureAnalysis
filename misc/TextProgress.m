@@ -35,6 +35,16 @@ classdef TextProgress < handle
     %           pause(1);
     %       end
     %       progress3.done('done!', 'prefix', 'done!');
+    %
+    %   4. Change the update interval
+    %
+    %       progress4 = TextProgress('test', 'updinterval', 1.0);
+    %       for i = 1:100
+    %           progress4.update(i);
+    %           pause(0.1);
+    %       end
+    %       progress4.done;     % needed for newline
+
     
     properties
         length = 10;
@@ -44,11 +54,13 @@ classdef TextProgress < handle
         percent = 0;
         timer = true;
         timefmt = '%5.1f';
+        updinterval = 0.25;
     end
     
     properties (Access=private)
         backStr_ = '';
         t0_ = [];
+        tlastupd_ = [];
     end
     
     methods
@@ -114,6 +126,7 @@ classdef TextProgress < handle
             parser.addParameter('percent', none, @(n) isnumeric(n) && isreal(n));
             parser.addParameter('timer', none, @(b) islogical(b) && isscalar(b));
             parser.addParameter('timefmt', none, @(s) ischar(s) && (isvector(s) || isempty(s)));
+            parser.addParameter('updinterval', none, @(n) isnumeric(n) && isreal(n));
             
             % parse
             parser.parse(varargin{:});
@@ -134,6 +147,10 @@ classdef TextProgress < handle
         
         function display_(obj)
             % Display the bar.
+            if ~isempty(obj.tlastupd_) && toc(obj.tlastupd_) < obj.updinterval
+                % don't update too often
+                return;
+            end
             if isempty(obj.prespace)
                 bar = obj.prefix;
             else
@@ -165,6 +182,8 @@ classdef TextProgress < handle
             
             fprintf(1, [obj.backStr_ '%s'], bar);
             obj.backStr_ = repmat('\b', 1, numel(bar));
+            
+            obj.tlastupd_ = tic;
         end
     end
     
