@@ -7,40 +7,41 @@ function results = walkImages(pipeline, images, varargin)
 %   function application into a structure.
 %
 %   Each element of the `pipeline` except the last should be a function
-%   that takes one 2d or 3d image (the third dimenion represents patches in
-%   the case in which the image was already split into patches) and returns
-%   two arguments:
-%     (a) in the 2d case, an image, and a cropping/scaling matrix
-%         [row1, col1, row2, col2] identifying the region in the input
-%         image (for this particular function) corresponding to the
-%         resulting image.
-%     (b) in the 3d case, a 3d (i.e., patchified) image, and either an
-%         npatches x 4 matrix of patch coordinates in the format
-%         [row1, col1, row2, col2] (if this is the first function that
-%         patchified the image), or an empty matrix to keep the same
-%         patches as in the input.
+%   that takes a matrix or a 3d array of patches and returns two arguments:
+%   another image (2d or 3d), and a matrix of cropping/scaling information
+%   containing rows of the form [row1, col1, row2, col2]:
+%       [imgOut, crop] = fct(img)
+%   Two kinds of functions are allowed
+%       (a) functions that act on each patch, potentially removing some. In
+%           this case, the number of patches in the output is at most as
+%           large as that in the input (i.e., `size(imgOut, 3) <= size(img, 3)`),
+%           and each row in `crop` matches one patch in `img` (i.e.,
+%           `size(crop, 1) == size(img, 3)`). Rows that are all equal to 0
+%           indicate patches that have been dropped in the processing. The
+%           number of such rows must thus be equal to the difference
+%           between the number of patches in the input and output images.
+%           Each row indicates a potential crop within each patch.
+%       (b) functions that expand a 2d matrix into a 3d array of patches.
+%           In this case, the number of rows in `crop` matches the number
+%           of patches in `imgOut`, `size(crop, 1) == size(imgOut, 3)`, and
+%           each row indicates the extents of each patch in the input image.
 %   If the image that is returned is an empty matrix for any function
-%   within the `pipeline`, the current image is ignored. An empty crop or
-%   list of patch locations implies using the patches from the previous
-%   pipeline function.
+%   within the `pipeline`, the current image is ignored. Empty crop
+%   information implies no cropping compared to the input.
 %
 %   The last element of the processing `pipeline` should be a function of
 %   the form
-%       fct(i, image, crop)
+%       resStruct = fct(i, image, crop)
 %   taking the index in the image set of the current image being processed,
-%   `i`, the image data itself, `image`, and, when the image is 2d, a
-%   cropping/scaling matrix in the format [row1, col1, row2, col2]
-%   identifying the region in the initial image (before any of the functions
-%   from `pipeline` were applied) corresponding to the final image (the one
-%   that's passed to `fct`). If the image is 3d (i.e., patchified), the
-%   `crop` argument is an nPatches x 4 matrix giving the locations of all
-%   the patches in the initial image. The function should return either an
+%   `i`, the image data itself, `image`, and an nPatches x 4 matrix giving
+%   the locations of all the patches in the initial image (where `nPatches`
+%   is equal to `size(image, 3)`). The function should return either an
 %   empty matrix (in which case the result is discarded), or a structure.
-%   All the fields in the structures returned for each image are combined
-%   into the output `results`.
+%   All the fields in the structures returned for all the images are
+%   combined into the output `results`.
 %
-%   The `images` can be input as
-%     * file names, in which case they are loaded using loadLUMImage;
+%   The `images` argument to walkImages can be input as
+%     * file names, in which case they are loaded using `loadLUMImage`;
 %     * arrays, in which case they are used as-is;
 %     * a pair, `{n, imageGenerator}`, in which case `n` images are
 %       generated on the fly by calling the `imageGenerator`; the ith
@@ -104,7 +105,7 @@ for i = 1:imageCount
         end
     end
     
-    % initial crop covers the whole image
+    % initial crop -- a single patch covering the whole image
     crop = [1 1 size(crtImage)];
     
     % do the preprocessing (pipeline(1:end-1))
@@ -119,42 +120,57 @@ for i = 1:imageCount
         
         % process
         oldSize = size(crtImage);
+        oldNPatches = size(crtImage, 3);
         [crtImage, crtCrop] = pipeline{j}(crtImage);
+        newNPatches = size(crtImage, 3);
         
         % an empty result leads to skipping
         if isempty(crtImage)
             skipImage = true;
-            if ~params.quiet
-                if ~generate && ischar(images{i})
-                    crtName = ['(' images{i} ')'];
-                else
-                    crtName = '';
-                end
-                warning('Image  #%d %s skipped because of empty output at stage #d.', ...
-                    i, crtName, j);
-            end
             break;
         end
         
         % keep old crop if new one is empty
         if ~isempty(crtCrop)
-            % can only generate a new crop if the previous image was 2d
-            if ~isvector(crop)
-                error([mfilename ':badcrop'], 'Cannot recrop patchified images.');
+            % new crop -- one row for each patch
+            newCrop = zeros(newNPatches, 4);
+
+            if newNPatches > oldNPatches
+                % we're patchifying a 2d image
+                if oldNPatches ~= 1
+                    error([mfilename ':badpatch'], ...
+                        'Can only patchify 2d image. (image %d, stage %d)', i, j);
+                end
+            else
+                % we might be losing some of the patches
+                keepMask = any(crtCrop ~= 0, 2);
+                % select only the patches we're keeping
+                crop = crop(keepMask, :);
+                crtCrop = crtCrop(keepMask, :);
+                % check match between number of patches and rows of crtCrop
+                if size(crtCrop, 1) ~= newNPatches
+                    error([mfilename ':badnp'], ...
+                        'Number of patches in image output doesn''t match non-zero rows of crop.  (image %d, stage %d)', ...
+                        i, j);
+                end
+                % note that newNPatches can't be zero (we checked for empty
+                % crtImage earlier), and so crtCrop and crop can also not
+                % be empty here
             end
-            % for 2d images, make sure crop is row vector
-            if isvector(crtCrop)
-                crtCrop = crtCrop(:)';
-            end
+            
+            % figure out any scaling between the image coordinates for the
+            % input patches at this particular pipeline position, and the
+            % coordinates in the initial image
+            scaleRows = (crop(:, 3) - crop(:, 1) + 1) ./ oldSize(:, 1);
+            scaleCols = (crop(:, 4) - crop(:, 2) + 1) ./ oldSize(:, 2);
+            
+            % find new patch extents in initial-image coordinates
+            newCrop(:, 1) = crop(:, 1) + scaleRows.*(crtCrop(:, 1) - 1);
+            newCrop(:, 2) = crop(:, 2) + scaleCols.*(crtCrop(:, 2) - 1);
+            newCrop(:, 3) = newCrop(:, 1) + scaleRows.*(crtCrop(:, 3) - crtCrop(:, 1) + 1) - 1;
+            newCrop(:, 4) = newCrop(:, 2) + scaleCols.*(crtCrop(:, 4) - crtCrop(:, 2) + 1) - 1;
+
             % update the crop
-            scaleRows = (crop(3) - crop(1) + 1) / oldSize(1);
-            scaleCols = (crop(4) - crop(2) + 1) / oldSize(2);
-            % I *think* this is right...
-            newCrop = zeros(size(crtCrop, 1), length(crop)); 
-            newCrop(:, 1) = crop(1) + scaleRows*(crtCrop(:, 1) - 1);
-            newCrop(:, 2) = crop(2) + scaleCols*(crtCrop(:, 2) - 1);
-            newCrop(:, 3) = crop(1) + scaleRows*(crtCrop(:, 3) - crtCrop(:, 1) + 1) - 1;
-            newCrop(:, 4) = crop(2) + scaleCols*(crtCrop(:, 4) - crtCrop(:, 2) + 1) - 1;
             crop = newCrop;
         end
     end
@@ -195,6 +211,16 @@ for i = 1:imageCount
                     end
                 end
             end
+        end
+    else
+        if ~params.quiet
+            if ~generate && ischar(images{i})
+                crtName = ['(' images{i} ')'];
+            else
+                crtName = '';
+            end
+            warning('Image #%d %s skipped because of empty output at stage %d.', ...
+                i, crtName, j);
         end
     end
     
