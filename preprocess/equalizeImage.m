@@ -71,7 +71,7 @@ if isempty(params.patchSize)
     % equalizing the histogram is the same as labeling each color value by
     % its rank (and we normalize to keep everything in [0, 1])
     for i = 1:nPatches
-        [~, idxs] = sort(img(:, :, i));
+        [~, idxs] = sort(flatten(img(:, :, i)));
         patch(idxs) = sortedValues;
         imgOut(:, :, i) = patch;
     end
