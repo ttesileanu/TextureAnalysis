@@ -70,7 +70,7 @@ end
             return;
         end
         % keep track of the image from which the patches originated
-        crtRes.patchLoactions = crop;
+        crtRes.patchLocations = crop;
         crtRes.imgIds = i*ones(size(crtRes.ev, 1), 1);
     end
 
