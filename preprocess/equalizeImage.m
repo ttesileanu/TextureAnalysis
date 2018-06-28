@@ -18,11 +18,12 @@ function [imgOut, crop] = equalizeImage(img, varargin)
 %         size. You can expect it to be around (pixels per patch)/25, so
 %         about 40x slower for a 32x32 patch.
 %
-%   [imgOut, crop] = equalizeImage(...) also returns a vector of four
-%   elements [row1, col1, row2, col2] identifying the range in the original
-%   image corresponding to the equalized image. If the input image is 2d,
-%   this is always [1 1 size(img)]. If it is 3d, the `crop` is set to an
-%   empty matrix.
+%   [imgOut, crop] = equalizeImage(...) also returns a matrix with four
+%   columns, each row of which identifying the range in the original image
+%   patches corresponding to the equalized patches. The format of each row
+%   is [row1, col1, row2, col2]. A row that is equal to all zeros
+%   corresponds to patches that are skipped in `imgOut` (see 'minLevels'
+%   below).
 %
 %   Options:
 %    'jitter'
@@ -30,6 +31,10 @@ function [imgOut, crop] = equalizeImage(img, varargin)
 %       with exactly equal values. The jitter is added as uniform noise in
 %       the interval [-amount, amount]. Set this to 0 to have no jitter.
 %       The default value is equal to `eps(max(abs(img(:))))`.
+%    'minLevels'
+%       If a patch has fewer unique values than the number given here, it
+%       will be ignored (i.e., skipped in `imgOut`, and the corresponding
+%       row in `crop` will be all zeros).
 
 % parse optional arguments
 parser = inputParser;
@@ -40,6 +45,7 @@ parser.addOptional('patchSize', [], @(p) isempty(p) || (isnumeric(p) && isscalar
     (isnumeric(p) && isvector(p) && numel(p) == 2 && all(p >= 1)));
 % parser.addParameter('perpixel', false, @(b) islogical(b) && isscalar(b));
 parser.addParameter('jitter', [], @(x) isempty(x) || (isnumeric(x) && isscalar(x) && x >= 0));
+parser.addParameter('minLevels', 0, @(n) isscalar(n) && isnumeric(n));
 
 % defaults
 if nargin == 1 && strcmp(img, 'defaults')
@@ -63,17 +69,30 @@ if params.jitter > 0
 end
 
 nPatches = size(img, 3);
+crop = repmat([1 1 size(img, 1) size(img, 2)], nPatches, 1);
 if isempty(params.patchSize)
     % non-overlapping patches
     imgOut = zeros(size(img));
     patch = zeros(size(img, 1), size(img, 2));
+    patchMask = true(nPatches, 1);
     sortedValues = linspace(0, 1, numel(patch));
     % equalizing the histogram is the same as labeling each color value by
     % its rank (and we normalize to keep everything in [0, 1])
     for i = 1:nPatches
-        [~, idxs] = sort(flatten(img(:, :, i)));
+        [sortedPatch, idxs] = sort(flatten(img(:, :, i)));
+        if params.minLevels > 0
+            nLevels = 1 + sum(diff(sortedPatch) > 0);
+            if nLevels < params.minLevels
+                patchMask(i) = false;
+                continue;
+            end
+        end
         patch(idxs) = sortedValues;
         imgOut(:, :, i) = patch;
+    end
+    if params.minLevels > 0
+        imgOut = imgOut(:, :, patchMask);
+        crop(~patchMask, :) = 0;
     end
 else
     % handle scalar or vector patch sizes
@@ -102,12 +121,6 @@ else
             end
         end
     end
-end
-
-if nPatches == 1
-    crop = [1 1 size(imgOut)];
-else
-    crop = [];
 end
 
 end
