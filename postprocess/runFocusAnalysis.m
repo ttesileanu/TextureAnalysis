@@ -78,7 +78,7 @@ if ~params.skipSharpness
         crtImgId = allImgIds(i);
         crtImg = loadLUMImage(res.imageNames{crtImgId});
         crtPatchMask = (res.imgIds == crtImgId);
-        crtPatchLocs = res.patchLocationsOrig(crtPatchMask, :);
+        crtPatchLocs = res.patchLocations(crtPatchMask, :);
         crtSharpness = zeros(size(crtPatchLocs, 1), 1);
         for j = 1:size(crtPatchLocs, 1)
             crtPatchLoc = crtPatchLocs(j, :);
