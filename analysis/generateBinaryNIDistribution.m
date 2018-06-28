@@ -4,9 +4,9 @@
 %% Select downsampling factor (N) and patch size (R)
 
 % [N, R] pairs
-% valuesNR = {[1, 32], [1, 48], [1, 64], [2, 32], [2, 48], [2, 64], ...
-%     [4, 32], [4, 48], [4, 64]};
-valuesNR = {[1, 32]};
+valuesNR = {[1, 32], [1, 48], [1, 64], [2, 32], [2, 48], [2, 64], ...
+    [4, 32], [4, 48], [4, 64]};
+% valuesNR = {[1, 32]};
 
 valuesN = cellfun(@(x) x(1), valuesNR);
 valuesR = cellfun(@(x) x(2), valuesNR);
@@ -113,4 +113,5 @@ results = resultsFocus;
 
 %% Save the binary stats
 
-save(fullfile('save', 'BinaryDistribution_PennNoSky.mat'), 'results', 'R_values', 'N_values', 'NR_values');
+save(fullfile('save', 'BinaryDistribution_PennNoSky.mat'), 'results', ...
+    'valuesR', 'valuesN', 'valuesNR');
