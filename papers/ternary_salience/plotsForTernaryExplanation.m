@@ -433,3 +433,142 @@ beautifygraph('fontscale', 0.5, 'ticksize', 12);
 preparegraph;
 
 safePrint(fullfile('figs', 'draft', 'ternarizationPdf'));
+
+%% Calculate power spectrum before and after whitening
+
+% calculate power spectrum before and after filtering
+filterNoAvg0 = open(fullfile('filters', 'filter1x32.mat'));
+filterNoAvg = filterNoAvg0.filter;
+
+[imgFullPatchified, imgFullPatchLocs] = patchify(img0log, size(filterNoAvg));
+% [imgFullPatchified, imgFullPatchLocs] = patchify(img0, size(filterNoAvg));
+imgFullFiltered = reconstitute(filterImage(imgFullPatchified, filterNoAvg), imgFullPatchLocs);
+imgFullUnfiltered = img0log(1:size(imgFullFiltered, 1), 1:size(imgFullFiltered, 2));
+% imgFullUnfiltered = img0(1:size(imgFullFiltered, 1), 1:size(imgFullFiltered, 2));
+
+[radialSpectrumBefore, radiiBefore, fourierBefore] = powerspec(imgFullUnfiltered);
+[radialSpectrumAfter, radiiAfter, fourierAfter] = powerspec(imgFullFiltered);
+if max(abs(radiiAfter - radiiBefore))
+    error('The radial bins aren''t the same for before and after spectra.');
+end
+
+% make the figure
+figSize = [1.1 0.7];
+
+fig = figure;
+fig.Units = 'inches';
+fig.Position = [1 1 figSize];
+
+% find slope in log-log plot before filtering
+coeffs = polyfit(log10(radiiBefore(2:11)'), log10(radialSpectrumBefore(2:11)), 1);
+
+% draw the fit line
+loglog(radiiBefore, 10.^(coeffs(1)*log10(radiiBefore) + coeffs(2)), ...
+    'color', [0.6, 0.6, 0.6], 'linewidth', 0.25);
+hold on;
+% draw the radial spectrum
+loglog(radiiBefore, radialSpectrumBefore, 'color', [0    0.4470    0.7410]);
+
+% set the axes and labels
+xlabel('log radius');
+ylabel('log power');
+set(gca, 'xtick', [], 'ytick', []);
+
+xlim([4, 500]);
+ylim([3e4, 1.8e9]);
+% ylim([2.5e11, 4e15]);
+
+% beautify and save
+beautifygraph('fontscale', 0.5);
+preparegraph;
+
+safePrint(fullfile('figs', 'draft', 'powerSpectrumBeforeFilter'));
+
+% make after-filtering figure
+fig = figure;
+fig.Units = 'inches';
+fig.Position = [3 1 figSize];
+
+% const_y = geomean(avg_radial_spectrum_after);
+% find the mean value of the power after filtering in the log-log space
+const_y = 10^(trapz(log10(radiiAfter(2:end)), log10(radialSpectrumAfter(2:end))) / ...
+              trapz(log10(radiiAfter(2:end)), ones(size(radialSpectrumAfter(2:end)))));
+% draw a line at the mean value
+loglog(radiiAfter, repmat(const_y, size(radiiAfter)), ...
+    'color', [0.6, 0.6, 0.6], 'linewidth', 0.25);
+hold on;
+% draw the radial power spectrum after filtering
+loglog(radiiAfter, radialSpectrumAfter, 'color', [0    0.4470    0.7410]);
+
+% set the axes and labels
+xlabel('log radius');
+ylabel('log power');
+set(gca, 'xtick', [], 'ytick', []);
+
+xlim([4, 500]);
+% ylim([7e7, 2e12]);
+ylim([15, 9e5]);
+% ylim([8e7, 1.28e12]);
+
+% beautify and save
+beautifygraph('fontscale', 0.5);
+preparegraph;
+
+safePrint(fullfile('figs', 'draft', 'powerSpectrumAfterFilter'));
+
+%% Make 2d power spectrum plots
+
+% make figure
+figSize = size(fourierBefore);
+
+fig = figure;
+fig.Units = 'pixels';
+fig.Position = [fig.Position(1:2) fliplr(figSize)/2];
+
+ax = axes;
+ax.Position = [0 0 1 1];
+
+% figure out a good color range to get nice contrast
+data1 = log10(abs(fourierBefore));
+% 95% of values
+rng1 = [quantile(data1(:), 0.025), quantile(data1(:), 0.975)];
+
+% draw
+imagesc(data1, rng1);
+colormap('gray');
+
+% remove axes
+axis equal;
+axis off;
+
+% save
+drawnow;
+frame = getframe(fig);
+imwrite(frame.cdata, fullfile('figs', 'draft', 'powerSpectrum2dBeforeFilter.png'));
+
+% make figure for after-filter plot
+figSize = size(fourierAfter);
+
+fig = figure;
+fig.Units = 'pixels';
+fig.Position = [fig.Position(1:2) fliplr(figSize)/2];
+
+ax = axes;
+ax.Position = [0 0 1 1];
+
+data2 = log10(abs(fourierAfter));
+% keep the same dynamic range as for the 'before' spectrum
+rng2 = median(data2(:)) + [-0.5 0.5]*diff(rng1);
+
+% draw
+imagesc(data2, rng2);
+colormap('gray');
+
+% remove axes
+axis equal;
+axis off;
+
+% save
+drawnow;
+frame = getframe(fig);
+imwrite(frame.cdata, fullfile('figs', 'draft', 'powerSpectrum2dAfterFilter.png'));
