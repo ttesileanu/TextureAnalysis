@@ -13,7 +13,7 @@ function [imgOut, crop] = equalizeImage(img, varargin)
 %   The patches surrounding pixels close to the edges of the image are
 %   cropped to fit within the image.
 %
-%   NOTE: The 'perpixel' option is very slow compared to equalizing on
+%   NOTE: This latter option is very slow compared to equalizing on
 %         non-overlapping patches! The slowdown factor is dependent on patch
 %         size. You can expect it to be around (pixels per patch)/25, so
 %         about 40x slower for a 32x32 patch.
@@ -71,7 +71,7 @@ end
 nPatches = size(img, 3);
 crop = repmat([1 1 size(img, 1) size(img, 2)], nPatches, 1);
 if isempty(params.patchSize)
-    % non-overlapping patches
+    % already patchified image
     imgOut = zeros(size(img));
     patch = zeros(size(img, 1), size(img, 2));
     patchMask = true(nPatches, 1);
