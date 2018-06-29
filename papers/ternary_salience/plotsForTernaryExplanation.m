@@ -572,3 +572,55 @@ axis off;
 drawnow;
 frame = getframe(fig);
 imwrite(frame.cdata, fullfile('figs', 'draft', 'powerSpectrum2dAfterFilter.png'));
+
+%% Draw distribution of patches in texture space, together with focus locus
+
+% load the texture distribution
+naturalStats0 = open(fullfile('save', 'TernaryDistribution_PennNoSky.mat'));
+naturalStats = naturalStats0.results{4}; % N = 2, R = 32
+
+% figure out which coordinates correspond to the groups we want to plot
+mtc = analyzeTexture('mtc', 3);
+groupNames = flatten(repmat(cellfun(@(s) s.name, mtc.coord_groups, 'uniform', false), 2, 1));
+
+group1 = 'AB_1_2';
+group2 = 'ABCD_1_2_1_2';
+
+% use only first coordinate corresponding to each group
+secondOrderIdx = find(strcmp(groupNames, group1), 1);
+secondOrder = naturalStats.ev(:, secondOrderIdx);
+
+fourthOrderIdx = find(strcmp(groupNames, group2), 1);
+fourthOrder = naturalStats.ev(:, fourthOrderIdx);
+
+% find the in-focus clusters
+focusMask = (naturalStats.focus.clusterIds == naturalStats.focus.focusCluster);
+secondOrderFocus = secondOrder(focusMask);
+fourthOrderFocus = fourthOrder(focusMask);
+
+% make the figure
+fig = figure;
+fig.Units = 'inches';
+fig.Position = [1 1 2.5 2.25];
+hold on;
+
+% draw all the points
+smartscatter(secondOrder, fourthOrder, 'density', false, 'color', [0.5 0.5 0.5], ...
+    'alpha', 0.05, 'maxpoints', inf, 'size', 5);
+% overlay the in-focus points
+smartscatter(secondOrderFocus, fourthOrderFocus, 'density', false, 'color', [0    0.4470    0.7410], ...
+    'alpha', 0.05, 'maxpoints', inf, 'size', 5);
+xlabel(group1);
+ylabel(group2);
+
+% set the axes
+axis equal;
+
+xlim([0.1 0.999]);
+ylim([0.2 0.999]);
+
+% beautify and save
+beautifygraph('fontscale', 0.6667, 'ticksize', 11);
+preparegraph;
+
+safePrint(fullfile('figs', 'draft', 'focusLocus'), 'type', 'png', 'printOpts', {'-r600'});
