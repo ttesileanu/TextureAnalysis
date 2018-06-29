@@ -99,10 +99,10 @@ end
 if ischar(I) && isvector(I)
     switch I
         case 'gtc'
-            P = gtc;
+            ev = gtc;
             return;
         case 'mtc'
-            P = mtcs{nLevels};
+            ev = mtcs{nLevels};
             return
         otherwise
             error([mfilename ':badreq'], 'Unknown request.');
