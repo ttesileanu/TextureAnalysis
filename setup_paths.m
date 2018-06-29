@@ -12,12 +12,14 @@ addpath(PWD);
 % add subfolders
 addpath(fullfile(PWD, 'analysis'));
 addpath(fullfile(PWD, 'batch'));
+addpath(fullfile(PWD, 'conversion'));
 addpath(fullfile(PWD, 'filters'));
 addpath(fullfile(PWD, 'graphing'));
 %addpath(fullfile(PWD, 'gui'));
 addpath(fullfile(PWD, 'indices'));
 addpath(fullfile(PWD, 'load'));
 addpath(fullfile(PWD, 'misc'));
+addpath(fullfile(PWD, 'papers', 'ternary_salience'));
 addpath(fullfile(PWD, 'patch'));
 addpath(fullfile(PWD, 'preprocess'));
 addpath(fullfile(PWD, 'postprocess'));
