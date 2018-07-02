@@ -171,6 +171,7 @@ for k = 1:length(params.subjects)
             % multi-group
             crtCGroupDirs = edirData.cgroup_dirs;
             
+            % convert to 6 components
             crtDirections = ternarymix2to6(crtVecs, crtCGroupDirs);
             crtDirectionsLo = ternarymix2to6(crtVecsLo, crtCGroupDirs);
             crtDirectionsHi = ternarymix2to6(crtVecsHi, crtCGroupDirs);
@@ -229,10 +230,10 @@ for k = 1:length(params.subjects)
         results.directions = [results.directions ; crtNormalizedCell(:)];
         results.thresholds = [results.thresholds ; crtThresholds(:)];
         crtThreshIntervals = [crtThreshLo crtThreshHi];
-        results.thresholdIntervals = [results.threshold_intervals ; crtThreshIntervals];
+        results.thresholdIntervals = [results.thresholdIntervals ; crtThreshIntervals];
         results.subjects = [results.subjects ; repmat({crtSubject}, crtNDirs, 1)];
         results.multi = [results.multi ; repmat(crtMulti, crtNDirs, 1)];
-        results.nSubjects = [results.n_subjects ; repmat(crtNSubj, crtNDirs, 1)];            
+        results.nSubjects = [results.nSubjects ; repmat(crtNSubj, crtNDirs, 1)];
     end
 end
 
