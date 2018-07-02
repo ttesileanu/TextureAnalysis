@@ -153,7 +153,7 @@ end
 preparegraph;
 
 % save to file
-safe_print(fullfile('figs', 'draft', 'singlePlanePPDirections'));
+safePrint(fullfile('figs', 'draft', 'singlePlanePPDirections'));
 
 %% show measurement rays, mixed plane
 
@@ -188,4 +188,4 @@ end
 preparegraph;
 
 % save to file
-safe_print(fullfile('figs', 'draft', 'mixedPlanePPDirections'));
+safePrint(fullfile('figs', 'draft', 'mixedPlanePPDirections'));
