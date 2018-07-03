@@ -14,6 +14,8 @@ function vecs6 = ternarymix2to6(vecs2, dirs)
 %   component identified by `dirs`. The other two quasi-probabilities in
 %   each group are set equal to each other in such a way that all three
 %   quasi-probabilities sum up to 1.
+%
+%   See also: ternary6tomix2.
 
 % first find the quasi-probabilities in the canonical directions (indicated
 % by dirs)
