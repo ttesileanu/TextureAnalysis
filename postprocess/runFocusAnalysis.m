@@ -38,6 +38,10 @@ function resOut = runFocusAnalysis(res, varargin)
 %    'skipSharpness': boolean
 %       Set to true to skip sharpness calculation. If this is true, then a
 %       `focusPatch` or `focusImage` must be provided.
+%    'reuseSharpness' : boolean
+%       Set to true to skip sharpness calculation and use sharpness values
+%       from `res.focus.sharpness`. An error will occur if the results
+%       don't have sharpness data.
 %    'quiet': boolean
 %       Set to true to inhibit any display from the function.
 %
@@ -51,6 +55,7 @@ parser.FunctionName = mfilename;
 parser.addParameter('focusImage', [], @(n) isscalar(n) && isnumeric(n) && isreal(n) && n >= 1);
 parser.addParameter('focusPatch', [], @(n) isscalar(n) && isnumeric(n) && isreal(n) && n >= 1);
 parser.addParameter('skipSharpness', false, @(b) isscalar(b) && islogical(b));
+parser.addParameter('reuseSharpness', false, @(b) isscalar(b) && islogical(b));
 parser.addParameter('quiet', false, @(b) isscalar(b) && islogical(b));
 
 % defaults
@@ -66,7 +71,7 @@ params = parser.Results;
 
 % get sharpness for each patch -- need to load the images
 t0 = tic;
-if ~params.skipSharpness
+if ~params.skipSharpness && ~params.reuseSharpness
     allImageIds = unique(res.imageIds);
     focus = struct;
     focus.sharpness = zeros(size(res.ev, 1), 1);
@@ -93,10 +98,14 @@ if ~params.skipSharpness
     if ~params.quiet
         progress.done('done!');
     end
-else
+elseif params.skipSharpness
     if isempty(params.focusImage) && isempty(params.focusPatch)
         error([mfilename ':needidx'], 'When skipSharpness is true, either focusImage or focusPatch must be provided.');
     end
+else
+    % reuse sharpness data
+    focus = struct;
+    focus.sharpness = res.focus.sharpness;
 end
 
 % run 2 Gaussian decomposition
