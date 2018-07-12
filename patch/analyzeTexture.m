@@ -53,8 +53,10 @@ function [ev, P, entropy, patternIdx] = analyzeTexture(I, nLevels)
 %   mtc_probs2cgs).
 %
 %   References:
-%     Hermundstad et al. (2014). Variance predicts salience in central sensory processing. ELife, 10.7554, e03722.
-%     Victor et al. (2012). Local image statistics: maximum-entropy constructions and perceptual salience. Journal of the Optical Society of America. A, Optics, Image Science, and Vision, 29(7), 1313?45.
+%     Hermundstad et al. (2014). Variance predicts salience in central sensory processing.
+%           ELife, 10.7554, e03722.
+%     Victor et al. (2012). Local image statistics: maximum-entropy constructions and perceptual salience.
+%           Journal of the Optical Society of America. A, Optics, Image Science, and Vision, 29(7), 1313-45.
 
 % set up the persistent structures for Jonathan's code
 % these are used in conjunction with Jonahtan's code when nLevels isn't inf or 2
