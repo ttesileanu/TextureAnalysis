@@ -11,7 +11,7 @@ function plotTernaryMatrix(pred, meas, varargin)
 %   plotTernaryMatrix([], meas) plots only the measurements.
 %
 %   By default the plots are arranged in a rectangular grid that covers
-%   most of the screen area. This can be changed using the 'plotterOpts'
+%   most of the screen area. This can be changed using the 'plotterOptions'
 %   below.
 %
 %   Options:
@@ -40,8 +40,8 @@ function plotTernaryMatrix(pred, meas, varargin)
 %       vector giving the multiplicities to draw, for instance [1] shows
 %       only single groups, [2] shows pairs, and [1, 2] shows both. Note
 %       that (for now?) only single groups and pairs are supported.
-%    'plotterOpts'
-%       Options to pass to MatrixPlotter.
+%    'plotterOptions'
+%       Options to pass to `MatrixPlotter`.
 %   Other options are sent directly to plotTernaryPlane.
 %
 %   See also: plotTernaryPlane.
@@ -70,7 +70,7 @@ parser.addParameter('predSize', 8, @(x) isnumeric(x) && isscalar(x) && x > 0);
 parser.addParameter('measSize', 5, @(x) isnumeric(x) && isscalar(x) && x > 0);
 parser.addParameter('multi', false, @(b) (islogical(b) && isscalar(b)) | ...
     (isnumeric(b) && isvector(b)));
-parser.addParameter('plotterOpts', {}, @(c) iscell(c) && isvector(c));
+parser.addParameter('plotterOptions', {}, @(c) iscell(c) && isvector(c));
 
 % show defaults if requested
 if showDefaults
@@ -124,7 +124,7 @@ else
 end
 
 % use the MatrixPlotter to make a figure containing a matrix of plots
-plotter = MatrixPlotter(length(uniqueGroups), params.plotterOpts{:});
+plotter = MatrixPlotter(length(uniqueGroups), params.plotterOptions{:});
 plotter.axAspect = 1;
 while plotter.next
     % find the index of the current plot

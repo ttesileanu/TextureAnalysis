@@ -33,9 +33,9 @@ function plotTernaryPlane(meas, mask, varargin)
 %         (b) an instance of `containers.Map`, mapping subject names to
 %             RGB colors.
 %       Set to empty to disable per-subject coloring.
-%    'beautifyOpts'
+%    'beautifyOptions'
 %       Options to pass to beautifygraph.
-%    'triangleOpts'
+%    'triangleOptions'
 %       Options to pass to drawTernaryTriangle.
 %    'limits'
 %       The largest coordinate value to show in absolute value and in
@@ -54,10 +54,10 @@ parser.addParameter('errorBars', true, @(b) islogical(b) && isscalar(b));
 parser.addParameter('errorColor', [0.5 0.5 0.5], @(v) isvector(v) && isnumeric(v) && length(v) == 3);
 parser.addParameter('ellipses', false, @(b) islogical(b) && isscalar(b));
 parser.addParameter('colorFct', @parula, @(f) isempty(f) || isa(f, 'function_handle') || isa(f, 'containers.Map'));
-parser.addParameter('beautifyOpts', {'box', 'on', 'tickdir', 'in', 'titlesize', 12}, ...
+parser.addParameter('beautifyOptions', {'box', 'on', 'tickdir', 'in', 'titlesize', 12}, ...
     @(c) iscell(c) && (isempty(c) || isvector(c)));
 parser.addParameter('limits', [2 1], @(v) isnumeric(v) && isvector(v) && ismember(length(v), [1 2]));
-parser.addParameter('triangleOpts', {}, @(c) iscell(c) && isvector(c));
+parser.addParameter('triangleOptions', {}, @(c) iscell(c) && isvector(c));
 
 % show defaults if requested
 if nargin == 1 && strcmp(meas, 'defaults')
@@ -102,7 +102,7 @@ end
 % background
 switch nGroups
     case 1
-        drawTernaryTriangle(params.triangleOpts{:});
+        drawTernaryTriangle(params.triangleOptions{:});
     case 2
         if ~isfield(meas, 'groups')
             groupOpts = {'Group 1', 'Group 2'};
@@ -200,6 +200,6 @@ if isfield(meas, 'groups')
     title(maskedGroups{1});
 end
 
-beautifygraph(params.beautifyOpts{:});
+beautifygraph(params.beautifyOptions{:});
 
 end
