@@ -9,6 +9,11 @@ function plotTernaryThresholds(thresholds, directions, varargin)
 %   be drawn using the 'errors' option (see below).
 %
 %   Options:
+%    'marker'
+%       Marker to use in general.
+%    'markerNoError'
+%       marker to use if error bars are provided, but they are infinite or
+%       NaN for a particular measurement.
 %    'color'
 %       3-component RGB vector giving the color of the symbols to use.
 %    'size'
@@ -28,6 +33,8 @@ parser = inputParser;
 parser.CaseSensitive = true;
 parser.FunctionName = mfilename;
 
+parser.addParameter('marker', 'x', @(s) ischar(s));
+parser.addParameter('markerNoError', 'o', @(s) ischar(s));
 parser.addParameter('color', [0.8 0.3 0.3], @(v) isvector(v) && isnumeric(v) && length(v) == 3);
 parser.addParameter('size', 5, @(x) isnumeric(x) && isscalar(x) && x > 0);
 parser.addParameter('errors', [], @(v) isempty(v) || (ismatrix(v) && size(v, 2) == 2 && isnumeric(v)));
@@ -90,16 +97,16 @@ if ~isempty(params.errors)
     % draw points without error bars as small open circles
     circleMask = ~errMask;
 else
-    circleMask = true(size(thresholds));
+    circleMask = false(size(thresholds));
 end
 
 % draw points with error bars
 plot(projectedThresholds(~circleMask, 1), ...
-    projectedThresholds(~circleMask, 2), 'x', 'linewidth', 1, ...
+    projectedThresholds(~circleMask, 2), params.marker, 'linewidth', 1, ...
     'markersize', params.size, 'color', params.color);
 % draw points without error bars
 plot(projectedThresholds(circleMask, 1), ...
-    projectedThresholds(circleMask, 2), 'o', 'linewidth', 1, ...
+    projectedThresholds(circleMask, 2), params.markerNoError, 'linewidth', 1, ...
     'markersize', params.size/2, 'color', params.color);
 
 % draw ellipses
@@ -108,7 +115,7 @@ if params.ellipse
     finiteMask = all(isfinite(projectedThresholds), 2);
     if sum(finiteMask) > 2
         % remove non-finite entries
-        measM = fitellipse(projectedThresholds(finiteMask, :));
+        measM = fitEllipse(projectedThresholds(finiteMask, :));
         ellipse(0, 0, inv(measM), 'color', mixcolor(params.color, [0.5 0.5 0.5]));
     end
 end
