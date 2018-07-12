@@ -50,3 +50,11 @@ ternaryBySubject = loadTernaryPP(fullfile('data', 'mtc_soid_xlsrun_summ.mat'), .
 
 save(fullfile('save', 'TernaryNIPredictions_PennNoSky_2x32.mat'), 'NRselection', ...
     'restrictToFocus', 'gain', 'predictions', 'predictionDetails');
+
+%% Check match in single planes
+
+plotTernaryMatrix(predictions, ternaryAvg, 'ellipses', true, 'mask', ~strcmp(ternaryAvg.groups, 'A_1'));
+
+%% Check match in mixed planes
+
+plotTernaryMatrix(predictions, ternaryAvg, 'ellipses', false, 'multi', 2);
