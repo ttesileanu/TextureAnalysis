@@ -45,3 +45,8 @@ ternaryBySubject = loadTernaryPP(fullfile('data', 'mtc_soid_xlsrun_summ.mat'), .
 % use only second-order groups to set the overall scaling of the predictions
 [gain, predictions, predictionDetails] = getPredictionsFromTernaryStats(...
     ni.ev, ternaryAvg, 'fitScaleOptions', {'mask', cellfun(@length, ternaryAvg.groups) == 6});
+
+%% Save
+
+save(fullfile('save', 'TernaryNIPredictions_PennNoSky_2x32.mat'), 'NRselection', ...
+    'restrictToFocus', 'gain', 'predictions', 'predictionDetails');
