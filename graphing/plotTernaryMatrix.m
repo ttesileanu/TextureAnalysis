@@ -133,13 +133,13 @@ while plotter.next
     % plot the measurements for this plane
     displayMask = mask & strcmp(meas.groups, uniqueGroups{i});
     plotTernaryPlane(meas, displayMask, 'symbolColor', params.measColor, ...
-        'symbolSize', params.measSize, unmatched);
+        'symbolSize', params.measSize, 'colorFct', colorFct, unmatched);
     
     % plot the predictions, if any
     if ~isempty(pred)
         hold on;
         plotTernaryThresholds(pred(displayMask), meas.directions(displayMask), ...
-            'color', params.predColor, 'colorFct', colorFct);
+            'color', params.predColor, 'marker', '.', 'size', params.predSize);
     end
 end
 
