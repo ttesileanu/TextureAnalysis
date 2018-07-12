@@ -13,6 +13,7 @@ addpath(PWD);
 addpath(fullfile(PWD, 'analysis'));
 addpath(fullfile(PWD, 'batch'));
 addpath(fullfile(PWD, 'conversion'));
+addpath(fullfile(PWD, 'efficient_coding'));
 addpath(fullfile(PWD, 'file'));
 addpath(fullfile(PWD, 'filters'));
 addpath(fullfile(PWD, 'graphing'));
