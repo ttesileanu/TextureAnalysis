@@ -13,6 +13,8 @@ function plotTernaryPlane(meas, mask, varargin)
 %   title.
 %
 %   Options:
+%    'symbol'
+%       Marker (symbol) to use.
 %    'symbolColor'
 %       3-component RGB vector giving the color of the symbols to use.
 %    'symbolSize'
@@ -45,6 +47,7 @@ parser = inputParser;
 parser.CaseSensitive = true;
 parser.FunctionName = mfilename;
 
+parser.addParameter('symbol', 'x', @(s) ischar(s));
 parser.addParameter('symbolColor', [0.8 0.3 0.3], @(v) isvector(v) && isnumeric(v) && length(v) == 3);
 parser.addParameter('symbolSize', 5, @(x) isnumeric(x) && isscalar(x) && x > 0);
 parser.addParameter('errorBars', true, @(b) islogical(b) && isscalar(b));
