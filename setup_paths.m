@@ -24,7 +24,7 @@ addpath(fullfile(PWD, 'papers', 'ternary_salience'));
 addpath(fullfile(PWD, 'patch'));
 addpath(fullfile(PWD, 'preprocess'));
 addpath(fullfile(PWD, 'postprocess'));
-%addpath(fullfile(PWD, 'sandbox'));
-%addpath(fullfile(PWD, 'segment'));
+addpath(fullfile(PWD, 'symmetry'));
+addpath(fullfile(PWD, 'tests'));
 
 end
