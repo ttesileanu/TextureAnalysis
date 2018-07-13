@@ -120,7 +120,8 @@ if isfinite(nLevels) && nLevels > 2
     % calculate independent stats
     evmat = mtc_probs2cgs(P, mtcs{nLevels});
     % remove one of the columns, since it is always equal to 1 minus the others
-    ev = flatten(evmat(:, 1:end-1)');
+    % then flatten into a row vector
+    ev = flatten(evmat(:, 1:end-1)')';
     
     return;
 end
