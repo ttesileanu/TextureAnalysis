@@ -37,7 +37,7 @@ switch type
         ev = reshape(ev, [], nPlanes*G);
     case '3d'
     otherwise
-        error([mfilename ':badtype', 'Unrecognized type argument.');
+        error([mfilename ':badtype'], 'Unrecognized type argument.');
 end
 
 end
