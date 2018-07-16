@@ -1,7 +1,7 @@
 function [ev, shuffle] = applyStatsGeometricPermutation(ev, G, permutation)
 % applyStatsGeometricPermutation Calculate the effect of a geometric
 % permutation on texture statistics.
-%   evP = applyStatsGeometricPermutation(ev, G, perumtation) calculates the
+%   evP = applyStatsGeometricPermutation(ev, G, permutation) calculates the
 %   way in which texture statistics with `G` gray levels contained in the
 %   matrix `ev` would change if the patches from which these statistics were
 %   calculated were modified by a permutation of the A, B, C, D components
