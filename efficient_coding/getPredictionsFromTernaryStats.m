@@ -3,7 +3,7 @@ function [gain, predictions, details] = getPredictionsFromTernaryStats(...
 % getPredictionsFromTernaryStats Calculate predictions for the ternary
 % texture case starting from natural image patches.
 %   [gain, predictions] = getPredictionsFromTernaryStats(niEv, ppData)
-%   returns the `gain` matrix obtained by appling the "variance = salience"
+%   returns the `gain` matrix obtained by applying the "variance = salience"
 %   idea based on efficient coding. This uses the texture statistics
 %   contained in the `niEv` matrix and assumes isotropic input and output
 %   noise. The function also uses this gain matrix to generate threshold
@@ -11,6 +11,10 @@ function [gain, predictions, details] = getPredictionsFromTernaryStats(...
 %   `directions` fields of the structure `ppData`, and finally scales
 %   these to optimally match the `thresholds` from `ppData` (see `fitScale`
 %   for details).
+%
+%   Note that the first output argument, `gain`, is the gain matrix scaled
+%   to include the best fit coefficient returned from `fitScale`. The
+%   unscaled matrix is returned in the `details` structure (see below).
 %
 %   The "variance = salience" method is accurate when output noise is
 %   negligible *and* the signal is small compared to the input noise. If
@@ -59,10 +63,10 @@ directionsExt = cellfun(@(v) v - 1/3, ternaryextdir(ppData.groups, ppData.direct
 
 % calculate the gain matrix
 niCov = cov(niEv);
-gain = solveLinearEfficientCoding(niCov, params.efficientCodingOptions{:});
+unscaledGain = solveLinearEfficientCoding(niCov, params.efficientCodingOptions{:});
 
 % calculate thresholds from the gains
-unscaledPredictions = gainsToThresholds(gain, directionsExt);
+unscaledPredictions = gainsToThresholds(unscaledGain, directionsExt);
 
 % now use fitscale to match predictions to measurements
 [aCoeff, predictions, predMse] = fitScale(unscaledPredictions, ppData.thresholds, ...
@@ -73,5 +77,10 @@ details.niCov = niCov;
 details.unscaledPredictions = unscaledPredictions;
 details.aCoeff = aCoeff;
 details.predMse = predMse;
+details.unscaledGain = unscaledGain;
+
+% rescale the gain to give the optimally-scaled predictions when used with
+% gainsToThresholds
+gain = unscaledGain / aCoeff;
 
 end
