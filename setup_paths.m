@@ -17,13 +17,13 @@ addpath(fullfile(PWD, 'efficient_coding'));
 addpath(fullfile(PWD, 'file'));
 addpath(fullfile(PWD, 'filters'));
 addpath(fullfile(PWD, 'graphing'));
-%addpath(fullfile(PWD, 'gui'));
 addpath(fullfile(PWD, 'indices'));
 addpath(fullfile(PWD, 'misc'));
 addpath(fullfile(PWD, 'papers', 'ternary_salience'));
 addpath(fullfile(PWD, 'patch'));
 addpath(fullfile(PWD, 'preprocess'));
 addpath(fullfile(PWD, 'postprocess'));
+addpath(fullfile(PWD, 'sandbox'));
 addpath(fullfile(PWD, 'symmetry'));
 addpath(fullfile(PWD, 'tests'));
 
