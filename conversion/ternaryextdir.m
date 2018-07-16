@@ -11,6 +11,8 @@ function v = ternaryextdir(group, direction)
 %   This also works in the multi-group case: then the group contains two or
 %   more texture group strings separated by a semicolon, and the direction
 %   has 3*ngroups components.
+%
+% See also: TERNARYCOMPRESS.
 
 % handle cell array input
 if iscell(group) || iscell(direction)
@@ -46,7 +48,7 @@ coordGroups = {...
     'ABCD_1_1_1_2'    'ABCD_1_1_1_2'    'ABCD_1_1_1_2'};
 
 % all coordinates are centered unless explicitly changed
-v = 1/3*ones(length(coordGroups), 1);
+v = 1/3*ones(1, length(coordGroups));
 
 % update coordinates group by group
 sepGroups = strtrim(strsplit(group, ';'));
