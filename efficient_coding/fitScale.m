@@ -51,6 +51,9 @@ function [a, predScaled, mse] = fitScale(pred, meas, varargin)
 %    'logSlope'
 %       If true, the fit uses both a slope and an intercept in log space,
 %           predscaled = a(1)*pred.^a(2) .
+%    'fixScale'
+%       Instead of fitting, fix the scale (`a`) to the value(s) given here
+%       and calculate the scaled predictions and the MSE.
 
 % parse optional arguments
 parser = inputParser;
@@ -71,6 +74,7 @@ parser.addParameter('stds', [], @(v) isnumeric(v) && ((isvector(v) && length(v) 
 parser.addParameter('mask', true(size(meas)), @(b) islogical(b) && isvector(b) && length(b) == length(meas));
 parser.addParameter('log', true, @(b) islogical(b) && isscalar(b));
 parser.addParameter('logSlope', false, @(b) islogical(b) && isscalar(b));
+parser.addParameter('fixScale', [], @(a) isnumeric(a) && isvector(a) && ismember(length(a), [1 2]));
 
 % show defaults
 if showDefaults
@@ -114,7 +118,11 @@ if ~params.log
     measNorm = meas(mask) ./ params.stds(mask);
 
     % find scaling factor
-    a = dot(predNorm, measNorm) / dot(predNorm, predNorm);
+    if isempty(params.fixScale)
+        a = dot(predNorm, measNorm) / dot(predNorm, predNorm);
+    else
+        a = params.fixScale;
+    end
     predScaled = a*pred;
 else
     % doing the fit in log space
@@ -129,7 +137,11 @@ else
         % xScaled is used for calculating the MSE
         xScaled = x + logA;
         % set the output arguments
-        a = exp(logA);
+        if isempty(params.fixScale)
+            a = exp(logA);
+        else
+            a = params.fixScale;
+        end
         predScaled = a*pred;
     else
         % we use both a slope and an intercept
@@ -140,13 +152,19 @@ else
         x2wm = wmean(x.^2, logWeights);
         
         % the scaling factor output is now a 2-component vector
-        a(2) = (xywm - xwm*ywm) / (x2wm - xwm^2);
+        if isempty(params.fixScale)
+            a(2) = (xywm - xwm*ywm) / (x2wm - xwm^2);
+        else
+            a = params.fixScale;
+        end
         logA = wmean(y - a(2)*x, logWeights);
         
         % xScaled is used for calculating the MSE
         xScaled = a(2)*x + logA;
         
-        a(1) = exp(logA);
+        if isempty(params.fixScale)
+            a(1) = exp(logA);
+        end
         
         % when applying the transformation to the predictions, we can only
         % do it for positive entries
