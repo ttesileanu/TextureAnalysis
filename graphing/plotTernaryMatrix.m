@@ -1,4 +1,4 @@
-function plotTernaryMatrix(pred, meas, varargin)
+function [plotter, uniqueGroups] = plotTernaryMatrix(pred, meas, varargin)
 % plotTernaryMatrix Make plots for each texture group comparing predicted
 % to measured thresholds.
 %   plotTernaryMatrix(pred, meas) makes a plot for each texture group
@@ -9,6 +9,10 @@ function plotTernaryMatrix(pred, meas, varargin)
 %   vector with the same ordering as that in the measurements structure.
 %
 %   plotTernaryMatrix([], meas) plots only the measurements.
+%
+%   [plotter, uniqueGroups] = plotTernaryMatrix(...) returns the
+%   `MatrixPlotter` instance used for plotting and the list of groups
+%   mapping to the list of axes in the plotter.
 %
 %   By default the plots are arranged in a rectangular grid that covers
 %   most of the screen area. This can be changed using the 'plotterOptions'
