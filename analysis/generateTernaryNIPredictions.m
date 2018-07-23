@@ -53,8 +53,12 @@ save(fullfile('save', 'TernaryNIPredictions_PennNoSky_2x32.mat'), 'NRselection',
 
 %% Check match in single planes
 
-plotTernaryMatrix(predictions, ternaryAvg, 'ellipses', false, 'mask', ~strcmp(ternaryAvg.groups, 'A_1'));
+plotTernaryMatrix({predictions, ternaryAvg}, ...
+    'ellipse', false, ...
+    'groupMaskFct', @(group) ~strcmp(group, 'A_1') && sum(group == ';') == 0);
 
 %% Check match in mixed planes
 
-plotTernaryMatrix(predictions, ternaryAvg, 'ellipses', true, 'multi', 2);
+plotTernaryMatrix({predictions, ternaryAvg}, ...
+    'ellipse', true, ...
+    'groupMaskFct', @(group) sum(group == ';') == 1);

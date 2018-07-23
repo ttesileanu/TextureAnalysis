@@ -9,11 +9,12 @@ function [gain, predictions, details] = getPredictionsFromTernaryStats(...
 %   noise. The function also uses this gain matrix to generate threshold
 %   predictions in the directions indicated by the `groups` and
 %   `directions` fields of the structure `ppData`, and finally scales
-%   these to optimally match the `thresholds` from `ppData` (see `fitScale`
-%   for details).
+%   these to optimally match the `thresholds` from `ppData`, if the
+%   thresholds field exists (see `fitScale` for details). The `predictions`
+%   are a structure containing fields `groups`, `directions`, `thresholds`.
 %
-%   Note that the first output argument, `gain`, is the gain matrix scaled
-%   to include the best fit coefficient returned from `fitScale`. The
+%   Note that the first output argument, `gain`, is the gain matrix *scaled
+%   to include the best fit coefficient returned from `fitScale`*. The
 %   unscaled matrix is returned in the `details` structure (see below).
 %
 %   The "variance = salience" method is accurate when output noise is
@@ -66,15 +67,24 @@ niCov = cov(niEv);
 unscaledGain = solveLinearEfficientCoding(niCov, params.efficientCodingOptions{:});
 
 % calculate thresholds from the gains
-unscaledPredictions = gainsToThresholds(unscaledGain, directionsExt);
+unscaledPredictedThresholds = gainsToThresholds(unscaledGain, directionsExt);
 
 % now use fitscale to match predictions to measurements
-[aCoeff, predictions, predMse] = fitScale(unscaledPredictions, ppData.thresholds, ...
-    'stds', ppData.thresholdIntervals, params.fitScaleOptions{:});
+if isfield(ppData, 'thresholds')
+    if isfield(ppData, 'thresholdIntervals')
+        fitScaleOptions = [{'stds', ppData.thresholdIntervals} params.fitScaleOptions];
+    else
+        fitScaleOptions = params.fitScaleOptions;
+    end
+    [aCoeff, predictedThresholds, predMse] = fitScale(unscaledPredictedThresholds, ...
+        ppData.thresholds, fitScaleOptions{:});
+else
+    predictedThresholds = unscaledPredictedThresholds;
+end
 
 % prepare the details structure
 details.niCov = niCov;
-details.unscaledPredictions = unscaledPredictions;
+details.unscaledPredictions = unscaledPredictedThresholds;
 details.aCoeff = aCoeff;
 details.predMse = predMse;
 details.unscaledGain = unscaledGain;
@@ -82,5 +92,9 @@ details.unscaledGain = unscaledGain;
 % rescale the gain to give the optimally-scaled predictions when used with
 % gainsToThresholds
 gain = unscaledGain / aCoeff;
+
+predictions.groups = ppData.groups;
+predictions.directions = ppData.directions;
+predictions.thresholds = predictedThresholds;
 
 end
