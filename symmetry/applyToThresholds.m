@@ -8,7 +8,11 @@ function [transformed, shuffle] = applyToThresholds(data, fct, varargin)
 %   ordering of the data is unchanged. Use the 'closed' option (below) to
 %   restrict the output to those directions that were contained in the
 %   initial data. The function needs `data` to have at least `groups` and
-%   `directions` fields.
+%   `directions` fields. The transformation function `fct` needs to take in
+%   a group name, and return a transformed group and a shuffling vector.
+%   A field called `changed` will be added to the output: it is a logical
+%   vector indicating which of the entries were changed by the
+%   transformation, and which were left invariant.
 %
 %   [transformed, shuffle] = applyToThresholds(data, fct) returns a vector
 %   `shuffle` showing how the transformation turned one direction into
@@ -16,7 +20,8 @@ function [transformed, shuffle] = applyToThresholds(data, fct, varargin)
 %   `data` corresponding to the transformed direction. If the transformed
 %   direction is not contained in the dataset, `shuffle(i)` is zero. Note
 %   that the 'closed' option (below) effectively only keeps the entries for
-%   which `shuffle` is nonzero.
+%   which `shuffle` is nonzero. Note also that the `changed` field above is
+%   simply given by `shuffle(i) ~= i`.
 %
 %   If the 'closed' option is not used, only the `groups` and `directions`
 %   fields are changed in the output. When 'closed' is set to true, all
@@ -52,9 +57,8 @@ params = parser.Results;
 transformed = data;
 shuffle = zeros(1, length(data.groups));
 for i = 1:length(data.groups)
-    extDir = ternaryextdir(data.groups{i}, data.directions{i});
-    extDirTrafo = fct(extDir);
-    [trafoGroup, trafoDir] = ternarycompress(extDirTrafo);
+    [trafoGroup, crtShuffle] = fct(data.groups{i});
+    trafoDir = data.directions{i}(crtShuffle);
     
     % store the transformed data
     transformed.groups{i} = trafoGroup;
@@ -81,21 +85,12 @@ for i = 1:length(data.groups)
     end
 end
 
+% find which directions changed
+transformed.changed = flatten(shuffle ~= 1:length(shuffle));
+
 % if asked to, keep only directions that existed in original data
 if params.closed
-    mask = (shuffle > 0);
-    fields = fieldnames(transformed);
-    n = length(transformed.groups);
-    for i = 1:length(fields)
-        field = fields{i};
-        value = transformed.(field);
-        % a heuristic to find which fields we should update
-        if isvector(value) && length(value) == n
-            transformed.(field) = value(mask);
-        elseif ismatrix(value) && size(value, 1) == n
-            transformed.(field) = value(mask, :);
-        end
-    end
+    transformed = selectMeasurements(transformed, shuffle > 0);
 end
 
 end

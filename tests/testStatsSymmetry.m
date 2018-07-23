@@ -47,7 +47,8 @@ resultsLR = generateTextureDistribution(images, 3, 'preprocessing', preprocessPi
 
 %% Compare
 
-[fastEvLR, shuffleLR] = applyStatsGeometricPermutation(results.ev, 3, 'BADC');
+[fastEvLR, shuffleLR] = applyToStats(results.ev, 3, ...
+    @(g) applyGroupGeometricPermutation(g, 3, 'BADC'));
 scatterfit(fastEvLR, resultsLR.ev);
 
 %% Analyze textures after UD flip
@@ -66,7 +67,8 @@ resultsUD = generateTextureDistribution(images, 3, 'preprocessing', preprocessPi
 
 %% Compare
 
-[fastEvUD, shuffleUD] = applyStatsGeometricPermutation(results.ev, 3, 'CDAB');
+[fastEvUD, shuffleUD] = applyToStats(results.ev, 3, ...
+    @(g) applyGroupGeometricPermutation(g, 3, 'CDAB'));
 scatterfit(fastEvUD, resultsUD.ev);
 
 %% Analyze textures after 90 degree CW rotation
@@ -85,7 +87,8 @@ resultsRotCW = generateTextureDistribution(images, 3, 'preprocessing', preproces
 
 %% Compare
 
-[fastEvRotCW, shuffleRotCW] = applyStatsGeometricPermutation(results.ev, 3, 'BDAC');
+[fastEvRotCW, shuffleRotCW] = applyToStats(results.ev, 3, ...
+    @(g) applyGroupGeometricPermutation(g, 3, 'BDAC'));
 scatterfit(fastEvRotCW, resultsRotCW.ev);
 
 %% Analyze textures after color cycle
@@ -104,7 +107,8 @@ resultsColorCycle = generateTextureDistribution(images, 3, 'preprocessing', prep
 
 %% Compare
 
-[fastEvColorCycle, shuffleColorCycle] = applyStatsColorTransformation(results.ev, 3, 1, 1);
+[fastEvColorCycle, shuffleColorCycle] = applyToStats(results.ev, 3, ...
+    @(g) applyGroupColorTransformation(g, 3, 1, 1));
 scatterfit(fastEvColorCycle, resultsColorCycle.ev);
 
 %% Analyze textures after gray-white flip
@@ -123,7 +127,8 @@ resultsGWFlip = generateTextureDistribution(images, 3, 'preprocessing', preproce
 
 %% Compare
 
-[fastEvGWFlip, shuffleGWFlip] = applyStatsColorTransformation(results.ev, 3, 2, 0);
+[fastEvGWFlip, shuffleGWFlip] = applyToStats(results.ev, 3, ...
+    @(g) applyGroupColorTransformation(g, 3, 2, 0));
 scatterfit(fastEvGWFlip, resultsGWFlip.ev);
 
 %% Analyze textures after black-gray flip
@@ -142,7 +147,8 @@ resultsBGFlip = generateTextureDistribution(images, 3, 'preprocessing', preproce
 
 %% Compare
 
-[fastEvBGFlip, shuffleBGFlip] = applyStatsColorTransformation(results.ev, 3, 2, 1);
+[fastEvBGFlip, shuffleBGFlip] = applyToStats(results.ev, 3, ...
+    @(g) applyGroupColorTransformation(g, 3, 2, 1));
 scatterfit(fastEvBGFlip, resultsBGFlip.ev);
 
 %% Analyze textures after all color permutations
@@ -167,9 +173,10 @@ end
 %% Compare
 
 for xCoeff = 1:2
-    for yCoeff = 0:2        
+    for yCoeff = 0:2
         [fastEvColorPermutation, shuffleColorPermutation] = ...
-            applyStatsColorTransformation(results.ev, 3, xCoeff, yCoeff);
+            applyToStats(results.ev, 3, ...
+            @(g) applyGroupColorTransformation(g, 3, xCoeff, yCoeff));
         subplot(2, 3, (xCoeff-1)*3 + yCoeff + 1);
         scatterfit(fastEvColorPermutation, resultsColorPermutation{xCoeff, yCoeff+1}.ev);
     end
