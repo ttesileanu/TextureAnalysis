@@ -9,6 +9,12 @@ function vecs2 = ternary3to2(vecs3)
 %
 %   This function assumes that each row of `vecs3` sums to 1.
 
+% handle empty inputs
+if isempty(vecs3)
+    vecs2 = [];
+    return;
+end
+
 vecs2 = vecs3*[-1/2 -sqrt(3)/2 ; 1 0 ; -1/2 sqrt(3)/2];
 
 end

@@ -18,6 +18,13 @@ function [vecs2, dirs] = ternary6tomix2(vecs6)
 %
 %   See also: ternarymix2to6.
 
+% handle empty inputs
+if isempty(vecs6)
+    vecs2 = [];
+    dirs = [];
+    return;
+end
+
 % we can do this more generally, with the argument being 3k dimensional
 if mod(size(vecs6, 2), 3) ~= 0
     error([mfilename ':badsz'], 'Input argument should have a number of columns that is a multiple of 3.');

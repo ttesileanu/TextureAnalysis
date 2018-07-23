@@ -12,6 +12,12 @@ function vecs = ternaryrec(mags, uvecs)
 %
 %   See also: TERNARYDEC.
 
+% handle empty inputs
+if isempty(mags)
+    vecs = [];
+    return
+end
+
 % handle cell-array input
 if iscell(uvecs)
     uvecs = cell2mat(cellfun(@(v) v(:)', uvecs(:), 'uniform', false));
