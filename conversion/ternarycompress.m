@@ -50,6 +50,6 @@ if length(groups) == 2
 end
 
 % collapse the groups to a single string
-group = cell2mat(flatten([groups ; [repmat({';'}, 1, length(groups)-1) {''}]])');
+group = buildGroupName(groups{:});
 
 end
