@@ -46,7 +46,7 @@ function [plotter, uniqueGroups] = plotTernaryMatrix(measurements, varargin)
 %         (a) a colormap-like function, such that `colorFct(n)` returns an
 %             n x 3 matrix of RGB colors.
 %         (b) an instance of `containers.Map`, mapping subject names to
-%       RGB colors.
+%             RGB colors.
 %       Set to empty to disable per-subject coloring.
 %    'limits'
 %       The largest coordinate value to show in absolute value and in
