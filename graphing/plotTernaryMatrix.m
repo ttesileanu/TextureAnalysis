@@ -22,7 +22,7 @@ function [plotter, uniqueGroups] = plotTernaryMatrix(measurements, varargin)
 %
 %   Options:
 %    'groupMaskFct'
-%       A callable that takes in a group name and return true to keep the
+%       A callable that takes in a group name and returns true to keep the
 %       group and false to dismiss it (and thus not draw it).
 %    'groupSelection'
 %       Set either to a cell array of group names -- in which case these
