@@ -18,11 +18,15 @@ function [projectedThresholds] = plotTernaryThresholds(...
 %
 %   Options:
 %    'marker'
-%       Marker to use in general.
+%       Marker to use.
 %    'color'
-%       3-component RGB vector giving the color of the symbols to use.
+%       3-component RGB vector giving the color of the symbols to use. This
+%       can also be a matrix in which every row gives the color of a
+%       matching entry in `thresholds` and `directions`.
 %    'size'
-%       Symbol size to use.
+%       Symbol size to use. This can also be a vector in which every entry
+%       gives the size for a matching entry in `thresholds` and
+%       `directions`.
 %    'errors'
 %       Matrix of error intervals for the thresholds, in a format where
 %       each row reprents [lo, hi] limits.
@@ -54,8 +58,8 @@ parser.FunctionName = mfilename;
 
 parser.addOptional('directions', {}, @(c) iscell(c));
 parser.addParameter('marker', 'x', @(s) ischar(s));
-parser.addParameter('color', [0.8 0.3 0.3], @(v) isvector(v) && isnumeric(v) && length(v) == 3);
-parser.addParameter('size', 5, @(x) isnumeric(x) && isscalar(x) && x > 0);
+parser.addParameter('color', [0.8 0.3 0.3], @(v) ismatrix(v) && isnumeric(v) && size(v, 2) == 3);
+parser.addParameter('size', 5, @(x) isnumeric(x) && isvector(x) && all(x > 0));
 parser.addParameter('errors', [], @(v) isempty(v) || (ismatrix(v) && size(v, 2) == 2 && isnumeric(v)));
 parser.addParameter('errorColor', [0.3 0.3 0.3], @(v) isvector(v) && isnumeric(v) && length(v) == 3);
 parser.addParameter('errorBars', true, @(b) islogical(b) && isscalar(b));
@@ -95,6 +99,12 @@ if strcmp(params.drawGuides, 'auto')
     params.drawGuides = ~ishold;
 end
 
+% don't display empty inputs
+if isempty(thresholds)
+    projectedThresholds = [];
+    return;
+end
+
 % figure out how whether this is a single-group or a mixed-group plane
 if mod(length(directions{1}), 3) ~= 0
     error([mfilename ':baddirsz'], 'Directions vector sizes aren''t compatible with ternary planes.');
@@ -112,12 +122,6 @@ if params.drawGuides
     else
         setupTernaryGuide(nGroups);
     end
-end
-
-% don't display empty inputs
-if isempty(thresholds)
-    projectedThresholds = [];
-    return;
 end
 
 % convert predictions, thresholds, and threshold intervals to the 2d
@@ -148,15 +152,47 @@ if ~isempty(params.errors)
     
     errorColor = mixcolor(params.color, params.errorColor);
     
-    plot([projectedLo(errMask, 1)' ; projectedHi(errMask, 1)'], ...
-         [projectedLo(errMask, 2)' ; projectedHi(errMask, 2)'], ...
-         'color', errorColor, 'linewidth', 0.5);
+    projLoMasked = projectedLo(errMask, :);
+    projHiMasked = projectedHi(errMask, :);
+    
+    if size(errorColor, 1) > 1
+        errColMasked = errorColor(errMask, :);
+    else
+        errColMasked = errorColor;
+    end
+    
+    % argh: need to draw each line separately if colors change
+    if size(errColMasked, 1) == 1
+        plot([projLoMasked(:, 1)' ; projHiMasked(:, 1)'], ...
+            [projLoMasked(:, 2)' ; projHiMasked(:, 2)'], ...
+            'color', errorColor, 'linewidth', 0.5);
+    else
+        for k = 1:size(errColMasked, 1)
+            plot([projLoMasked(k, 1) projHiMasked(k, 1)], ...
+                [projLoMasked(k, 2) projHiMasked(k, 2)], ...
+                'color', errColMasked(k, :), 'linewidth', 0.5);
+        end
+    end
 end
 
 % draw measured data
-plot(projectedThresholds(:, 1), projectedThresholds(:, 2), ...
-    params.marker, 'linewidth', 1, 'markersize', params.size, ...
-    'color', params.color);
+if isempty(params.colorFct)
+    colors = params.color;
+else
+    if isfield(measurements, 'subjects')
+        colors = cell2mat(cellfun(@(s) flatten(params.colorFct(s))', ...
+            measurements.subjects(:), 'uniform', false));
+    else
+        colors = cell2mat(cellfun(@(th) flatten(params.colorFct('subject'))', ...
+            thresholds(:), 'uniform', false));
+    end
+end
+h = scatter(projectedThresholds(:, 1), projectedThresholds(:, 2), ...
+    params.size.^2, colors, params.marker(1));
+h.LineWidth = 1;
+
+% params.marker, 'linewidth', 1, 'markersize', params.size, ...
+%     'color', params.color);
 
 % draw ellipses
 if params.ellipse
