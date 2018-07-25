@@ -155,22 +155,24 @@ if ~isempty(params.errors)
     projLoMasked = projectedLo(errMask, :);
     projHiMasked = projectedHi(errMask, :);
     
-    if size(errorColor, 1) > 1
-        errColMasked = errorColor(errMask, :);
-    else
-        errColMasked = errorColor;
-    end
-    
-    % argh: need to draw each line separately if colors change
-    if size(errColMasked, 1) == 1
-        plot([projLoMasked(:, 1)' ; projHiMasked(:, 1)'], ...
-            [projLoMasked(:, 2)' ; projHiMasked(:, 2)'], ...
-            'color', errorColor, 'linewidth', 0.5);
-    else
-        for k = 1:size(errColMasked, 1)
-            plot([projLoMasked(k, 1) projHiMasked(k, 1)], ...
-                [projLoMasked(k, 2) projHiMasked(k, 2)], ...
-                'color', errColMasked(k, :), 'linewidth', 0.5);
+    if ~isempty(projLoMasked)        
+        if size(errorColor, 1) > 1
+            errColMasked = errorColor(errMask, :);
+        else
+            errColMasked = errorColor;
+        end
+        
+        % argh: need to draw each line separately if colors change
+        if size(errColMasked, 1) == 1
+            plot([projLoMasked(:, 1)' ; projHiMasked(:, 1)'], ...
+                [projLoMasked(:, 2)' ; projHiMasked(:, 2)'], ...
+                'color', errColMasked, 'linewidth', 0.5);
+        else
+            for k = 1:size(errColMasked, 1)
+                plot([projLoMasked(k, 1) projHiMasked(k, 1)], ...
+                    [projLoMasked(k, 2) projHiMasked(k, 2)], ...
+                    'color', errColMasked(k, :), 'linewidth', 0.5);
+            end
         end
     end
 end
