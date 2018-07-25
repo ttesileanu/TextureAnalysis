@@ -55,7 +55,6 @@ params = parser.Results;
 
 % apply transformation
 transformed = data;
-shuffle = zeros(1, length(data.groups));
 for i = 1:length(data.groups)
     [trafoGroup, crtShuffle] = fct(data.groups{i});
     trafoDir = data.directions{i}(crtShuffle);
@@ -63,30 +62,12 @@ for i = 1:length(data.groups)
     % store the transformed data
     transformed.groups{i} = trafoGroup;
     transformed.directions{i} = trafoDir;
-    
-    % is the transformed direction in the data?
-    groupMatchMask = strcmp(data.groups, trafoGroup);
-    groupMatchIdxs = find(groupMatchMask);
-    if ~isempty(groupMatchIdxs)
-        % at least the transformed group is...
-        directionMatchSubmask = cellfun(@(d) max(abs(d - trafoDir)) < 1e-6, ...
-            data.directions(groupMatchMask));
-        nMatches = sum(directionMatchSubmask);
-        % the direction, too
-        if nMatches > 0
-            if nMatches > 1
-                % but it appears in several locations!
-                warning([mfilename ':multimatch'], 'Data at index %d (group %s) matches several datapoints after transformation.', ...
-                    i, data.groups{i});
-            end
-            submaskIdx = find(directionMatchSubmask, 1);
-            shuffle(i) = groupMatchIdxs(submaskIdx);
-        end
-    end
 end
 
+shuffle = matchMeasurements(transformed, data);
+
 % find which directions changed
-transformed.changed = flatten(shuffle ~= 1:length(shuffle));
+transformed.changed = flatten(shuffle(:)' ~= 1:length(shuffle));
 
 % if asked to, keep only directions that existed in original data
 if params.closed
