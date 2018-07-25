@@ -361,17 +361,3 @@ fig.Name = [fig.Name ' (crosses = PP, dots = NI)'];
 preparegraph;
 
 end
-
-%     % draw line between 'before' and 'after' predictions
-%     plot([projPredBefore(:, 1) projPredAfter(:, 1)]', ...
-%         [projPredBefore(:, 2) projPredAfter(:, 2)]', ...
-%         'color', params.predLineColor, 'linewidth', 1);
-%     
-%     % overlay a neutral color over things that haven't changed at all
-%     % (presumably the transformation didn't affect those directions)
-%     noChangeMask = max(abs(projPredBefore - projPredAfter), [], 2) ...
-%         < params.noChangeTol;
-%     projNoChange = projPredBefore(noChangeMask, :);
-%     plot(projNoChange(:, 1), projNoChange(:, 2), 'marker', params.predMarker, ...
-%         'markersize', params.predSize', 'color', params.colorNoChange, ...
-%         'linestyle', 'none');
