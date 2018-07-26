@@ -43,10 +43,10 @@ end
 groups = strtrim(strsplit(group, ';'));
 
 % the directions in the transformed groups might get reshuffled
-shuffle = zeros(1, G*length(groups));
+shuffle0 = zeros(1, G*length(groups));
 
 % perform the transformation group by group
-outGroups = cell(size(groups));
+outGroups0 = cell(size(groups));
 
 % we do so group-by-group
 for i = 1:length(groups)
@@ -114,11 +114,19 @@ for i = 1:length(groups)
         outGroup = [outGroup '[' int2str(outDirection) ']']; %#ok<AGROW>
     end
     
-    outGroups{i} = outGroup;
+    outGroups0{i} = outGroup;
     
     % fill out the shuffle vector
     groupIdxRange = G*(i-1)+1:G*i;
-    shuffle(groupIdxRange(coordinateMapping)) = groupIdxRange;
+    shuffle0(groupIdxRange(coordinateMapping)) = groupIdxRange;
+end
+
+% use canonical ordering of group names
+[outGroups, outOrdering] = sortGroups(outGroups0);
+shuffle = zeros(size(shuffle0));
+for i = 1:length(outGroups)
+    j = outOrdering(i);
+    shuffle(3*i-2:3*i) = shuffle0(3*j-2:3*j);
 end
 
 % reconstruct group name
