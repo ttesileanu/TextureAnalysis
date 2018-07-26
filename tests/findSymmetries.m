@@ -47,14 +47,14 @@ ni = predictions;
 
 % set up the transformations we want to look at 
 trafos = containers.Map;
-trafos('lr_flip') = @(group) applyGroupGeometricPermutation(group, 3, 'BADC');
-trafos('ud_flip') = @(group) applyGroupGeometricPermutation(group, 3, 'CDAB');
+trafos('lrFlip') = @(group) applyGroupGeometricPermutation(group, 3, 'BADC');
+trafos('udFlip') = @(group) applyGroupGeometricPermutation(group, 3, 'CDAB');
 trafos('rot90') = @(group) applyGroupGeometricPermutation(group, 3, 'CADB');
 trafos('rot180') = @(group) applyGroupGeometricPermutation(group, 3, 'DCBA');
 trafos('rot270') = @(group) applyGroupGeometricPermutation(group, 3, 'BDAC');
-trafos('exchange_12') = @(group) applyGroupColorTransformation(group, 3, 2, 0);
-trafos('exchange_01') = @(group) applyGroupColorTransformation(group, 3, 2, 1);
-trafos('exchange_02') = @(group) applyGroupColorTransformation(group, 3, 2, 2);
+trafos('exchange12') = @(group) applyGroupColorTransformation(group, 3, 2, 0);
+trafos('exchange01') = @(group) applyGroupColorTransformation(group, 3, 2, 1);
+trafos('exchange02') = @(group) applyGroupColorTransformation(group, 3, 2, 2);
 
 % generate the transformed NI predictions & PP data
 trafoNames = trafos.keys;
@@ -92,9 +92,56 @@ nCompTypes = length(compTypes);
 niEffectSizes = zeros(nTrafos, nCompTypes);
 ppEffectSizes = zeros(nTrafos, nCompTypes);
 
+groupMaskFct = @(g) length(g) == 6 || sum(g == ';') == 1;
+
 for i = 1:nTrafos
     for j = 1:nCompTypes
-        niEffectSizes(i, j) = compareMeasurements(ni, transformedNI{i}, compTypes{j});
-        ppEffectSizes(i, j) = compareMeasurements(pp, transformedPP{i}, compTypes{j});
+        niEffectSizes(i, j) = compareMeasurements(...
+            ni, transformedNI{i}, compTypes{j}, 'groupMaskFct', groupMaskFct);
+        ppEffectSizes(i, j) = compareMeasurements(...
+            pp, transformedPP{i}, compTypes{j}, 'groupMaskFct', groupMaskFct);
+    end
+end
+
+niEffectSizesCell = num2cell(niEffectSizes', 1);
+ppEffectSizesCell = num2cell(ppEffectSizes', 1);
+niEffectSizesTable = table(niEffectSizesCell{:}, ...
+    'VariableNames', trafoNames, 'RowNames', compTypes);
+ppEffectSizesTable = table(ppEffectSizesCell{:}, ...
+    'VariableNames', trafoNames, 'RowNames', compTypes);
+
+fig = figure;
+fig.Units = 'inches';
+fig.Position = [1 1 6 4];
+
+ax = axes;
+ax.OuterPosition = [0 0.5 1 0.5];
+% subplot(2, 1, 1);
+bar(niEffectSizes(:, 2));
+title('Natural images');
+set(ax, 'xtick', 1:nTrafos, 'xticklabel', trafoNames, 'xticklabelrotation', 45, ...
+    'yminortick', 'on');
+ylabel('\Delta thresholds');
+ylim([0, 0.4]);
+
+ax = axes;
+ax.OuterPosition = [0 0 1 0.5];
+% subplot(2, 1, 2);
+bar(ppEffectSizes(:, 2));
+title('Psychophysics');
+set(ax, 'xtick', 1:nTrafos, 'xticklabel', trafoNames, 'xticklabelrotation', 45, ...
+    'yminortick', 'on');
+ylabel('\Delta thresholds');
+ylim([0, 0.4]);
+
+%% SCRATCH
+
+for i = 1:length(pp.groups)
+    groupParts = strtrim(strsplit(pp.groups{i}, ';'));
+    sortedParts = sortGroups(groupParts);
+    regroup = buildGroupName(sortedParts{:});
+    oldGroup = buildGroupName(groupParts{:});
+    if ~strcmp(oldGroup, regroup)
+        warning('Difference: %s ~= %s', oldGroup, regroup);
     end
 end
