@@ -32,6 +32,9 @@ function [diff, details] = compareMeasurements(measurements1, measurements2, typ
 %   averaged over all groups.
 %
 %   Options:
+%    'groupMaskFct'
+%       A callable that takes in a group name and returns true to keep the
+%       group and false to dismiss it (and thus not draw it).
 %    'changedOnly'
 %       If `true`, only measurements that have changed are considered, as
 %       described above. If `false`, all measurements are used.
@@ -51,6 +54,7 @@ parser = inputParser;
 parser.CaseSensitive = true;
 parser.FunctionName = mfilename;
 
+parser.addParameter('groupMaskFct', @(g) true);
 parser.addParameter('changedOnly', true, @(b) islogical(b) && isscalar(b));
 parser.addParameter('invarianceTol', 1e-8, @(x) isnumeric(x) && isscalar(x));
 
@@ -71,6 +75,12 @@ params = parser.Results;
 % restrict to common measurements
 measurements1 = selectMeasurements(measurements1, details.shuffle1 > 0);
 measurements2 = selectMeasurements(measurements2, details.shuffle1(details.shuffle1 > 0));
+
+% restrict to groups that we want to include
+mask = cellfun(params.groupMaskFct, measurements1.groups);
+measurements1 = selectMeasurements(measurements1, mask);
+measurements2 = selectMeasurements(measurements2, mask);
+
 details.common.measurements1 = measurements1;
 details.common.measurements2 = measurements2;
 
@@ -95,7 +105,7 @@ details.common.logdiff = log(measurements1.thresholds) - log(measurements2.thres
 
 switch type
     case 'direct'
-        diff = std(details.common.logdiff(changed & mask));
+        diff = rms(details.common.logdiff(changed & mask));
     case 'group'
         if params.changedOnly
             % update 'changed' to make it consistent within groups
@@ -119,13 +129,20 @@ switch type
         % calculate group averages
         details.common.uniqueGroups = uniqueGroups;
         details.common.groupDiffMeans = cellfun(@(group) ...
-            std(details.common.logdiff(strcmp(measurements1.groups, group) & mask)), ...
+            rms(details.common.logdiff(strcmp(measurements1.groups, group) & mask)), ...
             uniqueGroups);
-        diff = std(details.common.groupDiffMeans);
+        diff = rms(details.common.groupDiffMeans);
     otherwise
         error([mfilename ':badtype'], 'Unrecognized difference type.');
 end
 
 details.common.changed = changed;
+
+end
+
+function x = rms(v)
+% Get root mean squared from vector.
+
+x = sqrt(mean(v(:).^2));
 
 end
