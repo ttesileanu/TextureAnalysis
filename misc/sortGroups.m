@@ -1,4 +1,4 @@
-function sorted = sortGroups(groups)
+function [sorted, shuffle] = sortGroups(groups)
 % sortGroups Sort a cell array of group names in a natural order.
 %   sorted = sortGroups(groups) takes in a cell array of group names and
 %   sorts them in a pleasing way. Lower-order groups are sorted before
@@ -10,6 +10,9 @@ function sorted = sortGroups(groups)
 %   direction indications, they are the last key to be sorted by (e.g.,
 %   AC_1_1[0] comes before AC_1_1[1], but after AB_1_1[2]). Single groups
 %   come before pairs of groups, which come before triples, etc.
+%
+%   [sorted, shuffle] = sortGroups(groups) also returns the ordering, such
+%   that `sorted = groups(shuffle)`.
 
 % to perform the sorting, we normalize the naming of the groups
 sorted = groups;
@@ -25,5 +28,7 @@ groupCount = groupCount(order);
 % now make sure we put smaller tuples of groups before larger ones
 [~, order2] = sort(groupCount);
 sorted = sorted(order2);
+
+shuffle = order(order2);
 
 end
