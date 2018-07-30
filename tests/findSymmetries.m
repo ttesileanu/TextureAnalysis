@@ -55,6 +55,18 @@ trafos('rot270') = @(group) applyGroupGeometricPermutation(group, 3, 'BDAC');
 trafos('exchange12') = @(group) applyGroupColorTransformation(group, 3, 2, 0);
 trafos('exchange01') = @(group) applyGroupColorTransformation(group, 3, 2, 1);
 trafos('exchange02') = @(group) applyGroupColorTransformation(group, 3, 2, 2);
+trafos('cycle120') = @(group) applyGroupColorTransformation(group, 3, 1, 1);
+trafos('cycle201') = @(group) applyGroupColorTransformation(group, 3, 1, 2);
+trafos('lr__x02') = @(group) chainGroupTransformations(...
+    trafos('lrFlip'), trafos('exchange02'), group);
+trafos('ud__x02') = @(group) chainGroupTransformations(...
+    trafos('udFlip'), trafos('exchange02'), group);
+trafos('r90__x02') = @(group) chainGroupTransformations(...
+    trafos('rot90'), trafos('exchange02'), group);
+trafos('r180__x02') = @(group) chainGroupTransformations(...
+    trafos('rot180'), trafos('exchange02'), group);
+trafos('r270__x02') = @(group) chainGroupTransformations(...
+    trafos('rot270'), trafos('exchange02'), group);
 
 % generate the transformed NI predictions & PP data
 trafoNames = trafos.keys;
@@ -91,15 +103,26 @@ compTypes = {'direct', 'group'};
 nCompTypes = length(compTypes);
 niEffectSizes = zeros(nTrafos, nCompTypes);
 ppEffectSizes = zeros(nTrafos, nCompTypes);
+niChangedGroupCounts = zeros(nTrafos, nCompTypes);
+ppChangedGroupCounts = zeros(nTrafos, nCompTypes);
 
-groupMaskFct = @(g) length(g) == 6 || sum(g == ';') == 1;
+% groupMaskFct = @(g) length(g) == 6 || sum(g == ';') == 1;
+groupMaskFct = @(g) length(g) > 3;
+% groupMaskFct = @(g) true;
+
+opts = {'groupMaskFct', groupMaskFct, 'hiLoRatioLimit', 2.0};
 
 for i = 1:nTrafos
     for j = 1:nCompTypes
-        niEffectSizes(i, j) = compareMeasurements(...
-            ni, transformedNI{i}, compTypes{j}, 'groupMaskFct', groupMaskFct);
-        ppEffectSizes(i, j) = compareMeasurements(...
-            pp, transformedPP{i}, compTypes{j}, 'groupMaskFct', groupMaskFct);
+        [niEffectSizes(i, j), niDetails] = compareMeasurements(...
+            ni, transformedNI{i}, compTypes{j}, opts{:});
+        [ppEffectSizes(i, j), ppDetails] = compareMeasurements(...
+            pp, transformedPP{i}, compTypes{j}, opts{:});
+        
+        if strcmp(compTypes{j}, 'group')
+            niChangedGroupCounts(i, j) = numel(niDetails.common.uniqueGroups);
+            ppChangedGroupCounts(i, j) = numel(ppDetails.common.uniqueGroups);
+        end
     end
 end
 
@@ -124,6 +147,11 @@ set(ax, 'xtick', 1:nTrafos, 'xticklabel', trafoNames, 'xticklabelrotation', 45, 
 ylabel('\Delta thresholds');
 ylim([0, 0.4]);
 
+for i = 1:size(niChangedGroupCounts, 1)
+    text(i, niEffectSizes(i, 2), int2str(niChangedGroupCounts(i, 2)), ...
+        'verticalalignment', 'bottom', 'horizontalalignment', 'center');
+end
+
 ax = axes;
 ax.OuterPosition = [0 0 1 0.5];
 % subplot(2, 1, 2);
@@ -133,6 +161,11 @@ set(ax, 'xtick', 1:nTrafos, 'xticklabel', trafoNames, 'xticklabelrotation', 45, 
     'yminortick', 'on');
 ylabel('\Delta thresholds');
 ylim([0, 0.4]);
+
+for i = 1:size(ppChangedGroupCounts, 1)
+    text(i, ppEffectSizes(i, 2), int2str(ppChangedGroupCounts(i, 2)), ...
+        'verticalalignment', 'bottom', 'horizontalalignment', 'center');
+end
 
 %% SCRATCH
 
