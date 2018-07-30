@@ -1,4 +1,4 @@
-function [diff, details] = compareMeasurements(measurements1, measurements2, type, varargin)
+function [difference, details] = compareMeasurements(measurements1, measurements2, type, varargin)
 % compareMeasurements Compare two sets of threshold measurements.
 %   diff = compareMeasurements(measurements1, measurements2, 'direct')
 %   returns a measure of the relative difference between the two sets of
@@ -38,6 +38,12 @@ function [diff, details] = compareMeasurements(measurements1, measurements2, typ
 %    'invarianceTol'
 %       Tolerance level used to define when measurements have changed in
 %       cases where a `changed` field isn't present.
+%    'hiLoRatioLimit'
+%       For measurements that have error bars (in the form of a field
+%       called `thresholdIntervals`), only thresholds for which the ratio
+%       between the 'hi' and 'lo' limits is below the value provided here
+%       are considered for the calculation. The ratios from the first
+%       measurements structure are used.
 
 % XXX TODO:
 %
@@ -57,6 +63,7 @@ parser.FunctionName = mfilename;
 parser.addParameter('groupMaskFct', @(g) true);
 parser.addParameter('changedOnly', true, @(b) islogical(b) && isscalar(b));
 parser.addParameter('invarianceTol', 1e-8, @(x) isnumeric(x) && isscalar(x));
+parser.addParameter('hiLoRatioLimit', inf, @(x) isnumeric(x) && isscalar(x));
 
 % show defaults if requested
 if nargin == 1 && strcmp(measurements1, 'defaults')
@@ -101,11 +108,17 @@ end
 % ignore measurements that are NaN or infinite in either group
 mask = isfinite(measurements1.thresholds) & isfinite(measurements2.thresholds);
 
+if isfield(measurements1, 'thresholdIntervals') && isfinite(params.hiLoRatioLimit)
+    % also ignore measurements that have too high hi-to-lo ratio
+    logRatios = diff(log(measurements1.thresholdIntervals), [], 2);
+    mask = mask & (logRatios <= log(params.hiLoRatioLimit));
+end
+
 details.common.logdiff = log(measurements1.thresholds) - log(measurements2.thresholds);
 
 switch type
     case 'direct'
-        diff = rms(details.common.logdiff(changed & mask));
+        difference = rms(details.common.logdiff(changed & mask));
     case 'group'
         if params.changedOnly
             % update 'changed' to make it consistent within groups
@@ -131,7 +144,7 @@ switch type
         details.common.groupDiffMeans = cellfun(@(group) ...
             rms(details.common.logdiff(strcmp(measurements1.groups, group) & mask)), ...
             uniqueGroups);
-        diff = rms(details.common.groupDiffMeans);
+        difference = rms(details.common.groupDiffMeans);
     otherwise
         error([mfilename ':badtype'], 'Unrecognized difference type.');
 end
