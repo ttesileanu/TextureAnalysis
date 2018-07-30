@@ -23,13 +23,10 @@ function [diff, details] = compareMeasurements(measurements1, measurements2, typ
 %   calculated for every group, and then all the group values are RMSed
 %   together.
 %
-%   diff = compareMeasurements(measurements1, measurements2, 'ellipse')
-%   works only for ternary texture statistics in single-group and some
-%   mixed-group planes. It fits ellipses to the measurements in each group
-%   and, for those groups that aren't completely un`changed` and for which
-%   fits exist in both sets of measurements, the ellipses are compared
-%   according to the following metric XXX. The difference values are
-%   averaged over all groups.
+%   [diff, details] = compareMeasurements(...) returns a structure
+%   containing detailed information about the intermediate steps of the
+%   calculation: the mapping between indices in the two measurement sets,
+%   the log threshold differences, per-group averages, elliptic fits, etc.
 %
 %   Options:
 %    'groupMaskFct'
@@ -44,10 +41,13 @@ function [diff, details] = compareMeasurements(measurements1, measurements2, typ
 
 % XXX TODO:
 %
-%   [diff, details] = compareMeasurements(...) returns a structure
-%   containing detailed information about the intermediate steps of the
-%   calculation: the mapping between indices in the two measurement sets,
-%   the log threshold differences, per-group averages, elliptic fits, etc.
+%   diff = compareMeasurements(measurements1, measurements2, 'ellipse')
+%   works only for ternary texture statistics in single-group and some
+%   mixed-group planes. It fits ellipses to the measurements in each group
+%   and, for those groups that aren't completely un`changed` and for which
+%   fits exist in both sets of measurements, the ellipses are compared
+%   according to the following metric XXX. The difference values are
+%   averaged over all groups.
 
 % parse optional arguments
 parser = inputParser;
