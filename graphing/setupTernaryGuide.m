@@ -19,7 +19,7 @@ parser = inputParser;
 parser.CaseSensitive = true;
 parser.FunctionName = mfilename;
 
-parser.addParameter('triangleOptions', {}, @(c) iscell(c) && isvector(c));
+parser.addParameter('triangleOptions', {}, @(c) isempty(c) || (iscell(c) && isvector(c)));
 
 % show defaults if requested
 if nargin == 1 && strcmp(groupInfo, 'defaults')

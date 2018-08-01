@@ -117,10 +117,10 @@ end
 % do we need to draw guides?
 if params.drawGuides
     if isfield(measurements, 'groups') && ~isempty(measurements.groups)
-        setupTernaryGuide(measurements.groups{1});
+        setupTernaryGuide(measurements.groups{1}, 'triangleOptions', params.triangleOptions);
         title(measurements.groups{1});
     else
-        setupTernaryGuide(nGroups);
+        setupTernaryGuide(nGroups, 'triangleOptions', params.triangleOptions);
     end
 end
 
