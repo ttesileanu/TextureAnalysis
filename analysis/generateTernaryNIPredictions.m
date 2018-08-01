@@ -40,6 +40,13 @@ ternaryAvg = loadTernaryPP(fullfile('data', 'mtc_soid_xlsrun_summ.mat'));
 ternaryBySubject = loadTernaryPP(fullfile('data', 'mtc_soid_xlsrun_summ.mat'), ...
     'subjects', '*', 'keepNaN', false);
 
+% add additional data from Jonathan, but keep only AC_1_2 plane
+pp_extra = open('data/extra_ternary_thresholds.mat');
+pp_extra_AC12 = selectMeasurements(pp_extra.avg, ...
+    strcmp(pp_extra.avg.groups, 'AC_1_2'));
+
+ternaryAvg = catMeasurements(ternaryAvg, pp_extra_AC12);
+
 %% Calculate gains and predicted thresholds
 
 % use only second-order groups to set the overall scaling of the predictions

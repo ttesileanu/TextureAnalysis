@@ -4,6 +4,13 @@
 
 pp = loadTernaryPP(fullfile('data', 'mtc_soid_xlsrun_summ.mat'));
 
+% add additional data from Jonathan, but keep only AC_1_2 plane
+pp_extra = open('data/extra_ternary_thresholds.mat');
+pp_extra_AC12 = selectMeasurements(pp_extra.avg, ...
+    strcmp(pp_extra.avg.groups, 'AC_1_2'));
+
+pp = catMeasurements(pp, pp_extra_AC12);
+
 %% Load the ternary NI distribution
 
 niStatsAll = open(fullfile('save', 'TernaryDistribution_PennNoSky.mat'));
@@ -57,6 +64,7 @@ trafos('exchange01') = @(group) applyGroupColorTransformation(group, 3, 2, 1);
 trafos('exchange02') = @(group) applyGroupColorTransformation(group, 3, 2, 2);
 trafos('cycle120') = @(group) applyGroupColorTransformation(group, 3, 1, 1);
 trafos('cycle201') = @(group) applyGroupColorTransformation(group, 3, 1, 2);
+trafos('reflect') = @(group) applyGroupReflection(group, 3);
 trafos('lr__x02') = @(group) chainGroupTransformations(...
     trafos('lrFlip'), trafos('exchange02'), group);
 trafos('ud__x02') = @(group) chainGroupTransformations(...
@@ -67,6 +75,11 @@ trafos('r180__x02') = @(group) chainGroupTransformations(...
     trafos('rot180'), trafos('exchange02'), group);
 trafos('r270__x02') = @(group) chainGroupTransformations(...
     trafos('rot270'), trafos('exchange02'), group);
+trafos('x01__refl') = @(group) chainGroupTransformations(...
+    trafos('reflect'), trafos('exchange01'), group);
+trafos('x01__reflAB_1_1') = @(group) chainGroupTransformations(...
+    @(group) applyGroupReflection(group, 3, 'restrict', @(g) strcmp(g, 'AB_1_1')), ...
+    trafos('exchange01'), group);
 
 % generate the transformed NI predictions & PP data
 trafoNames = trafos.keys;
