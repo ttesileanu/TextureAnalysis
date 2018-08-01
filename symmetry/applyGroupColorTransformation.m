@@ -8,9 +8,9 @@ function [outGroup, shuffle] = applyGroupColorTransformation(group, G, x, y)
 %   The transformation can turn one texture group into another; the
 %   resulting texture group is returned in `outGroup`. The transformation
 %   might also result in a shuffling of coordinates within the group, which
-%   is returned in `shuffle`. Specifically, the `j`th coordinate within the
-%   `outGroup` corresponds to the `shuffle(j)`th coordinate within the
-%   initial group.
+%   is returned in the matrix `shuffle`. Specifically, a direction vector
+%   `v` in the initial group gets transformed into direction `v*shuffle` in
+%   the `outGroup`. Here `v` is assumed to be a row vector.
 %
 %   The function also works for mixed groups, separated by a semicolon in
 %   the `group` argument.
@@ -37,7 +37,8 @@ end
 groups = strtrim(strsplit(group, ';'));
 
 % the directions in the transformed groups might get reshuffled
-shuffle = zeros(1, G*length(groups));
+% shuffle = zeros(1, G*length(groups));
+shuffle = zeros(G*length(groups));
 
 % perform the transformation group by group
 outGroups = cell(size(groups));
@@ -64,11 +65,12 @@ for i = 1:length(groups)
     % a combination with index p in the original group will be at index
     % coordinateMapping(p) in the final group
     shift = mod(y*sum(groupCoefficients), G);
-    coordinateMapping = 1 + mod(xInv*(0:G-1) + shift, G);
+    coordinateMapping = 1 + mod(xInv*((0:G-1) - shift), G);
     
     % fill out the shuffle vector
     groupIdxRange = G*(i-1)+1:G*i;
-    shuffle(groupIdxRange(coordinateMapping)) = groupIdxRange;
+%     shuffle(groupIdxRange(coordinateMapping)) = groupIdxRange;
+    shuffle(groupIdxRange(coordinateMapping), groupIdxRange) = eye(G);
     
     if ~isempty(crtDirection)
         outDirection = coordinateMapping(crtDirection + 1) - 1;

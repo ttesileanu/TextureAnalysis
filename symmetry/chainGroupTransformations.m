@@ -14,7 +14,7 @@ for i = 1:length(varargin)-1
     if isempty(shuffle)
         shuffle = reshuffle;
     else
-        shuffle = shuffle(reshuffle);
+        shuffle = shuffle*reshuffle;
     end
 end
 

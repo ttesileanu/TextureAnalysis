@@ -9,10 +9,13 @@ function [transformed, shuffle] = applyToThresholds(data, fct, varargin)
 %   restrict the output to those directions that were contained in the
 %   initial data. The function needs `data` to have at least `groups` and
 %   `directions` fields. The transformation function `fct` needs to take in
-%   a group name, and return a transformed group and a shuffling vector.
-%   A field called `changed` will be added to the output: it is a logical
-%   vector indicating which of the entries were changed by the
-%   transformation, and which were left invariant.
+%   a group name, and return a transformed group and a shuffling matrix.
+%   The matrix linearly transforms probability values in the input group
+%   into probability values in the output group. Note that the matrix is
+%   applied on the right, to a row vector. A field called `changed` will be
+%   added to the output: it is a logical vector indicating which of the
+%   entries were changed by the transformation, and which were left
+%   invariant.
 %
 %   [transformed, shuffle] = applyToThresholds(data, fct) returns a vector
 %   `shuffle` showing how the transformation turned one direction into
@@ -57,7 +60,8 @@ params = parser.Results;
 transformed = data;
 for i = 1:length(data.groups)
     [trafoGroup, crtShuffle] = fct(data.groups{i});
-    trafoDir = data.directions{i}(crtShuffle);
+%     trafoDir = data.directions{i}(crtShuffle);
+    trafoDir = data.directions{i}*crtShuffle;
     
     % store the transformed data
     transformed.groups{i} = trafoGroup;

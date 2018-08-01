@@ -4,11 +4,11 @@ function [ev, shuffle] = applyToStats(ev, G, fct)
 %   evOut = applyToStats(ev, G, fct) calcuales the effect of a symmetry
 %   transformation `fct` on texture statistics `ev` with `G` graylevel. The
 %   transformation function `fct` takes in a group name and returns a
-%   transformed group and a shuffling vector.
+%   transformed group.
 %
-%   [evOut, shuffle] = applyToStats(ev, G, fct) returns a vector `shuffle`
-%   showing how the columns of the stats matrix were shuffled,
-%       evOut = ev(:, shuffle) .
+%   [evOut, shuffle] = applyToStats(ev, G, fct) returns a matrix `shuffle`
+%   showing how to transform the input stats into the output ones,
+%       evOut = ev*shuffle .
 %
 %   `ev` can be given either in the independent-component format in which
 %   each texture group has `G-1` components, or in the full probability
@@ -24,7 +24,7 @@ nIndependent = G*(G-1)*(G^2 + G - 1);
 % revert to it at the end
 initialType = 'full';
 if ismatrix(ev) && size(ev, 2) == nIndependent
-    ev = expandTextureStats(ev, G, '3d');
+    ev = expandTextureStats(ev, G);
     initialType = 'independent';
 elseif ~ismatrix(ev)
     % transform to a 2d array
@@ -36,8 +36,9 @@ end
 % texture groups
 coordGroups = getCoordinateMapping(G);
 
-% find the shuffle
-shuffle = zeros(1, size(ev, 2));
+% find the shuffle matrix
+% shuffle = zeros(1, size(ev, 2));
+shuffle = zeros(size(ev, 2));
 
 % work group-by-group
 for i = 1:length(coordGroups)
@@ -47,11 +48,13 @@ for i = 1:length(coordGroups)
     newGroupIdx = find(strcmp(coordGroups, newGroup));
     groupIdxRange = G*(i-1)+1:G*i;
     newGroupIdxRange = G*(newGroupIdx-1)+1:G*newGroupIdx;
-    shuffle(newGroupIdxRange) = groupIdxRange(crtShuffle);
+%     shuffle(newGroupIdxRange) = groupIdxRange(crtShuffle);
+    shuffle(groupIdxRange, newGroupIdxRange) = crtShuffle;
 end
 
-% shuffle columns of ev
-ev = ev(:, shuffle);
+% transform ev
+% ev = ev(:, shuffle);
+ev = ev*shuffle;
 
 % convert back to the initial format for the ev data
 switch initialType

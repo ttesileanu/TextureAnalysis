@@ -15,8 +15,9 @@ function [outGroup, shuffle] = applyGroupGeometricPermutation(group, G, permutat
 %   can in principle also model transformations that do not map to any
 %   global geometric change. This will in general also shuffle the
 %   coordinates within the group; the specific shuffling is returned in
-%   `shuffle`. Specifically, the `j`th coordinate within the `outGroup`
-%   corresponds to the `shuffle(j)`th coordinate within the initial group.
+%   the matix `shuffle`. Specifically, a direction vector `v` in the
+%   initial group gets transformed into direction `v*shuffle` in the
+%   `outGroup`. Here `v` is assumed to be a row vector.
 %
 %   The function also works for mixed groups, separated by a semicolon in
 %   the `group` argument.
@@ -43,7 +44,8 @@ end
 groups = strtrim(strsplit(group, ';'));
 
 % the directions in the transformed groups might get reshuffled
-shuffle0 = zeros(1, G*length(groups));
+% shuffle0 = zeros(1, G*length(groups));
+shuffle0 = zeros(G*length(groups));
 
 % perform the transformation group by group
 outGroups0 = cell(size(groups));
@@ -118,7 +120,8 @@ for i = 1:length(groups)
     
     % fill out the shuffle vector
     groupIdxRange = G*(i-1)+1:G*i;
-    shuffle0(groupIdxRange(coordinateMapping)) = groupIdxRange;
+%     shuffle0(groupIdxRange(coordinateMapping)) = groupIdxRange;
+    shuffle0(groupIdxRange(coordinateMapping), groupIdxRange) = eye(G);
 end
 
 % use canonical ordering of group names
@@ -126,7 +129,7 @@ end
 shuffle = zeros(size(shuffle0));
 for i = 1:length(outGroups)
     j = outOrdering(i);
-    shuffle(3*i-2:3*i) = shuffle0(3*j-2:3*j);
+    shuffle(:, 3*i-2:3*i) = shuffle0(:, 3*j-2:3*j);
 end
 
 % reconstruct group name
