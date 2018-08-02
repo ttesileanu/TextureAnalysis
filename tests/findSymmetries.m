@@ -125,8 +125,8 @@ ppEffectSizes = zeros(nTrafos, nCompTypes);
 niChangedGroupCounts = zeros(nTrafos, nCompTypes);
 ppChangedGroupCounts = zeros(nTrafos, nCompTypes);
 
-% groupMaskFct = @(g) length(g) == 6 || sum(g == ';') == 1;
-groupMaskFct = @(g) length(g) > 3;
+groupMaskFct = @(g) length(g) == 6 || sum(g == ';') == 1;
+% groupMaskFct = @(g) length(g) > 3;
 % groupMaskFct = @(g) true;
 
 opts = {'groupMaskFct', groupMaskFct, 'hiLoRatioLimit', 2.0};
