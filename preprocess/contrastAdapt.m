@@ -28,6 +28,8 @@ function [imgOut, crop] = contrastAdapt(img, varargin)
 %   below).
 %
 %   Options:
+%    'clip'
+%       Set to `true` to clip output values to the range [0, 1].
 %    'minStd'
 %       If the standard deviation within the patch is smaller than this
 %       given number, it  will be ignored (i.e., skipped in `imgOut`, and
@@ -43,7 +45,6 @@ parser.FunctionName = mfilename;
 
 parser.addOptional('patchSize', [], @(p) isempty(p) || (isnumeric(p) && isscalar(p) && p >= 1) || ...
     (isnumeric(p) && isvector(p) && numel(p) == 2 && all(p >= 1)));
-% parser.addParameter('perpixel', false, @(b) islogical(b) && isscalar(b));
 parser.addParameter('clip', false, @(b) islogical(b) && isscalar(b));
 parser.addParameter('minStd', 1e-6, @(n) isscalar(n) && isnumeric(n));
 parser.addParameter('meanFct', @mean, @(f) isa(f, 'function_handle'));
