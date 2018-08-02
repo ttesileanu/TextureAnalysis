@@ -1,12 +1,36 @@
 % analyze natural images after ternarizing to generate a distribution over
 % ternary textures
 
-%% Select downsampling factor (N) and patch size (R)
+%% Setup
 
-% [N, R] pairs
-valuesNR = {[1, 32], [1, 48], [1, 64], [2, 32], [2, 48], [2, 64], ...
-    [4, 32], [4, 48], [4, 64]};
-% valuesNR = {[2, 32]};
+% This script's behavior can be modified by defining some variables before
+% running. When these variables are not defined, default values are used.
+%
+% Options:
+%   valuesNR
+%       Cell array of pairs [N, R] of downsampling factor and patch size
+%       for which to run the analysis.
+%   compressType
+%       Choose the way in which image values are compressed in the [0, 1]
+%       interval before ternarizing. Options are
+%           'equalize' -- histogram equalization
+%           'contrast' -- contrast adaptation
+
+setdefault('valuesNR', {[1, 32], [1, 48], [1, 64], [2, 32], [2, 48], [2, 64], ...
+    [4, 32], [4, 48], [4, 64]});
+
+setdefault('compressType', 'equalize');
+
+%% Preprocess options
+
+switch compressType
+    case 'equalize'
+        compressFunction = @(image) equalizeImage(image, 'jitter', 0, 'minLevels', 16);
+    case 'contrast'
+        compressFunction = @(image) contrastAdapt(image, 'minStd', 1e-3);
+    otherwise
+        error('Unknown compressType');
+end
 
 valuesN = cellfun(@(x) x(1), valuesNR);
 valuesR = cellfun(@(x) x(2), valuesNR);
@@ -50,7 +74,7 @@ for i = 1:length(valuesN)
         @(image) blockAverage(image, crtN), ...
         @(image) patchify(image, crtR), ...
         @(image) filterImage(image, filters{i}), ...
-        @(image) equalizeImage(image, 'jitter', 0, 'minLevels', 16), ...
+        compressFunction, ...
         @(image) quantizeImage(image, 3)};
     
     % image quantization has a small random component that matters for
@@ -78,5 +102,10 @@ results = resultsFocus;
 
 %% Save the binary stats
 
-save(fullfile('save', 'TernaryDistribution_PennNoSky.mat'), 'results', ...
+if ~strcmp(compressType, 'equalize')
+    compressExt = ['_' compressType];
+else
+    compressExt = '';
+end
+save(fullfile('save', ['TernaryDistribution_PennNoSky' compressExt '.mat']), 'results', ...
     'valuesR', 'valuesN', 'valuesNR');
