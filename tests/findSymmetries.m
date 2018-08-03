@@ -1,5 +1,43 @@
 % find symmetries in the NI predictions and in the PP data
 
+%% Setup
+
+% This script's behavior can be modified by defining some variables before
+% running. When these variables are not defined, default values are used.
+%
+% Options:
+%   dbChoice
+%       Choice of database to use. Available options are
+%           'PennNoSky' -- Penn image database, filtering out pictures with
+%                          lots of sky
+%   compressType
+%       Choose the way in which image values were compressed in the [0, 1]
+%       interval before ternarizing. Options are
+%           'equalize' -- histogram equalization
+%           'contrast' -- contrast adaptation
+%   NRselection
+%       Choose one of the analyses, based on block-averaging factor (N) and
+%       patch size (R).
+%   restrictToFocus
+%       Set to `true` to only keep patches that were identified as in-focus
+%       by a two-Gaussian fit.
+
+setdefault('dbChoice', 'PennNoSky');
+setdefault('compressType', 'equalize');
+setdefault('NRselection', [2, 32]);
+setdefault('restrictToFocus', true);
+
+%% Preprocess options
+
+if ~strcmp(compressType, 'equalize')
+    compressExt = ['_' compressType];
+else
+    compressExt = '';
+end
+niFileName = ['TernaryDistribution_' dbChoice compressExt '.mat'];
+NRstr = [int2str(NRselection(1)) 'x' int2str(NRselection(2))];
+niPredFileName = ['TernaryNIPredictions_' dbChoice compressExt '_' NRstr '.mat'];
+
 %% Load the data
 
 pp = loadTernaryPP(fullfile('data', 'mtc_soid_xlsrun_summ.mat'));
@@ -13,10 +51,9 @@ pp = catMeasurements(pp, pp_extra_AC12);
 
 %% Load the ternary NI distribution
 
-niStatsAll = open(fullfile('save', 'TernaryDistribution_PennNoSky.mat'));
+niStatsAll = open(fullfile('save', niFileName));
 
 % choose one of the analyses
-NRselection = [2, 32];
 idx = find(cellfun(@(nr) isequal(nr, NRselection), niStatsAll.valuesNR));
 if isempty(idx)
     error('Can''t find NR selection in NI distribution file.');
@@ -28,9 +65,6 @@ end
 niStats0 = niStatsAll.results{idx};
 
 %% NI distribution preprocessing
-
-% we typically restrict our analysis to patches identified as in-focus
-restrictToFocus = true;
 
 % check that the distribution we loaded has focus information
 niStats = rmfield(niStats0, 'focus');
@@ -46,8 +80,7 @@ end
 
 %% Load the NI predictions
 
-load(fullfile('save', ['TernaryNIPredictions_PennNoSky_' int2str(NRselection(1)) ...
-    'x' int2str(NRselection(2)) '.mat']));
+load(fullfile('save', niPredFileName));
 ni = predictions;
 
 %% Calculate the effects for a series of transformations
