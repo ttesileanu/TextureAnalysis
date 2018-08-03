@@ -120,24 +120,24 @@ switch type
     case 'direct'
         difference = rms(details.common.logdiff(changed & mask));
     case 'group'
-        if params.changedOnly
-            % update 'changed' to make it consistent within groups
-            uniqueGroups = sortGroups(unique(measurements1.groups));
-            uniqueGroupMask = true(size(uniqueGroups));
-            for i = 1:length(uniqueGroups)
-                groupMask = strcmp(measurements1.groups, uniqueGroups{i});
+        uniqueGroups = sortGroups(unique(measurements1.groups));
+        uniqueGroupMask = true(size(uniqueGroups));
+        for i = 1:length(uniqueGroups)
+            groupMask = strcmp(measurements1.groups, uniqueGroups{i});
+            if params.changedOnly
                 if any(changed(groupMask))
+                    % update 'changed' to make it consistent within groups
                     changed(groupMask) = true;
                 else
                     uniqueGroupMask(i) = false;
                 end
-                if all(~mask(groupMask))
-                    % don't include groups that have only invalid measurements
-                    uniqueGroupMask(i) = false;
-                end
             end
-            uniqueGroups = uniqueGroups(uniqueGroupMask);
+            if all(~mask(groupMask))
+                % don't include groups that have only invalid measurements
+                uniqueGroupMask(i) = false;
+            end
         end
+        uniqueGroups = uniqueGroups(uniqueGroupMask);
         
         % calculate group averages
         details.common.uniqueGroups = uniqueGroups;
