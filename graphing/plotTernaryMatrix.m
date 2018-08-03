@@ -81,7 +81,7 @@ parser.addParameter('plotterOptions', {}, @(c) iscell(c) && isvector(c));
 parser.addParameter('beautifyOptions', {}, @(c) iscell(c) && isvector(c));
 
 % show defaults if requested
-if nargin == 1 && strcmp(measurements, 'defaults')
+if nargin == 1 && isequal(measurements, 'defaults')
     parser.parse;
     disp(parser.Results);
     return;
