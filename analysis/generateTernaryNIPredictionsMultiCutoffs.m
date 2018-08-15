@@ -88,7 +88,7 @@ allPredictionResults = allPredictionResults(reorder);
 
 %% Save the results
 
-save(fullfile('save', 'TernaryDistribution_PennNoSky_2x32_mutlicutoff_predictions.mat'));
+save(fullfile('save', 'TernaryDistribution_PennNoSky_2x32_multicutoff_predictions.mat'));
 
 %% Check how match to psychophysics depends on cutoff
 
