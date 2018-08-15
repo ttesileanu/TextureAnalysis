@@ -56,7 +56,7 @@ ni0 = niAll.results{idx};
 
 % check that the distribution we loaded has focus information
 ni = rmfield(ni0, 'focus');
-if restrictToFocus && isfield(ni, 'focus')
+if restrictToFocus && isfield(ni0, 'focus')
     disp('Restricting to in-focus patches.');
     mask = (ni0.focus.clusterIds == ni0.focus.focusCluster);
     fields = {'ev', 'patchLocations', 'imageIds'};
