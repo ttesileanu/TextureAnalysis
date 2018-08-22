@@ -50,6 +50,7 @@ for i = 1:k
     non0_row = find(crt_non0, 1);
     if isempty(non0_row)
         dirs(i) = nan;
+        vecs2(:, i) = 0;
     else
         for j = 1:3
             crt_diffs(~crt_non0, j) = crt_diffs(non0_row, j);
@@ -65,9 +66,8 @@ for i = 1:k
         % crt_diffs(:, 2) == false --> 0
         % crt_diffs(:, 3) == false --> 1
         dirs(i) = mod(find(~crt_diffs(1, :), 1) + 1, 3);
+        vecs2(:, i) = (3/2)*crt_vecs(:, dirs(i) + 1) - 1/2;
     end
-    
-    vecs2(:, i) = (3/2)*crt_vecs(:, dirs(i) + 1) - 1/2;
 end
 
 end
