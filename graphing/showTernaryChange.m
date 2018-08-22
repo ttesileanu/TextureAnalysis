@@ -140,7 +140,7 @@ if ~iscell(measurementsBefore)
     measurementsBefore = {measurementsBefore};
 end
 if ~iscell(measurementsAfter)
-    measurementsBefore = {measurementsAfter};
+    measurementsAfter = {measurementsAfter};
 end
 
 if length(measurementsBefore) ~= length(measurementsAfter)
