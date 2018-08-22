@@ -101,3 +101,6 @@ differences = arrayfun(@(s) compareMeasurements(s.predictions, pp, 'group', ...
 plot(grayAmounts, differences, '.-');
 xlabel('Fraction of gray');
 ylabel('Mismatch between NI and PP');
+
+beautifygraph;
+preparegraph;
