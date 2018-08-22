@@ -119,6 +119,7 @@ details.common.logdiff = log(measurements1.thresholds) - log(measurements2.thres
 switch type
     case 'direct'
         difference = rms(details.common.logdiff(changed & mask));
+        details.common.nAveraged = sum(changed & mask);
     case 'group'
         uniqueGroups = sortGroups(unique(measurements1.groups));
         uniqueGroupMask = true(size(uniqueGroups));
