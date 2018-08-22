@@ -203,7 +203,7 @@ if params.ellipse
     if sum(finiteMask) > 2
         % remove non-finite entries
         measM = fitEllipse(projectedThresholds(finiteMask, :));
-        ellipse(0, 0, inv(measM), 'color', mixcolor(params.color, [0.5 0.5 0.5]));
+        ellipse(0, 0, measM, 'color', mixcolor(params.color, [0.5 0.5 0.5]));
     end
 end
 

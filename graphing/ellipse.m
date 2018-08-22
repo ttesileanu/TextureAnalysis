@@ -37,8 +37,8 @@ if ~isscalar(a)
     M = a;
     [V, D] = eig(M);
     D = diag(D);
-    a = sqrt(D(1));
-    b = sqrt(D(2));
+    a = 1/sqrt(D(1));
+    b = 1/sqrt(D(2));
     
     e1 = V(:, 1);
     e2 = V(:, 2);
