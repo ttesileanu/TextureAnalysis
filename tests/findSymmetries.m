@@ -167,7 +167,7 @@ end
 
 %% Check how large the effect of each transformation was on NI & PP
 
-compTypes = {'direct', 'group'};
+compTypes = {'direct', 'group', 'ellipse'};
 nCompTypes = length(compTypes);
 niEffectSizes = zeros(nTrafos, nCompTypes);
 ppEffectSizes = zeros(nTrafos, nCompTypes);
@@ -187,10 +187,10 @@ for i = 1:nTrafos
         [ppEffectSizes(i, j), ppDetails] = compareMeasurements(...
             pp, transformedPP{i}, compTypes{j}, opts{:});
         
-        if strcmp(compTypes{j}, 'group')
+        if strcmp(compTypes{j}, 'group') || strcmp(compTypes{j}, 'ellipse')
             niChangedCounts(i, j) = numel(niDetails.common.uniqueGroups);
             ppChangedCounts(i, j) = numel(ppDetails.common.uniqueGroups);
-        else
+        elseif strcmp(compTypes{j}, 'direct')
             niChangedCounts(i, j) = niDetails.common.nAveraged;
             ppChangedCounts(i, j) = ppDetails.common.nAveraged;
         end
@@ -204,12 +204,15 @@ niEffectSizesTable = table(niEffectSizesCell{:}, ...
 ppEffectSizesTable = table(ppEffectSizesCell{:}, ...
     'VariableNames', trafoNames, 'RowNames', compTypes);
 
-plotChoice = 'direct';
+plotChoice = 'ellipse';
 plotChoiceIdx = find(strcmp(compTypes, plotChoice), 1);
 
 fig = figure;
 fig.Units = 'inches';
 fig.Position = [1 1 8 6];
+
+plotMax = max(max(niEffectSizes(:, plotChoiceIdx), ...
+    max(ppEffectSizes(:, plotChoiceIdx))))*1.2;
 
 ax = axes;
 ax.OuterPosition = [0 0.5 1 0.5];
@@ -219,7 +222,8 @@ title('Natural images');
 set(ax, 'xtick', 1:nTrafos, 'xticklabel', trafoNames, 'xticklabelrotation', 45, ...
     'yminortick', 'on');
 ylabel('\Delta thresholds');
-ylim([0, 0.45]);
+% ylim([0, 0.45]);
+ylim([0, plotMax]);
 xlim([0, nTrafos+1]);
 
 for i = 1:size(niChangedCounts, 1)
@@ -235,7 +239,8 @@ title('Psychophysics');
 set(ax, 'xtick', 1:nTrafos, 'xticklabel', trafoNames, 'xticklabelrotation', 45, ...
     'yminortick', 'on');
 ylabel('\Delta thresholds');
-ylim([0, 0.45]);
+% ylim([0, 0.45]);
+ylim([0, plotMax]);
 xlim([0, nTrafos+1]);
 
 for i = 1:size(ppChangedCounts, 1)
