@@ -23,6 +23,22 @@ function [difference, details] = compareMeasurements(measurements1, measurements
 %   calculated for every group, and then all the group values are RMSed
 %   together.
 %
+%   diff = compareMeasurements(measurements1, measurements2, 'ellipse')
+%   works only for ternary texture statistics in single-group and some
+%   mixed-group planes. It fits ellipses to the measurements in each group
+%   and, for those groups that aren't completely un`changed` and for which
+%   fits exist in both sets of measurements, the ellipses are compared
+%   according to the following metric. Each ellipse is first converted to a
+%   3d vector
+%       wvec = (a+b)/2 * (ecc*e1 + sqrt(1-ecc^2)*zhat) ,
+%   where a and b are the lengths of the two semiaxes, e1 is the unit
+%   vector pointing in the direction of the long semiaxes, zhat is the unit
+%   vector in the z direction, and ecc is the eccentricity,
+%       ecc = sqrt(1 - b^2/a^2) .
+%   The difference between the two sets of measurements is the difference
+%   between their associated 3d vectors. The difference values for all
+%   planes where they could be calculated are RMSed together.
+%
 %   [diff, details] = compareMeasurements(...) returns a structure
 %   containing detailed information about the intermediate steps of the
 %   calculation: the mapping between indices in the two measurement sets,
@@ -44,16 +60,6 @@ function [difference, details] = compareMeasurements(measurements1, measurements
 %       between the 'hi' and 'lo' limits is below the value provided here
 %       are considered for the calculation. The ratios from the first
 %       measurements structure are used.
-
-% XXX TODO:
-%
-%   diff = compareMeasurements(measurements1, measurements2, 'ellipse')
-%   works only for ternary texture statistics in single-group and some
-%   mixed-group planes. It fits ellipses to the measurements in each group
-%   and, for those groups that aren't completely un`changed` and for which
-%   fits exist in both sets of measurements, the ellipses are compared
-%   according to the following metric XXX. The difference values are
-%   averaged over all groups.
 
 % parse optional arguments
 parser = inputParser;
@@ -146,6 +152,88 @@ switch type
             rms(details.common.logdiff(strcmp(measurements1.groups, group) & mask)), ...
             uniqueGroups);
         difference = rms(details.common.groupDiffMeans);
+    case 'ellipse'
+        uniqueGroups = sortGroups(unique(measurements1.groups));
+        uniqueGroupMask = true(size(uniqueGroups));
+        wvecs1 = cell(size(uniqueGroups));
+        wvecs2 = cell(size(uniqueGroups));
+        wvecDiff = nan(size(uniqueGroups));
+        for i = 1:length(uniqueGroups)
+            groupMask = strcmp(measurements1.groups, uniqueGroups{i});
+            if params.changedOnly
+                if any(changed(groupMask))
+                    % update 'changed' to make it consistent within groups
+                    changed(groupMask) = true;
+                else
+                    uniqueGroupMask(i) = false;
+                    continue;
+                end
+            end
+            if all(~mask(groupMask))
+                % don't include groups that have only invalid measurements
+                uniqueGroupMask(i) = false;
+                continue;
+            end
+            
+            % project to a texture plane -- make sure these are ternary stats
+            nGroups = 1 + sum(uniqueGroups{i} == ';');
+            crtDirections = measurements1.directions(groupMask);
+            nGray = length(crtDirections{1}) / nGroups;
+            if nGray ~= 3
+                error([mfilename ':badng'], 'Ellipse mode only works with ternary statistics.');
+            end
+            
+            crtThresholds1 = measurements1.thresholds(groupMask);
+            crtThresholds2 = measurements2.thresholds(groupMask);
+            
+            crtThreshVectors1 = ternaryrec(crtThresholds1, crtDirections);
+            crtThreshVectors2 = ternaryrec(crtThresholds2, crtDirections);
+            
+            if nGroups == 1
+                projectionFct = @ternary3to2;
+            elseif nGroups == 2
+                projectionFct = @ternary6tomix2;
+            else
+                error([mfilename ':badord'], 'Ellipse mode only works with single groups or pairs of groups.');
+            end
+            
+            crtProjected1 = projectionFct(crtThreshVectors1);
+            crtProjected2 = projectionFct(crtThreshVectors2);
+            
+            % fit ellipses
+            finiteMask1 = all(isfinite(crtProjected1), 2);
+            finiteMask2 = all(isfinite(crtProjected2), 2);
+            M1 = fitEllipse(crtProjected1(finiteMask1, :));
+            M2 = fitEllipse(crtProjected2(finiteMask2, :));
+            
+            % calculate and store 3d vectors
+            wvecs1{i} = ellipseTo3d(M1);
+            wvecs2{i} = ellipseTo3d(M2);
+            
+            % don't compare if either ellipse wasn't fit
+            if ~all(isfinite(wvecs1{i})) || ~all(isfinite(wvecs2{i}))
+                uniqueGroupMask(i) = false;
+                continue;
+            end
+            
+            % calculate difference
+            wvecDiff(i) = norm(wvecs1{i} - wvecs2{i});
+        end
+        
+        % keep only the groups for which we managed to calculate a difference
+        uniqueGroups = uniqueGroups(uniqueGroupMask);
+        wvecs1 = wvecs1(uniqueGroupMask);
+        wvecs2 = wvecs2(uniqueGroupMask);
+        wvecDiff = wvecDiff(uniqueGroupMask);
+        
+        % store the w vectors
+        details.common.uniqueGroups = uniqueGroups;
+        details.common.ellipseVectors1 = wvecs1;
+        details.common.ellipseVectors2 = wvecs2;
+        details.common.ellipseDifferences = wvecDiff;
+        
+        % calculate overall difference
+        difference = rms(details.common.ellipseDifferences);
     otherwise
         error([mfilename ':badtype'], 'Unrecognized difference type.');
 end
@@ -158,5 +246,30 @@ function x = rms(v)
 % Get root mean squared from vector.
 
 x = sqrt(mean(v(:).^2));
+
+end
+
+function wvec = ellipseTo3d(M)
+% Calculate 3d vector corresponding to an ellipse, when the ellipse is
+% identified by its matrix M such that x'*M*x = 1.
+
+if any(~isfinite(M(:))) || any(eig(M) < -eps)
+    wvec = nan(3, 1);
+    return;
+end
+
+% find eccentricity, average radius, and direction of large semiaxis
+[V, D] = eigsorted(M);
+a = 1./sqrt(D(1, 1));
+b = 1./sqrt(D(2, 2));
+avgRad = (a + b) / 2;
+ecc = sqrt(1 - b^2 / a^2);
+e1 = real(V(:, 1));
+
+% extend to 3d
+zhat = [0 0 1]';
+e1ext = [e1 ; 0];
+
+wvec = avgRad*(ecc*e1ext + sqrt(1 - ecc^2)*zhat);
 
 end
