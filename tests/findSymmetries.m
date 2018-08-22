@@ -21,11 +21,17 @@
 %   restrictToFocus
 %       Set to `true` to only keep patches that were identified as in-focus
 %       by a two-Gaussian fit.
+%   symmetrizePP
+%       Set to `true` to take the average between each psychophysics
+%       measurement and the measurement in the opposite texture direction.
+%       This effectively forces the measurements to be centered at the
+%       origin.
 
 setdefault('dbChoice', 'PennNoSky');
 setdefault('compressType', 'equalize');
 setdefault('NRselection', [2, 32]);
 setdefault('restrictToFocus', true);
+setdefault('symmetrizePP', false);
 
 %% Preprocess options
 
@@ -49,6 +55,16 @@ pp_extra_AC12 = selectMeasurements(pp_extra.avg, ...
 
 pp = catMeasurements(pp, pp_extra_AC12);
 
+if symmetrizePP
+    % make sure data is symmetric
+    ppOriginal = pp;
+    
+    reflectTrafo = @(group) applyGroupReflection(group, 3);
+    ppReflected = applyToThresholds(pp, reflectTrafo, 'closed', true);
+    
+    pp = averageMeasurements(ppOriginal, ppReflected);
+end
+
 %% Load the ternary NI distribution
 
 niStatsAll = open(fullfile('save', niFileName));
@@ -68,7 +84,7 @@ niStats0 = niStatsAll.results{idx};
 
 % check that the distribution we loaded has focus information
 niStats = rmfield(niStats0, 'focus');
-if restrictToFocus && isfield(niStats, 'focus')
+if restrictToFocus && isfield(niStats0, 'focus')
     disp('Restricting to in-focus patches.');
     mask = (niStats0.focus.clusterIds == niStats0.focus.focusCluster);
     fields = {'ev', 'patchLocations', 'imageIds'};
@@ -155,8 +171,8 @@ compTypes = {'direct', 'group'};
 nCompTypes = length(compTypes);
 niEffectSizes = zeros(nTrafos, nCompTypes);
 ppEffectSizes = zeros(nTrafos, nCompTypes);
-niChangedGroupCounts = zeros(nTrafos, nCompTypes);
-ppChangedGroupCounts = zeros(nTrafos, nCompTypes);
+niChangedCounts = zeros(nTrafos, nCompTypes);
+ppChangedCounts = zeros(nTrafos, nCompTypes);
 
 groupMaskFct = @(g) length(g) == 6 || sum(g == ';') == 1;
 % groupMaskFct = @(g) length(g) > 3;
@@ -172,8 +188,11 @@ for i = 1:nTrafos
             pp, transformedPP{i}, compTypes{j}, opts{:});
         
         if strcmp(compTypes{j}, 'group')
-            niChangedGroupCounts(i, j) = numel(niDetails.common.uniqueGroups);
-            ppChangedGroupCounts(i, j) = numel(ppDetails.common.uniqueGroups);
+            niChangedCounts(i, j) = numel(niDetails.common.uniqueGroups);
+            ppChangedCounts(i, j) = numel(ppDetails.common.uniqueGroups);
+        else
+            niChangedCounts(i, j) = niDetails.common.nAveraged;
+            ppChangedCounts(i, j) = ppDetails.common.nAveraged;
         end
     end
 end
@@ -185,6 +204,9 @@ niEffectSizesTable = table(niEffectSizesCell{:}, ...
 ppEffectSizesTable = table(ppEffectSizesCell{:}, ...
     'VariableNames', trafoNames, 'RowNames', compTypes);
 
+plotChoice = 'direct';
+plotChoiceIdx = find(strcmp(compTypes, plotChoice), 1);
+
 fig = figure;
 fig.Units = 'inches';
 fig.Position = [1 1 8 6];
@@ -192,7 +214,7 @@ fig.Position = [1 1 8 6];
 ax = axes;
 ax.OuterPosition = [0 0.5 1 0.5];
 % subplot(2, 1, 1);
-bar(niEffectSizes(:, 2));
+bar(niEffectSizes(:, plotChoiceIdx));
 title('Natural images');
 set(ax, 'xtick', 1:nTrafos, 'xticklabel', trafoNames, 'xticklabelrotation', 45, ...
     'yminortick', 'on');
@@ -200,15 +222,15 @@ ylabel('\Delta thresholds');
 ylim([0, 0.45]);
 xlim([0, nTrafos+1]);
 
-for i = 1:size(niChangedGroupCounts, 1)
-    text(i, niEffectSizes(i, 2), int2str(niChangedGroupCounts(i, 2)), ...
+for i = 1:size(niChangedCounts, 1)
+    text(i, niEffectSizes(i, plotChoiceIdx), int2str(niChangedCounts(i, plotChoiceIdx)), ...
         'verticalalignment', 'bottom', 'horizontalalignment', 'center');
 end
 
 ax = axes;
 ax.OuterPosition = [0 0 1 0.5];
 % subplot(2, 1, 2);
-bar(ppEffectSizes(:, 2));
+bar(ppEffectSizes(:, plotChoiceIdx));
 title('Psychophysics');
 set(ax, 'xtick', 1:nTrafos, 'xticklabel', trafoNames, 'xticklabelrotation', 45, ...
     'yminortick', 'on');
@@ -216,8 +238,8 @@ ylabel('\Delta thresholds');
 ylim([0, 0.45]);
 xlim([0, nTrafos+1]);
 
-for i = 1:size(ppChangedGroupCounts, 1)
-    text(i, ppEffectSizes(i, 2), int2str(ppChangedGroupCounts(i, 2)), ...
+for i = 1:size(ppChangedCounts, 1)
+    text(i, ppEffectSizes(i, plotChoiceIdx), int2str(ppChangedCounts(i, plotChoiceIdx)), ...
         'verticalalignment', 'bottom', 'horizontalalignment', 'center');
 end
 
