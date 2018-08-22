@@ -193,9 +193,6 @@ h = scatter(projectedThresholds(:, 1), projectedThresholds(:, 2), ...
     params.size.^2, colors, params.marker(1));
 h.LineWidth = 1;
 
-% params.marker, 'linewidth', 1, 'markersize', params.size, ...
-%     'color', params.color);
-
 % draw ellipses
 if params.ellipse
     % measurements
