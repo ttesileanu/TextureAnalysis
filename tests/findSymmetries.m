@@ -204,7 +204,8 @@ niEffectSizesTable = table(niEffectSizesCell{:}, ...
 ppEffectSizesTable = table(ppEffectSizesCell{:}, ...
     'VariableNames', trafoNames, 'RowNames', compTypes);
 
-plotChoice = 'ellipse';
+% plotChoice = 'ellipse';
+plotChoice = 'group';
 plotChoiceIdx = find(strcmp(compTypes, plotChoice), 1);
 
 fig = figure;
