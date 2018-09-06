@@ -123,7 +123,7 @@ end
 
 % get the gains themselves, and rotate back to the original coordinates
 rotatedGains = sqrt(max(rotatedGainsSquared, 0));
-Lrotated= full(spdiags(rotatedGains, 0, m, n));
+Lrotated = full(spdiags(rotatedGains, 0, m, n));
 L = evecNoiseOut*Lrotated*pcS'*invSqrtNoiseIn; %#ok<MINV>
 
 end
