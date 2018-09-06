@@ -88,11 +88,15 @@ classdef TextProgress < handle
             %
             %   UPDATE('key', value, ...) updates the bar by changing the
             %   options.
+            %
+            %   Additionally, the option 'force', true can be used to force
+            %   update even if the appropriate interval since the last
+            %   update hasn't yet passed.
             if isnumeric(percent)
                 obj.update_('percent', percent, varargin{:});
             else
                 obj.update_(percent, varargin{:});
-            end;
+            end
         end
         
         function done(obj, suffix, varargin)
@@ -103,9 +107,10 @@ classdef TextProgress < handle
             %
             %   DONE(..., 'key', value, ...) also sets other options.
             if nargin >= 2
-                obj.update_('percent', 100, 'suffix', suffix, varargin{:});
+                obj.update_('percent', 100, 'suffix', suffix, 'force', true, ...
+                    varargin{:});
             else
-                obj.update_('percent', 100);
+                obj.update_('percent', 100, 'force', true);
             end
             fprintf('\n');
             obj.backStr_ = '';
@@ -127,10 +132,15 @@ classdef TextProgress < handle
             parser.addParameter('timer', none, @(b) islogical(b) && isscalar(b));
             parser.addParameter('timefmt', none, @(s) ischar(s) && (isvector(s) || isempty(s)));
             parser.addParameter('updinterval', none, @(n) isnumeric(n) && isreal(n));
+            parser.addParameter('force', false, @(b) islogical(b) && isscalar(b));
             
             % parse
             parser.parse(varargin{:});
             params = parser.Results;
+
+            % force is only passed to display_
+            force = params.force;
+            params = rmfield(params, 'force');
             
             % update the properties
             fields = fieldnames(params);
@@ -142,12 +152,18 @@ classdef TextProgress < handle
             end
 
             % handle the display
-            obj.display_();
+            obj.display_(force);
         end
         
-        function display_(obj)
-            % Display the bar.
-            if ~isempty(obj.tlastupd_) && toc(obj.tlastupd_) < obj.updinterval
+        function display_(obj, force)
+            % Display the bar. Normally this is only done if enough time
+            % passed since the last update. This can be overridden by
+            % setting `force` to `true`.
+            if nargin < 2
+                force = false;
+            end
+            
+            if ~force && ~isempty(obj.tlastupd_) && toc(obj.tlastupd_) < obj.updinterval
                 % don't update too often
                 return;
             end
