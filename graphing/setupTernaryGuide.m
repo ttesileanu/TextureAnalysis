@@ -6,12 +6,11 @@ function setupTernaryGuide(groupInfo, varargin)
 %   This sets `axis` to 'equal' and draws the appropriate guides.
 %
 %   setupTernaryGuide(groupName) uses the group name to infer the number of
-%   groups. It also uses the group name for labeling.
+%   groups.
 %
 %   Options:
 %    'triangleOptions'
 %       Options to pass to `drawTernaryTriangle`.
-%
 %   See also: drawTernaryTriangle, drawTernaryMixedBackground.
 
 % parse optional arguments
@@ -20,6 +19,7 @@ parser.CaseSensitive = true;
 parser.FunctionName = mfilename;
 
 parser.addParameter('triangleOptions', {}, @(c) isempty(c) || (iscell(c) && isvector(c)));
+parser.addParameter('labelOptions', {}, @(c) isempty(c) || (iscell(c) && isvector(c)));
 
 % show defaults if requested
 if nargin == 1 && strcmp(groupInfo, 'defaults')
@@ -34,11 +34,9 @@ params = parser.Results;
 
 % handle the two kinds of input
 if ischar(groupInfo)
-    groupName = groupInfo;
-    nGroups = 1 + sum(groupName == ';');
+    nGroups = 1 + sum(groupInfo == ';');
 else
     nGroups = groupInfo;
-    groupName = [];
 end
 
 % draw guides
@@ -46,12 +44,7 @@ switch nGroups
     case 1
         drawTernaryTriangle(params.triangleOptions{:});
     case 2
-        if isempty(groupName)
-            groupOpts = {'Group 1', 'Group 2'};
-        else
-            groupOpts = strsplit(groupName, ';');
-        end
-        drawTernaryMixedBackground(groupOpts{:});
+        drawTernaryMixedBackground;
     otherwise
         error([mfilename ':badngrp'], 'This function only works with single groups and pairs of groups.');
 end

@@ -118,7 +118,6 @@ end
 if params.drawGuides
     if isfield(measurements, 'groups') && ~isempty(measurements.groups)
         setupTernaryGuide(measurements.groups{1}, 'triangleOptions', params.triangleOptions);
-        title(measurements.groups{1});
     else
         setupTernaryGuide(nGroups, 'triangleOptions', params.triangleOptions);
     end
