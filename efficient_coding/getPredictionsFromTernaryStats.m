@@ -29,7 +29,7 @@ function [gain, predictions, details] = getPredictionsFromTernaryStats(...
 %   Options:
 %    'fitScaleOptions'
 %       Options to be passed to `fitScale`.
-%    'efficientCodingOpts'
+%    'efficientCodingOptions'
 %       Options to be passed to `solveLinearEfficientCoding`.
 %
 %   See also: solveLinearEfficientCoding, gainsToThresholds, fitScale.
