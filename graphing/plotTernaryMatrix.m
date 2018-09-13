@@ -21,9 +21,6 @@ function [plotter, uniqueGroups] = plotTernaryMatrix(measurements, varargin)
 %   below.
 %
 %   Options:
-%    'groupMaskFct'
-%       A callable that takes in a group name and returns true to keep the
-%       group and false to dismiss it (and thus not draw it).
 %    'groupSelection'
 %       Set either to a cell array of group names -- in which case these
 %       are the only groups that will be drawn. Or set to
@@ -48,15 +45,7 @@ function [plotter, uniqueGroups] = plotTernaryMatrix(measurements, varargin)
 %         (b) an instance of `containers.Map`, mapping subject names to
 %             RGB colors.
 %       Set to empty to disable per-subject coloring.
-%    'limits'
-%       The largest coordinate value to show in absolute value and in
-%       either direction. This can be a pair of numbers, in which case the
-%       first applies to single groups, and the second to mixed groups.
-%    'plotterOptions'
-%       Options to pass to `MatrixPlotter`.
-%    'beautifyOptions'
-%       Options to pass to beautifygraph.
-%    Other options are sent directly to `plotTernaryThresholds`.
+%    Other options are sent to `showTernaryChange`.
 %
 %   See also: plotTernaryThresholds.
 
@@ -92,117 +81,13 @@ parser.parse(varargin{:});
 params = parser.Results;
 unmatched = parser.Unmatched;
 
-% handle single set input
-if ~iscell(measurements)
-    measurements = {measurements};
-end
-
-% choose groups to display
-if ~iscell(params.groupSelection)
-    % collect group names according to the choice of groupSelection
-    allGroups = {};
-    for i = 1:length(measurements)
-        % very basic input cleaning: remove whitespace from group names
-        measurements{i}.groups = cellfun(@(s) s(~isspace(s)), ...
-            measurements{i}.groups, 'uniform', false);
-        
-        % use the groupMaskFct to select the entries we want
-        crtInitialGroups = unique(measurements{i}.groups);
-        crtGroupMask = cellfun(params.groupMaskFct, crtInitialGroups);
-        crtFinalGroups = crtInitialGroups(crtGroupMask);
-        measurements{i} = selectMeasurements(measurements{i}, ...
-            ismember(measurements{i}.groups, crtFinalGroups));
-        
-        % combine with allGroups
-        if i == 1
-            allGroups = crtFinalGroups;
-        else
-            switch params.groupSelection
-                case 'intersect'
-                    allGroups = intersect(allGroups, crtFinalGroups);
-                case 'union'
-                    allGroups = union(allGroups, crtFinalGroups);
-                otherwise
-                    error([mfilename ':badgrpsel'], 'Unknown option for groupSelection.');
-            end
-        end
-    end
-    uniqueGroups = sortGroups(unique(allGroups(:)));
-else
-    uniqueGroups = params.groupSelection;
-end
-
-% remove measurements entries that are not in uniqueGroups
-for i = 1:length(measurements)
-    measurements{i} = selectMeasurements(measurements{i}, ...
-        ismember(measurements{i}.groups, uniqueGroups));
-end
-
-% figure out per-subject colors (if necessary)
-if ~isempty(params.colorFct)
-    if isa(params.colorFct, 'function_handle')
-        % assign colors now, so that colors are consistent across different
-        % groups even if some subjects don't have data for some groups
-        allSubjects = {};
-        for i = 1:length(measurements)
-            if isfield(measurements{i}, 'subjects')
-                allSubjects = union(allSubjects, measurements{i}.subjects);
-            end
-        end
-        allSubjectColors = params.colorFct(length(allSubjects));
-        colorFct = containers.Map(allSubjects, num2cell(allSubjectColors, 2));
-    else
-        colorFct = params.colorFct;
-    end
-else
-    colorFct = [];
-end
-
-% use the MatrixPlotter to make a figure containing a matrix of plots
-plotter = MatrixPlotter(length(uniqueGroups), params.plotterOptions{:});
-plotter.axAspect = 1;
-while plotter.next
-    % find the index of the current plot
-    i = plotter.index;
-    
-    % plot the measurements for this plane
-    hold on;
-    for k = 1:length(measurements)
-        crtMeasurements = selectMeasurements(measurements{k}, ...
-            strcmp(measurements{k}.groups, uniqueGroups{i}));
-        if isfield(crtMeasurements, 'thresholdIntervals')
-            errors = crtMeasurements.thresholdIntervals;
-        else
-            errors = [];
-        end
-        plotTernaryThresholds(crtMeasurements, ...
-            'marker', selectMod(params.markers, k), ...
-            'color', selectMod(params.colors, k), ...
-            'size', selectMod(params.sizes, k), ...
-            'errors', errors, ...
-            'colorFct', colorFct, ...
-            'drawGuides', k == 1, ...
-            unmatched);
-    end
-    
-    % set axis limits and beautify
-    nGroups = 1 + sum(uniqueGroups{i} == ';');
-    switch nGroups
-        case 1
-            xlim([-params.limits(1) params.limits(1)]);
-            ylim([-params.limits(1) params.limits(1)]);
-        case 2
-            xlim([-params.limits(2) params.limits(2)]);
-            ylim([-params.limits(2) params.limits(2)]);
-    end
-
-    beautifygraph(params.beautifyOptions{:});
-end
-
-% set up figure
-fig = plotter.getFigure;
-fig.Name = [fig.Name ' (crosses = PP, dots = NI)'];
-
-preparegraph;
+% process options
+[plotter, uniqueGroups] = showTernaryChange(...
+    measurements, {}, 'groupMaskFct', params.groupMaskFct, ...
+    'groupSelection', strcat(params.groupSelection, 'All'), ...
+    'colorsBefore', params.colors, 'markersBefore', params.markers, ...
+    'sizesBefore', params.sizes, 'colorFctBefore', params.colorFct, ...
+    'limits', params.limits, 'plotterOptions', params.plotterOptions, ...
+    'beautifyOptions', params.beautifyOptions, unmatched);
 
 end
