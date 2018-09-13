@@ -24,6 +24,9 @@ function L = solveLinearEfficientCoding(S, varargin)
 %       related to the constraint on output power from the filter. To obtain
 %       non-zero gains, the Lagrange multiplier should be between 0 and
 %       `max(1./eig(covNoiseOut))`.
+%    'gainTransform'
+%       A transformation function to apply to gains in the principal
+%       component coordinates.
 %    'tol'
 %       Tolerance level for checking symmetry of covariance matrices. For a
 %       covariance matrix A, if max(abs(flatten(A - A'))) <= tol, the matrix
@@ -43,6 +46,7 @@ parser.FunctionName = mfilename;
 parser.addParameter('covNoiseIn', [], @(m) ismatrix(m) && isscalar(m));
 parser.addParameter('covNoiseOut', [], @(m) ismatrix(m) && isscalar(m));
 parser.addParameter('lagrange', [], @(x) isempty(x) || (isscalar(x) && isnumeric(x)));
+parser.addParameter('gainTransform', @(x) x, @(f) isa(f, 'function_handle'));
 parser.addParameter('tol', 1e-6, @(x) isscalar(x) && isnumeric(x));
 parser.addParameter('covarianceRegularization', 1e-8, @(x) isscalar(x) && isnumeric(x));
 
@@ -123,6 +127,10 @@ end
 
 % get the gains themselves, and rotate back to the original coordinates
 rotatedGains = sqrt(max(rotatedGainsSquared, 0));
+
+% apply the transform
+rotatedGains = params.gainTransform(rotatedGains);
+
 Lrotated = full(spdiags(rotatedGains, 0, m, n));
 L = evecNoiseOut*Lrotated*pcS'*invSqrtNoiseIn; %#ok<MINV>
 
