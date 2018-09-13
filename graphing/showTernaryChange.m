@@ -1,4 +1,5 @@
-function showTernaryChange(measurementsBefore, measurementsAfter, varargin)
+function [plotter, uniqueGroups] = showTernaryChange(...
+    measurementsBefore, measurementsAfter, varargin)
 % showTernaryChange Show a change in ternary threshold measurements.
 %   showTernaryChange(measurementsBefore, measurementsAfter) makes a plot
 %   of `measurementsBefore` and `measurementsAfter` (similar to
@@ -13,6 +14,14 @@ function showTernaryChange(measurementsBefore, measurementsAfter, varargin)
 %   Several sets of 'before' and 'after' measurements can be shown by
 %   passing cell arrays to `measurementsBefore` and `measurementsAfter`. In
 %   this case, the number of elements in the two arrays should be the same.
+%
+%   [plotter, uniqueGroups] = showTernaryChange(...) returns the
+%   `MatrixPlotter` instance used for plotting and the list of groups
+%   mapping to the list of axes in the plotter.
+%
+%   By default the plots are arranged in a rectangular grid that covers
+%   most of the screen area. This can be changed using the 'plotterOptions'
+%   below.
 %
 %   Options:
 %    'groupMaskFct'
@@ -82,6 +91,15 @@ function showTernaryChange(measurementsBefore, measurementsAfter, varargin)
 %       Options to pass to `MatrixPlotter`.
 %    'beautifyOptions'
 %       Options to pass to beautifygraph.
+%    'labelOptions'
+%       Options to pass to `textTexGroup` for labeling.
+%    'titleShift'
+%       Shift in title coordinates (for single-group planes), in data
+%       units. This is a two-component vector, `[shiftX, shiftY]`.
+%    'titleAlignment'
+%       Alignment options for the title, as a cell array with the first
+%       element for the horizontal alignment and the second element for the
+%       vertical. See possible options at `textTexGroup`.
 %    Other options are sent directly to `plotTernaryThresholds`.
 %
 %   See also: MatrixPlotter, plotTernaryMatrix.
@@ -116,8 +134,18 @@ parser.addParameter('colorFctAfter', []);
 parser.addParameter('invarianceTol', 1e-8, @(x) isnumeric(x) && isscalar(x));
 parser.addParameter('limits', [2 1], @(v) isvector(v) && isnumeric(v) && ...
     ismember(numel(v), [1 2]));
-parser.addParameter('plotterOptions', {}, @(c) iscell(c) && isvector(c));
-parser.addParameter('beautifyOptions', {}, @(c) iscell(c) && isvector(c));
+parser.addParameter('plotterOptions', {}, @(c) iscell(c) && (isvector(c) || isempty(c)));
+parser.addParameter('beautifyOptions', {}, @(c) iscell(c) && (isvector(c) || isempty(c)));
+parser.addParameter('labelOptions', {}, @(c) iscell(c) && (isvector(c) || isempty(c)));
+parser.addParameter('titleShift', [0 0], @(v) isvector(v) && isnumeric(v) && length(v) == 2);
+parser.addParameter('titleAlignment', {'center', 'top'}, @(c) isvector(c) && ...
+    length(c) == 2);
+parser.addParameter('xLabelShift', [0 0], @(v) isvector(v) && isnumeric(v) && length(v) == 2);
+parser.addParameter('xLabelAlignment', {'right', 'bottom'}, @(c) isvector(c) && ...
+    length(c) == 2);
+parser.addParameter('yLabelShift', [0 0], @(v) isvector(v) && isnumeric(v) && length(v) == 2);
+parser.addParameter('yLabelAlignment', {'left', 'top'}, @(c) isvector(c) && ...
+    length(c) == 2);
 
 % show defaults if requested
 if nargin == 1 && strcmp(measurementsBefore, 'defaults')
@@ -143,7 +171,7 @@ if ~iscell(measurementsAfter)
     measurementsAfter = {measurementsAfter};
 end
 
-if length(measurementsBefore) ~= length(measurementsAfter)
+if length(measurementsBefore) ~= length(measurementsAfter) && ~isempty(measurementsAfter)
     error([mfilename ':lenmismatch'], 'Should have matching numbers of  ''before'' and ''after'' measurements.');
 end
 
@@ -228,57 +256,61 @@ while plotter.next
     for k = 1:length(measurementsBefore)
         % first find matching before and after measurements
         crtMeasurementsBefore = measurementsBefore{k};
-        crtMeasurementsAfter = measurementsAfter{k};
-        
         groupMeasurementsBefore = selectMeasurements(...
             crtMeasurementsBefore, ...
             strcmp(crtMeasurementsBefore.groups, uniqueGroups{i}));
-        groupMeasurementsAfter = selectMeasurements(...
-            crtMeasurementsAfter, ...
-            strcmp(crtMeasurementsAfter.groups, uniqueGroups{i}));
-    
-        % figure mapping between indices in 'before' and 'after' measurements
         directionsBefore = groupMeasurementsBefore.directions;
-        directionsAfter = groupMeasurementsAfter.directions;
-        
         mappingBefore = zeros(length(directionsBefore), 1);
-        mappingAfter = zeros(length(directionsAfter), 1);
         
-        % XXX this is awfully inefficient, but it's unlikely to matter
-        for iBef = 1:length(directionsBefore)
-            crtDir = directionsBefore{iBef};
-            for iAft = 1:length(directionsAfter)
-                if max(abs(crtDir - directionsAfter{iAft})) < 1e-8
-                    mappingBefore(iBef) = iAft;
-                    mappingAfter(iAft) = iBef;
-                    break;
+        if ~isempty(measurementsAfter)
+            crtMeasurementsAfter = measurementsAfter{k};
+            groupMeasurementsAfter = selectMeasurements(...
+                crtMeasurementsAfter, ...
+                strcmp(crtMeasurementsAfter.groups, uniqueGroups{i}));
+            directionsAfter = groupMeasurementsAfter.directions;
+            mappingAfter = zeros(length(directionsAfter), 1);
+            
+            % find mapping between indices in 'before' and 'after' measurements
+            
+            % XXX this is awfully inefficient, but it's unlikely to matter
+            for iBef = 1:length(directionsBefore)
+                crtDir = directionsBefore{iBef};
+                for iAft = 1:length(directionsAfter)
+                    if max(abs(crtDir - directionsAfter{iAft})) < 1e-8
+                        mappingBefore(iBef) = iAft;
+                        mappingAfter(iAft) = iBef;
+                        break;
+                    end
                 end
             end
-        end
-        
-        % find directions that have a match
-        hasMatchBefore = (mappingBefore ~= 0);
-        hasMatchAfter = (mappingAfter ~= 0);
-        
-        % figure out which directions are invariant
-        if isfield(crtMeasurementsAfter, 'changed')
-            invariantAfter = ~groupMeasurementsAfter.changed;
-        else
-            invariantAfter = false(size(mappingAfter));
-            invariantAfter(mappingAfter ~= 0) = ...
-                abs(groupMeasurementsAfter.thresholds(hasMatchAfter) - ...
+            
+            % find directions that have a match
+            hasMatchBefore = (mappingBefore ~= 0);
+            hasMatchAfter = (mappingAfter ~= 0);
+            
+            % figure out which directions are invariant
+            if isfield(crtMeasurementsAfter, 'changed')
+                invariantAfter = ~groupMeasurementsAfter.changed;
+            else
+                invariantAfter = false(size(mappingAfter));
+                invariantAfter(mappingAfter ~= 0) = ...
+                    abs(groupMeasurementsAfter.thresholds(hasMatchAfter) - ...
                     groupMeasurementsBefore.thresholds(mappingAfter(hasMatchAfter))) ...
-                < params.invarianceTol;
+                    < params.invarianceTol;
+            end
+            invariantBefore = false(size(mappingBefore));
+            invariantBefore(mappingAfter(invariantAfter)) = true;            
+        else
+            hasMatchBefore = [];
+            invariantBefore = [];
         end
-        invariantBefore = false(size(mappingBefore));
-        invariantBefore(mappingAfter(invariantAfter)) = true;
-        
+
+        % now do the drawing
         colorInvariant = selectMod(params.colorsInvariant, k);
         colorNoMatch = selectMod(params.colorsNoMatch, k);
-    
-        % now do the drawing
+
         projectedPoints = cell(1, 2);
-        for j = 1:2
+        for j = 1:1+(~isempty(measurementsAfter))
             switch j
                 case 1
                     groupMeasurements = groupMeasurementsBefore;
@@ -352,11 +384,26 @@ while plotter.next
     end
 
     beautifygraph(params.beautifyOptions{:});
+    
+    % draw title/axis labels
+    if nGroups == 1
+        textTexGroup(params.titleShift(1), params.limits(1) + params.titleShift(2), ...
+            uniqueGroups{i}, 'HorizontalAlignment', params.titleAlignment{1}, ...
+            'VerticalAlignment', params.titleAlignment{2}, params.labelOptions{:});
+    elseif nGroups == 2
+        groupNames = strsplit(uniqueGroups{i}, ';');
+        textTexGroup(params.limits(2) + params.xLabelShift(1), params.xLabelShift(2), ...
+            groupNames{1}, 'HorizontalAlignment', params.xLabelAlignment{1}, ...
+            'VerticalAlignment', params.xLabelAlignment{2}, params.labelOptions{:});
+        textTexGroup(params.yLabelShift(1), params.limits(2) + params.yLabelShift(2), ...
+            groupNames{2}, 'HorizontalAlignment', params.yLabelAlignment{1}, ...
+            'VerticalAlignment', params.yLabelAlignment{2}, params.labelOptions{:});
+    end
 end
 
 % set up figure
-fig = plotter.getFigure;
-fig.Name = [fig.Name ' (crosses = PP, dots = NI)'];
+% fig = plotter.getFigure;
+% fig.Name = [fig.Name ' (crosses = PP, dots = NI)'];
 
 preparegraph;
 
