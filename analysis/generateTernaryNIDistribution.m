@@ -100,7 +100,7 @@ end
 disp(['Focus analysis for binary stats took ' num2str(toc, '%.2f') ' seconds.']);
 results = resultsFocus;
 
-%% Save the binary stats
+%% Save the ternary stats
 
 if ~strcmp(compressType, 'equalize')
     compressExt = ['_' compressType];
@@ -109,3 +109,4 @@ else
 end
 save(fullfile('save', ['TernaryDistribution_PennNoSky' compressExt '.mat']), 'results', ...
     'valuesR', 'valuesN', 'valuesNR');
+
