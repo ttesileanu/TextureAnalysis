@@ -67,7 +67,9 @@ end
 
 %% Do PCA
 
-[pcVectors, pcProjection, ~, ~, pcExplained] = pca(niStats.ev);
+[pcVectors, pcProjection, ~, ~, pcExplained] = pca(...
+    expandTextureStats(niStats.ev, 3));
+% [pcVectors, pcProjection, ~, ~, pcExplained] = pca(niStats.ev);
 
 %% Scree plot
 
@@ -78,6 +80,8 @@ plot(cumsum(pcExplained), 'r.-');
 
 xlabel('Principal component');
 ylabel('% explained');
+
+ylim([0 100]);
 
 beautifygraph;
 preparegraph;
@@ -137,3 +141,16 @@ set(gca, 'xtick', ticks, 'xticklabels', labels);
 
 beautifygraph('minorticks', 'off');
 preparegraph;
+
+%% SCRATCH
+
+fig = figure;
+fig.Units = 'inches';
+fig.Position(3:4) = [6 4];
+
+allGroups = getCoordinateMapping(3);
+plusMinus = '+?';
+for i = 1:length(allGroups)
+    textTexGroup(i/34, 0.5, allGroups{i}, 'fontsize', 6, ...
+        'subscriptSpacing', -0.65, 'coeffToStr', @(i) plusMinus(i));
+end
