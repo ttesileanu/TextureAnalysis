@@ -16,7 +16,8 @@ else
     filtered = conv2(image, lapFlt, 'valid');
 %    filtered = imgradient(image);
 %    sharp = median(abs(filtered(:)), 'omitnan');
-    sharp = exp(median(log(abs(filtered(:))), 'omitnan'));
+%     sharp = exp(median(log(abs(filtered(:))), 'omitnan'));
+    sharp = median(abs(filtered(:)), 'omitnan');
 end
 
 end
