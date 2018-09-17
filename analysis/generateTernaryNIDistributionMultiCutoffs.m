@@ -47,7 +47,7 @@ end
 
 %% Generate the ternary stats
 
-images = parseImageNameFile('PennNoSkyIndex.txt', 'NaturalImages');
+images = parseImageNameFile('PennNoSkyIndex.txt', fullfile('NaturalImages', 'PennNoSky'));
 
 tic;
 for i = 1:length(valuesN)

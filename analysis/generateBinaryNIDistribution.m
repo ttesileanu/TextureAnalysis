@@ -17,7 +17,7 @@ filters = cell(1, length(valuesN));
 for i = 1:length(valuesN)
     crtN = valuesN(i);
     crtR = valuesR(i);
-    filterFilename = fullfile('filters', ['filter' int2str(crtN) 'x' int2str(crtR) '.mat']);
+    filterFilename = fullfile('filters', 'PennNoSky', ['filter' int2str(crtN) 'x' int2str(crtR) '.mat']);
     % load the filter from whichever variable has the right size and type
     crtFilter = open(filterFilename);
     fields = fieldnames(crtFilter);
@@ -34,7 +34,7 @@ end
 
 %% Generate the binary stats
 
-images = parseImageNameFile('PennNoSkyIndex.txt', 'NaturalImages');
+images = parseImageNameFile('PennNoSkyIndex.txt', fullfile('NaturalImages', 'PennNoSky'));
 
 results = cell(1, length(valuesN));
 tic;

@@ -11,7 +11,7 @@ filter0 = open(fullfile('filters', sprintf('filter%dx%d.mat', N, R)));
 filter = filter0.filter;
 
 % select some images
-images = parseImageNameFile('PennNoSkyIndex.txt', 'NaturalImages');
+images = parseImageNameFile('PennNoSkyIndex.txt', fullfile('NaturalImages', dbChoice));
 images = images(1:10);
 
 %% Analyze textures without any transformation

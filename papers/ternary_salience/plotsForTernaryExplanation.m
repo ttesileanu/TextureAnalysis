@@ -111,7 +111,7 @@ safePrint(fullfile('figs', 'draft', 'exampleTernaryPlane'));
 %% Choose an image region to work with
 
 % use the first image from the Penn database
-images = parseImageNameFile('PennNoSkyIndex.txt', 'NaturalImages');
+images = parseImageNameFile('PennNoSkyIndex.txt', fullfile('NaturalImages', 'PennNoSky'));
 img0 = loadLUMImage(images{1});
 
 % convert to log, as we do during processing
