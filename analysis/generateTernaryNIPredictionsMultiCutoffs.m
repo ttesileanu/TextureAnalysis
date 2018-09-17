@@ -110,8 +110,8 @@ for i = 1:length(allFiles)
     
     % use only second-order groups to set the overall scaling of the predictions
     [crtGain, crtPredictions, crtPredictionDetails] = getPredictionsFromTernaryStats(...
-        crtResults.ev, pp, 'fitScaleOptions', {'mask', cellfun(@length, pp.groups) == 6 ...
-        || sum(s == ';') == 1, pp.groups}, 'efficientCodingOptions', ...
+        crtResults.ev, pp, 'fitScaleOptions', {'mask', cellfun(@(s) length(s) == 6 || ...
+            sum(s == ';') == 1, pp.groups)}, 'efficientCodingOptions', ...
         {'gainTransform', gainTransformFct});
     
     % store the results
@@ -132,7 +132,7 @@ allPredictionResults = allPredictionResults(reorder);
 
 save(fullfile('save', 'TernaryDistribution_PennNoSky_2x32_multicutoff_predictions.mat'));
 
-%% Check how match to psychophysics depends on cutoff
+%% Check how much to psychophysics depends on cutoff
 
 grayAmounts = arrayfun(@(s) diff(s.cutoffs), allPredictionResults);
 % restrict comparison to either second-order or mixed groups
