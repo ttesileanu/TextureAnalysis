@@ -13,4 +13,6 @@ h = 1024;
 m = fread(f, [w h], 'uint16');
 m = m';
 
+fclose(f);
+
 end
