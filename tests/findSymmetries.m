@@ -158,7 +158,8 @@ for i = 1:nTrafos
     
     % find transformed NI threshold predictions
     [~, transformedNI{i}] = getPredictionsFromTernaryStats(niStatsTransformed.ev, pp, ...
-        'fitScaleOptions', {'fixScale', predictionDetails.aCoeff});
+        'fitScaleOptions', {'fixScale', predictionDetails.aCoeff}, ...
+        'efficientCodingOptions', {'gainTransform', gainTransformFct});
     
     % find which directions changed and which didn't in the NI
     [~, predictionsShuffle] = applyToThresholds(ni, fct);
@@ -205,7 +206,7 @@ ppEffectSizesTable = table(ppEffectSizesCell{:}, ...
     'VariableNames', trafoNames, 'RowNames', compTypes);
 
 % plotChoice = 'ellipse';
-plotChoice = 'group';
+plotChoice = 'direct';
 plotChoiceIdx = find(strcmp(compTypes, plotChoice), 1);
 
 fig = figure;
