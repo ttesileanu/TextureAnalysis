@@ -127,7 +127,7 @@ end
 NRstr = [int2str(NRselection(1)) 'x' int2str(NRselection(2))];
 outFileName = ['TernaryNIPredictions_' dbChoice compressExt '_' NRstr '.mat'];
 save(fullfile('save', outFileName), 'NRselection', 'restrictToFocus', ...
-    'gain', 'predictions', 'predictionDetails');
+    'gain', 'predictions', 'predictionDetails', 'gainTransformFct');
 
 %% Check match in single planes
 
