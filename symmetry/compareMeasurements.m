@@ -54,6 +54,10 @@ function [difference, details] = compareMeasurements(measurements1, measurements
 %    'invarianceTol'
 %       Tolerance level used to define when measurements have changed in
 %       cases where a `changed` field isn't present.
+%    'normalize'
+%       Before comparison, normalize both sets of measurements by
+%       subtracting out, from each set, the median of the log threshold.
+%       This only applies to the 'direct' and 'group' methods.
 %    'hiLoRatioLimit'
 %       For measurements that have error bars (in the form of a field
 %       called `thresholdIntervals`), only thresholds for which the ratio
@@ -69,6 +73,7 @@ parser.FunctionName = mfilename;
 parser.addParameter('groupMaskFct', @(g) true);
 parser.addParameter('changedOnly', true, @(b) islogical(b) && isscalar(b));
 parser.addParameter('invarianceTol', 1e-8, @(x) isnumeric(x) && isscalar(x));
+parser.addParameter('normalize', false, @(b) islogical(b) && isscalar(b));
 parser.addParameter('hiLoRatioLimit', inf, @(x) isnumeric(x) && isscalar(x));
 
 % show defaults if requested
@@ -120,7 +125,13 @@ if isfield(measurements1, 'thresholdIntervals') && isfinite(params.hiLoRatioLimi
     mask = mask & (logRatios <= log(params.hiLoRatioLimit));
 end
 
-details.common.logdiff = log(measurements1.thresholds) - log(measurements2.thresholds);
+logThresholds1 = log(measurements1.thresholds);
+logThresholds2 = log(measurements2.thresholds);
+if params.normalize
+    logThresholds1 = logThresholds1 - nanmedian(logThresholds1);
+    logThresholds2 = logThresholds2 - nanmedian(logThresholds2);
+end
+details.common.logdiff = logThresholds2 - logThresholds1;
 
 switch type
     case 'direct'
