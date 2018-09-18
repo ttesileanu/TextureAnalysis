@@ -52,11 +52,11 @@ symmetryNIPredFileName = ['TernaryNIPredictions_' dbChoice compressExt '_' NRstr
 pp = loadTernaryPP(fullfile('data', 'mtc_soid_xlsrun_summ.mat'));
 
 % add additional data from Jonathan, but keep only AC_1_2 plane
-% pp_extra = open('data/extra_ternary_thresholds.mat');
-% pp_extra_AC12 = selectMeasurements(pp_extra.avg, ...
-%     strcmp(pp_extra.avg.groups, 'AC_1_2'));
-% 
-% pp = catMeasurements(pp, pp_extra_AC12);
+pp_extra = open('data/extra_ternary_thresholds.mat');
+pp_extra_AC12 = selectMeasurements(pp_extra.avg, ...
+    strcmp(pp_extra.avg.groups, 'AC_1_2'));
+
+pp = catMeasurements(pp, pp_extra_AC12);
 
 if symmetrizePP
     % make sure data is symmetric
@@ -153,28 +153,94 @@ ppEffectSizes = zeros(nTrafos, 1);
 niChangedCounts = zeros(nTrafos, 1);
 ppChangedCounts = zeros(nTrafos, 1);
 
-% groupMaskFct = @(g) length(g) == 6 || sum(g == ';') == 1;
-groupMaskFct = @(g) length(g) > 3;
+groupMaskFct = @(g) length(g) == 6 || sum(g == ';') == 1;
+% groupMaskFct = @(g) length(g) > 3;
 % groupMaskFct = @(g) true;
 
 opts = {'groupMaskFct', groupMaskFct, 'hiLoRatioLimit', 2.0};
 
+niDetails = cell(nTrafos, 1);
+ppDetails = cell(nTrafos, 1);
+
 for i = 1:nTrafos
-    [niEffectSizes(i), niDetails] = compareMeasurements(...
+    [niEffectSizes(i), niDetails{i}] = compareMeasurements(...
         ni, transformedNI{i}, compType, opts{:});
-    [ppEffectSizes(i), ppDetails] = compareMeasurements(...
+    [ppEffectSizes(i), ppDetails{i}] = compareMeasurements(...
         pp, transformedPP{i}, compType, opts{:});
     
     if strcmp(compType, 'group') || strcmp(compType, 'ellipse')
-        niChangedCounts(i) = numel(niDetails.common.uniqueGroups);
-        ppChangedCounts(i) = numel(ppDetails.common.uniqueGroups);
+        niChangedCounts(i) = numel(niDetails{i}.common.uniqueGroups);
+        ppChangedCounts(i) = numel(ppDetails{i}.common.uniqueGroups);
     elseif strcmp(compType, 'direct')
-        niChangedCounts(i) = niDetails.common.nAveraged;
-        ppChangedCounts(i) = ppDetails.common.nAveraged;
+        niChangedCounts(i) = niDetails{i}.common.nAveraged;
+        ppChangedCounts(i) = ppDetails{i}.common.nAveraged;
     end
 end
 
 %% Make figure
+
+fig = figure;
+fig.Units = 'inches';
+fig.Position(3:4) = [3 1.5];
+
+ax = axes;
+ax.Units = 'inches';
+ax.Position = [0.4 0.5 2.5 0.9];
+hold on;
+
+plot([0, nTrafos+1], [0 0], 'color', [0.65 0.65 0.65], 'linewidth', 0.5);
+
+for i = 1:nTrafos
+    differencesNI = 2*(niDetails{i}.common.measurements2.thresholds - ...
+        niDetails{i}.common.measurements1.thresholds) ./ ...
+        (niDetails{i}.common.measurements2.thresholds + ...
+         niDetails{i}.common.measurements1.thresholds);
+    differencesPP = 2*(ppDetails{i}.common.measurements2.thresholds - ...
+        ppDetails{i}.common.measurements1.thresholds) ./ ...
+        (ppDetails{i}.common.measurements2.thresholds + ...
+         ppDetails{i}.common.measurements1.thresholds);
+     
+    crtLocs = [(i - 0.15)*ones(length(differencesNI), 1) ; ...
+        (i + 0.15)*ones(length(differencesPP), 1)];
+    crtDifferences = [differencesNI(:) ; differencesPP(:)];
+    
+    % ignore differences that are exacty zero
+    mask = abs(crtDifferences) >= 1e-8;
+    crtLocs = crtLocs(mask);
+    crtDifferences = crtDifferences(mask);
+    
+    h = stripPlot(crtLocs, crtDifferences, 'jitter', 0.15, 'sizes', 0.5, 'kde', true, ...
+        'colors', [0 0.3438 0.7410 ; 0.8000 0.3000 0.3000]);
+    set(h, 'markerfacealpha', 0.5, 'markeredgealpha', 0.5);
+end
+
+% hold on;
+% boxplot(allDifferencesMatrix, 'colors', 'k', 'whisker', 0, 'symbol', '');
+
+beautifygraph(ax, 'fontscale', 0.6667);
+
+set(ax, 'xtick', 1:nTrafos, 'xticklabel', trafoNames, 'xticklabelrotation', 45, ...
+    'yminortick', 'on');
+ax.XAxis.FontSize = 8;
+ax.YAxis.FontSize = 8;
+ylabel('Relative change');
+% ylim([0, 0.45]);
+% ylim([0, plotMax]);
+xlim([0, nTrafos+1]);
+
+% yl = 1.2*max(ylim);
+yl = 2;
+ylim([-yl yl]);
+
+% legend(h, {'NI', 'PP'}, 'fontsize', 8);
+
+set(ax, 'xminortick', 'off');
+
+preparegraph;
+
+safePrint(fullfile('figs', 'draft', 'symmetries'));
+
+%% Make figure (OLD)
 
 fig = figure;
 fig.Units = 'inches';
