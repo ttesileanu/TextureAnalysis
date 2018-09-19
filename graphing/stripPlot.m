@@ -19,6 +19,8 @@ function h = stripPlot(x, y, varargin)
 %       the beginning if necessary.
 %     'sizes'
 %       Point sizes. XXX For now this should be a scalar.
+%     'marker'
+%       Marker to use.
 %     'jitter'
 %       Amount of jitter to use.
 %     'kde'
@@ -34,6 +36,7 @@ parser.addParameter('ax', []);
 parser.addParameter('colors', 'lines', @(c) (ischar(c) && isvector(c)) || ...
     (ismatrix(c) && size(c, 2) == 3 && isnumeric(c) && isreal(c)));
 parser.addParameter('sizes', [], @(s) isempty(s) || (isnumeric(s) && isscalar(s)));
+parser.addParameter('marker', '', @(s) isempty(s) || ischar(s));
 parser.addParameter('jitter', 0, @(x) isscalar(x) && isnumeric(x));
 parser.addParameter('kde', false, @(b) islogical(b) && isscalar(b));
 
@@ -94,6 +97,11 @@ else
 end
 
 % draw
-h = scatter(xAll, y, params.sizes, c);
+if ~isempty(params.marker)
+    opts = {params.marker};
+else
+    opts = {};
+end
+h = scatter(xAll, y, params.sizes, c, opts{:});
 
 end
