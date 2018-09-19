@@ -67,6 +67,8 @@ switch params.method
         covMat = diag(lognrnd(params.axisParams(1), params.axisParams(2), n, 1));
     case 'correlated'
         error([mfilename ':notimp'], 'Method ''correlated'' not yet implemented.');
+    otherwise
+        error([mfilename ':badmeth'], 'Unknown method.');
 end
 
 invCovMat = inv(covMat);
