@@ -56,7 +56,7 @@ function [difference, details] = compareMeasurements(measurements1, measurements
 %       cases where a `changed` field isn't present.
 %    'normalize'
 %       Before comparison, normalize both sets of measurements by
-%       subtracting out, from each set, the median of the log threshold.
+%       subtracting out, from each set, the mean of the log threshold.
 %       This only applies to the 'direct' and 'group' methods.
 %    'hiLoRatioLimit'
 %       For measurements that have error bars (in the form of a field
@@ -128,8 +128,8 @@ end
 logThresholds1 = log(measurements1.thresholds);
 logThresholds2 = log(measurements2.thresholds);
 if params.normalize
-    logThresholds1 = logThresholds1 - nanmedian(logThresholds1);
-    logThresholds2 = logThresholds2 - nanmedian(logThresholds2);
+    logThresholds1 = logThresholds1 - nanmean(logThresholds1);
+    logThresholds2 = logThresholds2 - nanmean(logThresholds2);
 end
 details.common.logdiff = logThresholds2 - logThresholds1;
 
