@@ -118,4 +118,4 @@ else
     compressExt = '';
 end
 save(fullfile('save', ['TernaryDistribution_' dbChoice compressExt '.mat']), 'results', ...
-    'valuesR', 'valuesN', 'valuesNR');
+    'valuesR', 'valuesN', 'valuesNR', '-v7.3');
