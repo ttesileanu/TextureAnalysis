@@ -125,7 +125,8 @@ end
 %% Save
 
 NRstr = [int2str(NRselection(1)) 'x' int2str(NRselection(2))];
-outFileName = ['TernaryNIPredictions_' dbChoice compressExt '_' NRstr '.mat'];
+outFileName = ['TernaryNIPredictions_' dbChoice compressExt '_' NRstr ...
+    '_' gainTransform '.mat'];
 save(fullfile('save', outFileName), 'NRselection', 'restrictToFocus', ...
     'gain', 'predictions', 'predictionDetails', 'gainTransformFct');
 

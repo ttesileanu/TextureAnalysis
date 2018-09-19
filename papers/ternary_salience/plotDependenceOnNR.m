@@ -27,12 +27,25 @@
 %       measurement and the measurement in the opposite texture direction.
 %       This effectively forces the measurements to be centered at the
 %       origin.
+%   gainTransform
+%       A function to apply to the gains obtained from efficient coding.
+%       This can be either a function handle or one of
+%        'identity'
+%           The gains are kept as they are.
+%        'square'
+%           The gains are squared. This was used in Hermundstad et al.,
+%           leading to threshold predictions that are inversely proportional
+%           to natural image standard deviations instead of their square
+%           roots. Since the efficient coding problem solved here uses a
+%           Gaussian approximation, this transformation might indicate a
+%           departure of visual processing in the brain from Gaussianity.
 
 setdefault('dbChoice', 'PennNoSky');
 setdefault('compressType', 'equalize');
 setdefault('valuesNR', {[1, 32], [1, 48], [1, 64], [2, 32], [2, 48], [2, 64], ...
     [4, 32], [4, 48], [4, 64]});
 setdefault('symmetrizePP', false);
+setdefault('gainTransform', 'square');
 
 %% Preprocess options
 
@@ -80,7 +93,8 @@ details = cell(size(valuesNR));
 for i = 1:length(valuesNR)
     crtNR = valuesNR{i};
     NRstr = [int2str(crtNR(1)) 'x' int2str(crtNR(2))];
-    crtFileName = ['TernaryNIPredictions_' dbChoice compressExt '_' NRstr '.mat'];
+    crtFileName = ['TernaryNIPredictions_' dbChoice compressExt '_' NRstr ...
+        '_' gainTransform '.mat'];
     niStructure = open(fullfile('save', crtFileName));
     ni = niStructure.predictions;
     
@@ -109,8 +123,9 @@ allDifferencesMatrix = cell2mat(cellfun(@(s) ...
 
 allDifferences = allDifferencesMatrix(:);
 allCategories = flatten(meshgrid(1:length(valuesNR), ones(size(allDifferencesMatrix, 1), 1)));
-h = stripPlot(allCategories, allDifferences, 'jitter', 0.5, 'sizes', 1, 'kde', true);
-set(h, 'markerfacealpha', 0.5, 'markeredgealpha', 0.5);
+h = stripPlot(allCategories, allDifferences, 'jitter', 0.5, 'marker', '.', ...
+    'sizes', 1e-3, 'kde', true);
+% set(h, 'markerfacealpha', 0.5, 'markeredgealpha', 0.5);
 
 hold on;
 boxplot(allDifferencesMatrix, 'colors', 'k', 'whisker', 0, 'symbol', '');

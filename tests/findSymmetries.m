@@ -26,12 +26,25 @@
 %       measurement and the measurement in the opposite texture direction.
 %       This effectively forces the measurements to be centered at the
 %       origin.
+%   gainTransform
+%       A function to apply to the gains obtained from efficient coding.
+%       This can be either a function handle or one of
+%        'identity'
+%           The gains are kept as they are.
+%        'square'
+%           The gains are squared. This was used in Hermundstad et al.,
+%           leading to threshold predictions that are inversely proportional
+%           to natural image standard deviations instead of their square
+%           roots. Since the efficient coding problem solved here uses a
+%           Gaussian approximation, this transformation might indicate a
+%           departure of visual processing in the brain from Gaussianity.
 
 setdefault('dbChoice', 'PennNoSky');
 setdefault('compressType', 'equalize');
 setdefault('NRselection', [2, 32]);
 setdefault('restrictToFocus', true);
 setdefault('symmetrizePP', false);
+setdefault('gainTransform', 'square');
 
 %% Preprocess options
 
@@ -42,7 +55,8 @@ else
 end
 niFileName = ['TernaryDistribution_' dbChoice compressExt '.mat'];
 NRstr = [int2str(NRselection(1)) 'x' int2str(NRselection(2))];
-niPredFileName = ['TernaryNIPredictions_' dbChoice compressExt '_' NRstr '.mat'];
+niPredFileName = ['TernaryNIPredictions_' dbChoice compressExt '_' NRstr ...
+    '_' gainTransform '.mat'];
 
 %% Load the data
 

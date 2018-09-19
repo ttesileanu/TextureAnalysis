@@ -29,12 +29,25 @@
 %       measurement and the measurement in the opposite texture direction.
 %       This effectively forces the measurements to be centered at the
 %       origin.
+%   gainTransform
+%       A function to apply to the gains obtained from efficient coding.
+%       This can be either a function handle or one of
+%        'identity'
+%           The gains are kept as they are.
+%        'square'
+%           The gains are squared. This was used in Hermundstad et al.,
+%           leading to threshold predictions that are inversely proportional
+%           to natural image standard deviations instead of their square
+%           roots. Since the efficient coding problem solved here uses a
+%           Gaussian approximation, this transformation might indicate a
+%           departure of visual processing in the brain from Gaussianity.
 
 setdefault('dbChoice', 'PennNoSky');
 setdefault('compressType', 'equalize');
 setdefault('symmetryNR', [2, 32]);
 setdefault('restrictToFocus', true);
 setdefault('symmetrizePP', false);
+setdefault('gainTransform', 'square');
 
 %% Preprocess options
 
@@ -45,7 +58,8 @@ else
 end
 niFileName = ['TernaryDistribution_' dbChoice compressExt '.mat'];
 NRstr = [int2str(symmetryNR(1)) 'x' int2str(symmetryNR(2))];
-symmetryNIPredFileName = ['TernaryNIPredictions_' dbChoice compressExt '_' NRstr '.mat'];
+symmetryNIPredFileName = ['TernaryNIPredictions_' dbChoice compressExt '_' NRstr ...
+    '_' gainTransform '.mat'];
 
 %% Load the data
 
@@ -209,9 +223,10 @@ for i = 1:nTrafos
     crtLocs = crtLocs(mask);
     crtDifferences = crtDifferences(mask);
     
-    h = stripPlot(crtLocs, crtDifferences, 'jitter', 0.15, 'sizes', 0.5, 'kde', true, ...
-        'colors', [0 0.3438 0.7410 ; 0.8000 0.3000 0.3000]);
-    set(h, 'markerfacealpha', 0.5, 'markeredgealpha', 0.5);
+    h = stripPlot(crtLocs, crtDifferences, 'jitter', 0.25, 'sizes', 1e-3, 'kde', true, ...
+        'colors', [0 0.3438 0.7410 ; 0.8000 0.3000 0.3000], ...
+        'marker', '.');
+%     set(h, 'markerfacealpha', 0.5, 'markeredgealpha', 0.5);
 end
 
 % hold on;

@@ -7,7 +7,7 @@ ternaryAvg = loadTernaryPP(fullfile('data', 'mtc_soid_xlsrun_summ.mat'));
 
 %% Load the NI predictions
 
-load(fullfile('save', 'TernaryNIPredictions_PennNoSky_2x32.mat'));
+load(fullfile('save', 'TernaryNIPredictions_PennNoSky_2x32_square.mat'));
 
 %% Single planes
 
