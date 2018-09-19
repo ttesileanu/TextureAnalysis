@@ -24,11 +24,27 @@
 %       measurement and the measurement in the opposite texture direction.
 %       This effectively forces the measurements to be centered at the
 %       origin.
+%   gainTransform
+%       A function to apply to the gains obtained from efficient coding.
+%       This can be either a function handle or one of
+%        'identity'
+%           The gains are kept as they are.
+%        'square'
+%           The gains are squared. This was used in Hermundstad et al.,
+%           leading to threshold predictions that are inversely proportional
+%           to natural image standard deviations instead of their square
+%           roots. Since the efficient coding problem solved here uses a
+%           Gaussian approximation, this transformation might indicate a
+%           departure of visual processing in the brain from Gaussianity.
+%   nSamples
+%       Number of samples to use for statistical tests.
 
 setdefault('dbChoice', 'PennNoSky');
 setdefault('compressType', 'equalize');
 setdefault('NRselection', [2, 32]);
 setdefault('symmetrizePP', false);
+setdefault('gainTransform', 'square');
+setdefault('nSamples', 10000);
 
 %% Preprocess options
 
@@ -39,7 +55,8 @@ else
 end
 % niFileName = ['TernaryDistribution_' dbChoice compressExt '.mat'];
 NRstr = [int2str(NRselection(1)) 'x' int2str(NRselection(2))];
-niPredFileName = ['TernaryNIPredictions_' dbChoice compressExt '_' NRstr '.mat'];
+niPredFileName = ['TernaryNIPredictions_' dbChoice compressExt '_' NRstr ...
+    '_' gainTransform '.mat'];
 
 %% Load data
 
@@ -73,20 +90,16 @@ ni = selectMeasurements(ni0, cellfun(@(s) length(s) == 6 || sum(s == ';') == 1, 
 % Note that this will in general not lead to elliptical threshold contours
 % in texture planes.
 
-% number of samples
-% nArtificial = 500;
-nArtificial = 10000;
-
 % generate the samples
-ppArtificialSimple = cell(1, nArtificial);
+ppArtificialSimple = cell(1, nSamples);
 
-comparisonsToExperimentSimple = zeros(nArtificial, 1);
-comparisonsToTheorySimple = zeros(nArtificial, 1);
+comparisonsToExperimentSimple = zeros(nSamples, 1);
+comparisonsToTheorySimple = zeros(nSamples, 1);
 
 compType = 'direct';
 
 progress = TextProgress;
-for i = 1:nArtificial
+for i = 1:nSamples
     ppArtificialSimple{i} = pp;
     permutation = randperm(length(ppArtificialSimple{i}.thresholds));
     ppArtificialSimple{i}.thresholds = ppArtificialSimple{i}.thresholds(permutation);
@@ -98,7 +111,7 @@ for i = 1:nArtificial
     comparisonsToTheorySimple(i) = compareMeasurements(ni, ppArtificialSimple{i}, compType, ...
         'normalize', true);
     
-    progress.update(i*100/nArtificial);
+    progress.update(i*100/nSamples);
 end
 progress.done;
 
@@ -131,12 +144,15 @@ beautifygraph;
 
 preparegraph;
 
-pvalSimple = mean(comparisonsToExperimentSimple < actualPPNIComparison);
+pvalSimple = mean(comparisonsToTheorySimple <= actualPPNIComparison);
 if pvalSimple == 0
-    disp(['p < 1/' int2str(nArtificial) '.']);
+    disp(['p < 1/' int2str(nSamples) '.']);
 else
     disp(['p = ' num2str(pvalSimple) '.']);
 end
+disp(['Actual D = ' num2str(actualPPNIComparison, '%.3f')]);
+[lo, hi] = getHdi(comparisonsToTheorySimple, 0.95);
+disp(['95% CI of D is [' num2str(lo, '%.3f') ', ' num2str(hi, '%.3f') ']']);
 
 %% NULL MODEL #2: thresholds along 99 texture directions drawn randomly i.i.d.
 
@@ -147,21 +163,17 @@ end
 % plane. At least one of the ellipse axes is always aligned with a
 % coordinate axis.
 
-% number of samples
-% nArtificial = 500;
-nArtificial = 10000;
-
 % generate the samples
-ppArtificial = cell(1, nArtificial);
+ppArtificial = cell(1, nSamples);
 axisParams = [nanmean(log(pp.thresholds)), nanstd(log(pp.thresholds))];
 
-comparisonsToExperiment = zeros(nArtificial, 1);
-comparisonsToTheory = zeros(nArtificial, 1);
+comparisonsToExperiment = zeros(nSamples, 1);
+comparisonsToTheory = zeros(nSamples, 1);
 
 compType = 'direct';
 
 progress = TextProgress;
-for i = 1:nArtificial
+for i = 1:nSamples
     ppArtificial{i} = inventMeasurements(pp.groups, pp.directions, 'axisParams', axisParams);
     
     % get distances to experiment and NI predictions, normalizing out the
@@ -171,7 +183,7 @@ for i = 1:nArtificial
     comparisonsToTheory(i) = compareMeasurements(ni, ppArtificial{i}, compType, ...
         'normalize', true);
     
-    progress.update(i*100/nArtificial);
+    progress.update(i*100/nSamples);
 end
 progress.done;
 
@@ -204,14 +216,17 @@ beautifygraph;
 
 preparegraph;
 
-pval = mean(comparisonsToExperiment < actualPPNIComparison);
+pval = mean(comparisonsToTheory <= actualPPNIComparison);
 if pval == 0
-    disp(['p < 1/' int2str(nArtificial) '.']);
+    disp(['p < 1/' int2str(nSamples) '.']);
 else
     disp(['p = ' num2str(pval) '.']);
 end
+disp(['Actual D = ' num2str(actualPPNIComparison, '%.3f')]);
+[lo, hi] = getHdi(comparisonsToTheory, 0.95);
+disp(['95% CI of D is [' num2str(lo, '%.3f') ', ' num2str(hi, '%.3f') ']']);
 
-%% BAYESIAN MODEL #3: interpolate between constant threshold and NI predictions
+%% BAYESIAN MODEL: interpolate between constant threshold and NI predictions
 
 % Consider a probabilistic model in which the log threshold in direction i
 % is related to the natural image prediction in that direction by
@@ -248,7 +263,7 @@ logPriors = {...
 % run the inference, plot some diagnostics
 fig = figure;
 posteriorSamplesBurned = cell(length(logPriors), 1);
-nSamples = 10000;
+% nSamples = 10000;
 for i = 1:length(logPriors)
     priorName = logPriors{i}{1};
     logPrior = logPriors{i}{2};
@@ -271,13 +286,19 @@ for i = 1:length(logPriors)
 end
 
 % show posterior beta
+minBeta = min([0 ; cellfun(@(samples) min(samples(:, 1)), posteriorSamplesBurned(:))]);
+maxBeta = max([1 ; cellfun(@(samples) max(samples(:, 1)), posteriorSamplesBurned(:))]);
 plotter = MatrixPlotter(length(logPriors), 'fixedSize', [8 4], 'fixedSizeUnits', 'inches');
 while plotter.next
     i = plotter.index;
     
-    histogram(posteriorSamplesBurned{i}(:, 1), 100, 'BinLimits', [0 1.2]);
+    histogram(posteriorSamplesBurned{i}(:, 1), 100, 'BinLimits', [minBeta maxBeta]);
     xlabel('\beta');
     title(logPriors{i}{1});
+    
+    [lo, hi] = getHdi(posteriorSamplesBurned{i}(:, 1), 0.95);
+    disp(['95% credible interval for beta, ', logPriors{i}{1} ' prior: [' ...
+        num2str(lo, '%.3f') ', ' num2str(hi, '%.3f') ']']);
 end
 
 % show posterior sigma
@@ -288,4 +309,8 @@ while plotter.next
     histogram(exp(posteriorSamplesBurned{i}(:, 2)), 100, 'BinLimits', [0 0.5]);
     xlabel('\sigma');
     title(logPriors{i}{1});
+    
+    [lo, hi] = getHdi(exp(posteriorSamplesBurned{i}(:, 2)), 0.95);
+    disp(['95% credible interval for sigma, ', logPriors{i}{1} ' prior: [' ...
+        num2str(lo, '%.3f') ', ' num2str(hi, '%.3f') ']']);
 end
