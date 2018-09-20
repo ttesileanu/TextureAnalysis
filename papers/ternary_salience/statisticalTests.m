@@ -90,6 +90,9 @@ ni = selectMeasurements(ni0, cellfun(@(s) length(s) == 6 || sum(s == ';') == 1, 
 % Note that this will in general not lead to elliptical threshold contours
 % in texture planes.
 
+% ensure reproducibility
+rng(2873834);
+
 % generate the samples
 ppArtificialSimple = cell(1, nSamples);
 
@@ -162,6 +165,9 @@ disp(['95% CI of D is [' num2str(lo, '%.3f') ', ' num2str(hi, '%.3f') ']']);
 % This naturally leads to elliptical threshold contours in every texture
 % plane. At least one of the ellipse axes is always aligned with a
 % coordinate axis.
+
+% ensure reproducibility
+rng(982378);
 
 % generate the samples
 ppArtificial = cell(1, nSamples);
@@ -240,6 +246,9 @@ disp(['95% CI of D is [' num2str(lo, '%.3f') ', ' num2str(hi, '%.3f') ']']);
 
 % We try a few different priors to make sure we're not biasing the
 % inference.
+
+% ensure reproducibility
+rng(75236);
 
 % prepare the data and NI predictions
 % comparing mean-centered log thresholds
