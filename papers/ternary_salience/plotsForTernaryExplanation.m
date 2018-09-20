@@ -128,7 +128,7 @@ colormap('gray');
 
 %% Load filter
 
-filter0 = open(fullfile('filters', 'filter4x32.mat'));
+filter0 = open(fullfile('filters', 'PennNoSky', 'filter4x32.mat'));
 filter = filter0.filter;
 
 %% Draw the preprocessing pipeline
