@@ -72,6 +72,9 @@ switch type
         nReps = G;
     otherwise
         nReps = 1;
+        if ~ismember(type, {'unique', 'analyzeShort'})
+            error('Unknown type.');
+        end
 end
 
 if nReps > 1
