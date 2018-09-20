@@ -37,6 +37,9 @@
 %           roots. Since the efficient coding problem solved here uses a
 %           Gaussian approximation, this transformation might indicate a
 %           departure of visual processing in the brain from Gaussianity.
+%   fitLogSlope
+%       If `true`, use a second fitting parameter to estimate the slope
+%       between log predictions and log measurements.
 
 setdefault('dbChoice', 'PennNoSky');
 setdefault('compressType', 'equalize');
@@ -44,6 +47,7 @@ setdefault('NRselection', [2, 32]);
 setdefault('restrictToFocus', true);
 setdefault('useErrorBars', true);
 setdefault('gainTransform', 'square');
+setdefault('fitLogSlope', false);
 
 %% Preprocess options
 
@@ -119,14 +123,17 @@ end
 % [gain, predictions, predictionDetails] = getPredictionsFromTernaryStats(...
 %     ni.ev, ppForFit, 'fitScaleOptions', {'mask', cellfun(@length, pp.groups) == 6});
 [gain, predictions, predictionDetails] = getPredictionsFromTernaryStats(...
-    ni.ev, ppForFit, 'fitScaleOptions', {'mask', cellfun(@(s) length(s) == 6 || sum(s == ';') == 1, pp.groups)}, ...
+    ni.ev, ppForFit, ...
+    'fitScaleOptions', {'mask', cellfun(@(s) length(s) == 6 || sum(s == ';') == 1, pp.groups), ...
+        'logSlope', fitLogSlope}, ...
     'efficientCodingOptions', {'gainTransform', gainTransformFct});
 
 %% Save
 
 NRstr = [int2str(NRselection(1)) 'x' int2str(NRselection(2))];
+fitLogSuffixes = {'', '_powfit'};
 outFileName = ['TernaryNIPredictions_' dbChoice compressExt '_' NRstr ...
-    '_' gainTransform '.mat'];
+    '_' gainTransform fitLogSuffixes{1 + fitLogSlope} '.mat'];
 save(fullfile('save', outFileName), 'NRselection', 'restrictToFocus', ...
     'gain', 'predictions', 'predictionDetails', 'gainTransformFct');
 
