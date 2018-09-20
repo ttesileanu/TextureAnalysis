@@ -35,6 +35,7 @@ parser.FunctionName = mfilename;
 parser.addParameter('method', 'independent', @(s) ismember(s, {'independent', 'correlated'}));
 parser.addParameter('axisParams', [0 1], @(v) isvector(v) && length(v) == 2 && isnumeric(v));
 parser.addParameter('axisCorr', 0, @(x) isscalar(x) && isnumeric(x));
+parser.addParameter('originalCov', [], @(m) ismatrix(m) && isnumeric(m));
 
 % show defaults if requested
 if nargin == 1 && strcmp(directions, 'defaults')
@@ -61,24 +62,55 @@ nGroups = G*(G^2 + G - 1);
 % each group is defined by a G-component probability distribution
 n = G*nGroups;
 
-% generate the threshold covariance matrix
+% generate a covariance matrix from which we'll calculate gains
 switch params.method
     case 'independent'
-        covMat = diag(lognrnd(params.axisParams(1), params.axisParams(2), n, 1));
+        if isempty(params.originalCov)
+            % the thresholds will end up inversely proportional to the standard
+            % deviations, so we set the variances equal to minus their squares
+            diagElements = lognrnd(-2*params.axisParams(1), 2*params.axisParams(2), n, 1);
+            
+        else
+            diagElements = diag(params.originalCov);
+            diagElements = diagElements(randperm(length(diagElements)));
+        end
+        covMat = diag(diagElements);
     case 'correlated'
         error([mfilename ':notimp'], 'Method ''correlated'' not yet implemented.');
     otherwise
         error([mfilename ':badmeth'], 'Unknown method.');
 end
 
-invCovMat = inv(covMat);
+% project the covariance matrix to enforce the constraints that the G
+% probabilities for each group add up to 1
+constraints = zeros(n, G);
+% assuming the groups are sequential: first G components are group 1, next
+% G are group 2, etc.
+for i = 1:nGroups
+    constraints((i-1)*G + 1:i*G, i) = 1/sqrt(G);
+end
+
+% the constraint vectors are orthonoral, so building a projector onto the
+% constraint space is trivial
+Pconstraint = constraints*constraints';
+
+% identity minus that projector then gives the projector onto the
+% orthogonal subspace to the constraint space
+P = eye(n) - Pconstraint;
+
+% project the covariance matrix
+% using the fact that P = P'
+covMat = P*covMat*P;
 
 % extend PP directions to the full dimensionality of texture space
 directionsExt = cellfun(@(v) v - 1/3, ternaryextdir(groups, directions), ...
     'uniform', false);
 
-% get thresholds
-thresholds = gainsToThresholds(invCovMat, directionsExt);
+% get gains
+unscaledGain = solveLinearEfficientCoding(covMat, 'gainTransform', @(x) x.^2);
+
+% calculate thresholds from the gains
+thresholds = gainsToThresholds(unscaledGain, directionsExt);
 
 % assemble the measurements structure
 measurements.groups = groups;
