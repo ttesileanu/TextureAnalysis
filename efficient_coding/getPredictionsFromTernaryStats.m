@@ -91,7 +91,11 @@ details.unscaledGain = unscaledGain;
 
 % rescale the gain to give the optimally-scaled predictions when used with
 % gainsToThresholds
-gain = unscaledGain / aCoeff;
+if isscalar(aCoeff)
+    gain = unscaledGain / aCoeff;
+else
+    gain = [];
+end
 
 predictions.groups = ppData.groups;
 predictions.directions = ppData.directions;
