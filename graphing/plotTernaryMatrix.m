@@ -38,13 +38,9 @@ function [plotter, uniqueGroups] = plotTernaryMatrix(measurements, varargin)
 %       measurements than sizes.
 %    'colorFct'
 %       Colormap function giving the colors to use when there are several
-%       subjects. This overrides the 'colors' option. It can be one of the
-%       following:
-%         (a) a colormap-like function, such that `colorFct(n)` returns an
-%             n x 3 matrix of RGB colors.
-%         (b) an instance of `containers.Map`, mapping subject names to
-%             RGB colors.
-%       Set to empty to disable per-subject coloring.
+%       subjects. This overrides the 'colors' option. The argument should
+%       be a callable that takes in the name of a subject and returns an
+%       RGB color. Set to empty to disable per-subject coloring.
 %    Other options are sent to `showTernaryChange`.
 %
 %   See also: plotTernaryThresholds.
