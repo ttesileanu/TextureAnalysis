@@ -109,9 +109,7 @@ compType = 'direct';
 
 progress = TextProgress;
 for i = 1:nSamples
-    ppArtificialSimple{i} = pp;
-    permutation = randperm(length(ppArtificialSimple{i}.thresholds));
-    ppArtificialSimple{i}.thresholds = ppArtificialSimple{i}.thresholds(permutation);
+    ppArtificialSimple{i} = shuffleMeasurements(pp);
     
     % get distances to experiment and NI predictions, normalizing out the
     % median log threshold
@@ -163,7 +161,174 @@ disp(['Actual D = ' num2str(actualPPNIComparison, '%.3f')]);
 [lo, hi] = getHdi(comparisonsToTheorySimple, 0.95);
 disp(['95% CI of D is [' num2str(lo, '%.3f') ', ' num2str(hi, '%.3f') ']']);
 
-%% NULL MODEL #2: thresholds along 99 texture directions drawn randomly i.i.d.
+%% NULL MODEL #2: shuffle all groups randomly
+
+% Note that this will in general not lead to elliptical threshold contours
+% in texture planes.
+
+% ensure reproducibility
+rng(4736734);
+
+% generate the samples
+ppArtificialPermGroupCyclic = cell(1, nSamples);
+
+comparisonsToExperimentPermGroupCyclic = zeros(nSamples, 1);
+comparisonsToTheoryPermGroupCyclic = zeros(nSamples, 1);
+
+compType = 'direct';
+
+progress = TextProgress;
+for i = 1:nSamples
+    ppArtificialPermGroupCyclic{i} = shuffleMeasurements(pp, 'group', true, ...
+        'cyclic', true);
+    
+    % get distances to experiment and NI predictions, normalizing out the
+    % median log threshold
+    comparisonsToExperimentPermGroupCyclic(i) = compareMeasurements(...
+        pp, ppArtificialPermGroupCyclic{i}, compType, ...
+        'normalize', true);
+    comparisonsToTheoryPermGroupCyclic(i) = compareMeasurements(...
+        ni, ppArtificialPermGroupCyclic{i}, compType, ...
+        'normalize', true);
+    
+    progress.update(i*100/nSamples);
+end
+progress.done;
+
+% distance between prediction and experiment
+actualPPNIComparison = compareMeasurements(pp, ni, compType, 'normalize', true);
+
+%% Make plots
+
+fig = figure;
+fig.Units = 'inches';
+fig.Position = [4 3 7 5];
+
+lo = min([comparisonsToExperimentPermGroupCyclic ; comparisonsToTheoryPermGroupCyclic]);
+hi = max([comparisonsToExperimentPermGroupCyclic ; comparisonsToTheoryPermGroupCyclic]);
+bins = linspace(lo, hi, 25);
+
+subplot(2, 1, 1);
+histogram(comparisonsToExperimentPermGroupCyclic, bins);
+hold on;
+plot([actualPPNIComparison actualPPNIComparison], ylim, 'r--');
+xlabel('comparison to experiment');
+beautifygraph;
+
+subplot(2, 1, 2);
+histogram(comparisonsToTheoryPermGroupCyclic, bins);
+hold on;
+plot([actualPPNIComparison actualPPNIComparison], ylim, 'r--');
+xlabel('comparison to theory');
+beautifygraph;
+
+preparegraph;
+
+pvalSimple = mean(comparisonsToTheoryPermGroupCyclic <= actualPPNIComparison);
+if pvalSimple == 0
+    disp(['p < 1/' int2str(nSamples) '.']);
+else
+    disp(['p = ' num2str(pvalSimple) '.']);
+end
+disp(['Actual D = ' num2str(actualPPNIComparison, '%.3f')]);
+[lo, hi] = getHdi(comparisonsToTheoryPermGroupCyclic, 0.95);
+disp(['95% CI of D is [' num2str(lo, '%.3f') ', ' num2str(hi, '%.3f') ']']);
+
+%% BAYESIAN MODEL: interpolate between constant threshold and NI predictions
+
+% Consider a probabilistic model in which the log threshold in direction i
+% is related to the natural image prediction in that direction by
+%   log_th(i) - avg_log_th = beta*(log_pred - avg_log_pred) + eta(i)
+% where eta(i) are i.i.d. errors drawn from a normal distribution with
+% standard deviation sigma.
+
+% Note that the log thresholds are simply random when beta = 0, and are
+% given by the NI predictions + random error when beta = 1. We aim to find
+% the posterior distribution for beta and see whether it overlaps 0 or 1.
+
+% We try a few different priors to make sure we're not biasing the
+% inference.
+
+% ensure reproducibility
+rng(75236);
+
+% prepare the data and NI predictions
+% comparing mean-centered log thresholds
+idxShuffle = matchMeasurements(pp, ni);
+xi = log(pp.thresholds);
+yi = log(ni.thresholds(idxShuffle));
+
+xiHat = xi - mean(xi);
+yiHat = yi - mean(yi);
+
+% prepare the priors
+n = length(xiHat);
+priorBetaStd = 10;
+priorLogSigmaStd = 10;
+logPriors = {...
+    {'flat', @(beta, logSigma) 0}, ...
+    {'normalBeta', @(beta, logSigma) -0.5*(beta/priorBetaStd)^2}, ...
+    {'normalLogSigma', @(beta, logSigma) -0.5*(logSigma/priorLogSigmaStd)^2}, ...
+    {'normalBoth', @(beta, logSigma) -0.5*(beta/priorBetaStd)^2 - 0.5*(logSigma/priorLogSigmaStd)^2}};
+
+% run the inference, plot some diagnostics
+figure;
+posteriorSamplesBurned = cell(length(logPriors), 1);
+% nSamples = 10000;
+for i = 1:length(logPriors)
+    priorName = logPriors{i}{1};
+    logPrior = logPriors{i}{2};
+    logPdf = @(params) -0.5*sum((params(1)*yiHat - xiHat).^2)/exp(2*params(2)) - ...
+        n/2*log(2*pi) - n*params(2) + logPrior(params(1), params(2));
+    
+    % choose a neutral initial point
+    initial = [0.5 0.0];
+    posteriorSamples = slicesample(initial, nSamples, 'logpdf', logPdf);
+    
+    % plot diagnostics
+    subplot(length(logPriors), 1, i);
+    plot(posteriorSamples);
+    legend({'\beta', 'log(\sigma)'});
+    xlabel('Iteration');
+    title(priorName);
+    
+    % store the samples
+    posteriorSamplesBurned{i} = posteriorSamples(end/2:end, :);
+end
+
+% show posterior beta
+minBeta = min([0 ; cellfun(@(samples) min(samples(:, 1)), posteriorSamplesBurned(:))]);
+maxBeta = max([1 ; cellfun(@(samples) max(samples(:, 1)), posteriorSamplesBurned(:))]);
+plotter = MatrixPlotter(length(logPriors), 'fixedSize', [8 4], 'fixedSizeUnits', 'inches');
+while plotter.next
+    i = plotter.index;
+    
+    histogram(posteriorSamplesBurned{i}(:, 1), 100, 'BinLimits', [minBeta maxBeta]);
+    xlabel('\beta');
+    title(logPriors{i}{1});
+    
+    [lo, hi] = getHdi(posteriorSamplesBurned{i}(:, 1), 0.95);
+    disp(['95% credible interval for beta, ', logPriors{i}{1} ' prior: [' ...
+        num2str(lo, '%.3f') ', ' num2str(hi, '%.3f') ']']);
+end
+
+% show posterior sigma
+plotter = MatrixPlotter(length(logPriors), 'fixedSize', [8 4], 'fixedSizeUnits', 'inches');
+while plotter.next
+    i = plotter.index;
+    
+    histogram(exp(posteriorSamplesBurned{i}(:, 2)), 100, 'BinLimits', [0 0.5]);
+    xlabel('\sigma');
+    title(logPriors{i}{1});
+    
+    [lo, hi] = getHdi(exp(posteriorSamplesBurned{i}(:, 2)), 0.95);
+    disp(['95% credible interval for sigma, ', logPriors{i}{1} ' prior: [' ...
+        num2str(lo, '%.3f') ', ' num2str(hi, '%.3f') ']']);
+end
+
+%% SCRATCH BELOW THIS POINT
+
+%% NULL MODEL #3: thresholds along 99 texture directions drawn randomly i.i.d.
 
 % ...from log-normal distribution with mean and standard deviation taken
 % from actual data. No correlations between directions.
@@ -237,95 +402,3 @@ end
 disp(['Actual D = ' num2str(actualPPNIComparison, '%.3f')]);
 [lo, hi] = getHdi(comparisonsToTheory, 0.95);
 disp(['95% CI of D is [' num2str(lo, '%.3f') ', ' num2str(hi, '%.3f') ']']);
-
-%% BAYESIAN MODEL: interpolate between constant threshold and NI predictions
-
-% Consider a probabilistic model in which the log threshold in direction i
-% is related to the natural image prediction in that direction by
-%   log_th(i) - avg_log_th = beta*(log_pred - avg_log_pred) + eta(i)
-% where eta(i) are i.i.d. errors drawn from a normal distribution with
-% standard deviation sigma.
-
-% Note that the log thresholds are simply random when beta = 0, and are
-% given by the NI predictions + random error when beta = 1. We aim to find
-% the posterior distribution for beta and see whether it overlaps 0 or 1.
-
-% We try a few different priors to make sure we're not biasing the
-% inference.
-
-% ensure reproducibility
-rng(75236);
-
-% prepare the data and NI predictions
-% comparing mean-centered log thresholds
-idxShuffle = matchMeasurements(pp, ni);
-xi = log(pp.thresholds);
-yi = log(ni.thresholds(idxShuffle));
-
-xiHat = xi - mean(xi);
-yiHat = yi - mean(yi);
-
-% prepare the priors
-n = length(xiHat);
-priorBetaStd = 10;
-priorLogSigmaStd = 10;
-logPriors = {...
-    {'flat', @(beta, logSigma) 0}, ...
-    {'normalBeta', @(beta, logSigma) -0.5*(beta/priorBetaStd)^2}, ...
-    {'normalLogSigma', @(beta, logSigma) -0.5*(logSigma/priorLogSigmaStd)^2}, ...
-    {'normalBoth', @(beta, logSigma) -0.5*(beta/priorBetaStd)^2 - 0.5*(logSigma/priorLogSigmaStd)^2}};
-
-% run the inference, plot some diagnostics
-fig = figure;
-posteriorSamplesBurned = cell(length(logPriors), 1);
-% nSamples = 10000;
-for i = 1:length(logPriors)
-    priorName = logPriors{i}{1};
-    logPrior = logPriors{i}{2};
-    logPdf = @(params) -0.5*sum((params(1)*yiHat - xiHat).^2)/exp(2*params(2)) - ...
-        n/2*log(2*pi) - n*params(2) + logPrior(params(1), params(2));
-    
-    % choose a neutral initial point
-    initial = [0.5 0.0];
-    posteriorSamples = slicesample(initial, nSamples, 'logpdf', logPdf);
-    
-    % plot diagnostics
-    subplot(length(logPriors), 1, i);
-    plot(posteriorSamples);
-    legend({'\beta', 'log(\sigma)'});
-    xlabel('Iteration');
-    title(priorName);
-    
-    % store the samples
-    posteriorSamplesBurned{i} = posteriorSamples(end/2:end, :);
-end
-
-% show posterior beta
-minBeta = min([0 ; cellfun(@(samples) min(samples(:, 1)), posteriorSamplesBurned(:))]);
-maxBeta = max([1 ; cellfun(@(samples) max(samples(:, 1)), posteriorSamplesBurned(:))]);
-plotter = MatrixPlotter(length(logPriors), 'fixedSize', [8 4], 'fixedSizeUnits', 'inches');
-while plotter.next
-    i = plotter.index;
-    
-    histogram(posteriorSamplesBurned{i}(:, 1), 100, 'BinLimits', [minBeta maxBeta]);
-    xlabel('\beta');
-    title(logPriors{i}{1});
-    
-    [lo, hi] = getHdi(posteriorSamplesBurned{i}(:, 1), 0.95);
-    disp(['95% credible interval for beta, ', logPriors{i}{1} ' prior: [' ...
-        num2str(lo, '%.3f') ', ' num2str(hi, '%.3f') ']']);
-end
-
-% show posterior sigma
-plotter = MatrixPlotter(length(logPriors), 'fixedSize', [8 4], 'fixedSizeUnits', 'inches');
-while plotter.next
-    i = plotter.index;
-    
-    histogram(exp(posteriorSamplesBurned{i}(:, 2)), 100, 'BinLimits', [0 0.5]);
-    xlabel('\sigma');
-    title(logPriors{i}{1});
-    
-    [lo, hi] = getHdi(exp(posteriorSamplesBurned{i}(:, 2)), 0.95);
-    disp(['95% credible interval for sigma, ', logPriors{i}{1} ' prior: [' ...
-        num2str(lo, '%.3f') ', ' num2str(hi, '%.3f') ']']);
-end
