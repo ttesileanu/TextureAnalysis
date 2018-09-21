@@ -36,6 +36,10 @@
 %           roots. Since the efficient coding problem solved here uses a
 %           Gaussian approximation, this transformation might indicate a
 %           departure of visual processing in the brain from Gaussianity.
+%   fitLogSlope
+%       Whether to use the predictions where a second fitting parameter was
+%       employed to estimate the slope between log predictions and log
+%       measurements.
 %   nSamples
 %       Number of samples to use for statistical tests.
 
@@ -45,6 +49,7 @@ setdefault('NRselection', [2, 32]);
 setdefault('symmetrizePP', false);
 setdefault('gainTransform', 'square');
 setdefault('nSamples', 10000);
+setdefault('fitLogSlope', false);
 
 %% Preprocess options
 
@@ -55,8 +60,9 @@ else
 end
 % niFileName = ['TernaryDistribution_' dbChoice compressExt '.mat'];
 NRstr = [int2str(NRselection(1)) 'x' int2str(NRselection(2))];
+fitLogSuffixes = {'', '_powfit'};
 niPredFileName = ['TernaryNIPredictions_' dbChoice compressExt '_' NRstr ...
-    '_' gainTransform '.mat'];
+    '_' gainTransform fitLogSuffixes{1 + fitLogSlope} '.mat'];
 
 %% Load data
 
