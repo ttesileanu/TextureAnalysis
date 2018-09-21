@@ -58,7 +58,8 @@ parser.FunctionName = mfilename;
 
 parser.addOptional('directions', {}, @(c) iscell(c));
 parser.addParameter('marker', 'x', @(s) ischar(s));
-parser.addParameter('color', [0.8 0.3 0.3], @(v) ismatrix(v) && isnumeric(v) && size(v, 2) == 3);
+parser.addParameter('color', [0.8 0.3 0.3], @(v) isempty(v) || ...
+    (ismatrix(v) && isnumeric(v) && size(v, 2) == 3));
 parser.addParameter('size', 5, @(x) isnumeric(x) && isvector(x) && all(x > 0));
 parser.addParameter('errors', [], @(v) isempty(v) || (ismatrix(v) && size(v, 2) == 2 && isnumeric(v)));
 parser.addParameter('errorColor', [0.3 0.3 0.3], @(v) isvector(v) && isnumeric(v) && length(v) == 3);
@@ -144,12 +145,25 @@ switch nGroups
         error([mfilename ':badngrp'], 'This function only works with single groups and pairs of groups.');
 end
 
+% figure out colors
+if isempty(params.colorFct)
+    colors = params.color;
+else
+    if isfield(measurements, 'subjects')
+        colors = cell2mat(cellfun(@(s) flatten(params.colorFct(s))', ...
+            measurements.subjects(:), 'uniform', false));
+    else
+        colors = cell2mat(cellfun(@(th) flatten(params.colorFct('subject'))', ...
+            thresholds(:), 'uniform', false));
+    end
+end
+
 % draw error bars for measured data, if we have them
 if ~isempty(params.errors)
     % don't plot errorbars that are not finite, though
     errMask = all(isfinite(projectedLo), 2) & all(isfinite(projectedHi), 2);
     
-    errorColor = mixcolor(params.color, params.errorColor);
+    errorColor = mixcolor(colors, params.errorColor);
     
     projLoMasked = projectedLo(errMask, :);
     projHiMasked = projectedHi(errMask, :);
@@ -177,17 +191,6 @@ if ~isempty(params.errors)
 end
 
 % draw measured data
-if isempty(params.colorFct)
-    colors = params.color;
-else
-    if isfield(measurements, 'subjects')
-        colors = cell2mat(cellfun(@(s) flatten(params.colorFct(s))', ...
-            measurements.subjects(:), 'uniform', false));
-    else
-        colors = cell2mat(cellfun(@(th) flatten(params.colorFct('subject'))', ...
-            thresholds(:), 'uniform', false));
-    end
-end
 h = scatter(projectedThresholds(:, 1), projectedThresholds(:, 2), ...
     params.size.^2, colors, params.marker(1));
 h.LineWidth = 1;
