@@ -58,8 +58,7 @@ parser.addParameter('colors', {[0 0.3438 0.7410], [0.8 0.3 0.3]}, ...
     @(c) iscell(c) && isvector(c));
 parser.addParameter('markers', {'.', 'x'}, @(c) iscell(c) && isvector(c));
 parser.addParameter('sizes', [8, 5], @(x) isnumeric(x) && isvector(x) && all(x > 0));
-parser.addParameter('colorFct', [], @(f) isempty(f) || isa(f, 'function_handle') ...
-    || isa(f, 'containers.Map'));
+parser.addParameter('colorFct', []);
 parser.addParameter('limits', [2 1], @(v) isvector(v) && isnumeric(v) && ...
     ismember(numel(v), [1 2]));
 parser.addParameter('plotterOptions', {}, @(c) iscell(c) && isvector(c));
