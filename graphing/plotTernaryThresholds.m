@@ -48,6 +48,8 @@ function [projectedThresholds] = plotTernaryThresholds(...
 %       before plotting the thresholds.
 %    'triangleOptions'
 %       Options to pass to drawTernaryTriangle.
+%    'mixedOptions'
+%       Options to pass to drawTernaryMixedBackground.
 %    
 %   See also: plotTernaryMatrix.
 
@@ -68,6 +70,7 @@ parser.addParameter('ellipse', false, @(b) islogical(b) && isscalar(b));
 parser.addParameter('colorFct', []);
 parser.addParameter('drawGuides', 'auto', @(b) (islogical(b) && isscalar(b)) || strcmp(b, 'auto'));
 parser.addParameter('triangleOptions', {}, @(c) iscell(c) && isvector(c));
+parser.addParameter('mixedOptions', {}, @(c) iscell(c) && isvector(c));
 
 % show defaults if requested
 if nargin == 1 && strcmp(thresholds, 'defaults')
@@ -118,9 +121,13 @@ end
 % do we need to draw guides?
 if params.drawGuides
     if isfield(measurements, 'groups') && ~isempty(measurements.groups)
-        setupTernaryGuide(measurements.groups{1}, 'triangleOptions', params.triangleOptions);
+        setupTernaryGuide(measurements.groups{1}, ...
+            'triangleOptions', params.triangleOptions, ...
+            'mixedOptions', params.mixedOptions);
     else
-        setupTernaryGuide(nGroups, 'triangleOptions', params.triangleOptions);
+        setupTernaryGuide(nGroups, ...
+            'triangleOptions', params.triangleOptions, ...
+            'mixedOptions', params.mixedOptions);
     end
 end
 

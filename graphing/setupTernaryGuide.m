@@ -11,6 +11,8 @@ function setupTernaryGuide(groupInfo, varargin)
 %   Options:
 %    'triangleOptions'
 %       Options to pass to `drawTernaryTriangle`.
+%    'mixedOptions'
+%       Options to pass to `drawTernaryMixedBackground`.
 %   See also: drawTernaryTriangle, drawTernaryMixedBackground.
 
 % parse optional arguments
@@ -19,6 +21,7 @@ parser.CaseSensitive = true;
 parser.FunctionName = mfilename;
 
 parser.addParameter('triangleOptions', {}, @(c) isempty(c) || (iscell(c) && isvector(c)));
+parser.addParameter('mixedOptions', {}, @(c) isempty(c) || (iscell(c) && isvector(c)));
 parser.addParameter('labelOptions', {}, @(c) isempty(c) || (iscell(c) && isvector(c)));
 
 % show defaults if requested
@@ -44,7 +47,7 @@ switch nGroups
     case 1
         drawTernaryTriangle(params.triangleOptions{:});
     case 2
-        drawTernaryMixedBackground;
+        drawTernaryMixedBackground(params.mixedOptions{:});
     otherwise
         error([mfilename ':badngrp'], 'This function only works with single groups and pairs of groups.');
 end

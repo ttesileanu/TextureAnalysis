@@ -9,6 +9,20 @@ function drawTernaryTriangle(varargin)
 %           'none'          to skip labeling simplex edges.
 %    'fontscale'
 %       Scale factor for label fonts.
+%    'innercircle'
+%       Set to false to not draw the inner guiding circle.
+%    'outercircle'
+%       Set to false to not draw the outer guiding circle.
+%    'simplex'
+%       Set to false to not draw the simplex boundary.
+%    'axes'
+%       Set to false to not draw the coordinate axes.
+%    'circleopts'
+%       Plot options for guiding circles.
+%    'simplexopts'
+%       Plot options for simplex boundary.
+%    'axisopts'
+%       Plot options for coordinate axes.
 
 % parse optional arguments
 parser = inputParser;
@@ -17,6 +31,13 @@ parser.FunctionName = mfilename;
 
 parser.addParameter('edgelabels', 'probability', @(s) ismember(s, {'probability', 'digit', 'none'}));
 parser.addParameter('fontscale', 1, @(x) isscalar(x) && isnumeric(x) && x > 0);
+parser.addParameter('innercircle', false, @(b) isscalar(b) && islogical(b));
+parser.addParameter('outercircle', true, @(b) isscalar(b) && islogical(b));
+parser.addParameter('simplex', true, @(b) isscalar(b) && islogical(b));
+parser.addParameter('axes', true, @(b) isscalar(b) && islogical(b));
+parser.addParameter('circleopts', {'color', [0.8, 0.8, 0.8], 'linewidth', 0.5}, @(c) iscell(c));
+parser.addParameter('simplexopts', {'color', [0.6 0.6 0.6], 'linewidth', 0.5}, @(c) iscell(c));
+parser.addParameter('axisopts', {'color', [0.8 0.8 0.8], 'linewidth', 0.5}, @(c) iscell(c));
 
 % show defaults if asked
 if nargin == 1 && strcmp(varargin{1}, 'defaults')
@@ -39,16 +60,24 @@ max_t2 = sqrt(3)/2;
 angle_range = linspace(0, 2*pi, 100);
 
 % draw circles for orientation (radius 1 and 1/2)
-plot(cos(angle_range), sin(angle_range), ':', 'color', [0.4 0.4 0.4]);
-plot(0.5*cos(angle_range), 0.5*sin(angle_range), ':', 'color', [0.4 0.4 0.4]);
+if params.outercircle
+    plot(cos(angle_range), sin(angle_range), params.circleopts{:});
+end
+if params.innercircle
+    plot(0.5*cos(angle_range), 0.5*sin(angle_range), params.circleopts{:});
+end
 
 % draw the probability triangle
-plot([-1/2 1 -1/2 -1/2], [-max_t2 0 max_t2 -max_t2], 'color', [0.5 0.7 1]);
+if params.simplex
+    plot([-1/2 1 -1/2 -1/2], [-max_t2 0 max_t2 -max_t2], params.simplexopts{:});
+end
 
 % draw the main axes
-plot([0 1.5], [0 0], ':', 'color', [1 0.6 0.6], 'linewidth', 1);
-plot([0 -1/2*1.5], [0 1.5*max_t2], ':', 'color', [1 0.6 0.6], 'linewidth', 1);
-plot([0 -1/2*1.5], [0 -1.5*max_t2], ':', 'color', [1 0.6 0.6], 'linewidth', 1);
+if params.axes
+    plot([0 1.5], [0 0], params.axisopts{:});
+    plot([0 -1/2*1.5], [0 1.5*max_t2], params.axisopts{:});
+    plot([0 -1/2*1.5], [0 -1.5*max_t2], params.axisopts{:});
+end
 
 % label the corners
 if ~strcmp(params.edgelabels, 'none')
