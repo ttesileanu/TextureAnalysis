@@ -83,6 +83,10 @@ if isscalar(y_range)
     y_range = [y_range y_range + size(data, 1) - 1];
 end
 
+% make sure x_range and y_range are ordered
+x_range = sort(x_range);
+y_range = sort(y_range);
+
 % correct the ranges to match pixel edges instead of centers
 x_ps = (diff(x_range) + 1) / size(data, 2);
 y_ps = (diff(y_range) + 1) / size(data, 1);
