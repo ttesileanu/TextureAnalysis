@@ -100,6 +100,10 @@ function [plotter, uniqueGroups] = showTernaryChange(...
 %       Alignment options for the title, as a cell array with the first
 %       element for the horizontal alignment and the second element for the
 %       vertical. See possible options at `textTexGroup`.
+%    'drawPatches'
+%       Set to `true` to draw example texture patches in each plane.
+%    'patchOptionsSingle'
+%       Options to pass to `showTernaryTexturesSingle`.
 %    Other options are sent directly to `plotTernaryThresholds`.
 %
 %   See also: MatrixPlotter, plotTernaryMatrix.
@@ -146,6 +150,8 @@ parser.addParameter('xLabelAlignment', {'right', 'bottom'}, @(c) isvector(c) && 
 parser.addParameter('yLabelShift', [0 0], @(v) isvector(v) && isnumeric(v) && length(v) == 2);
 parser.addParameter('yLabelAlignment', {'left', 'top'}, @(c) isvector(c) && ...
     length(c) == 2);
+parser.addParameter('drawPatches', false, @(b) islogical(b) && isscalar(b));
+parser.addParameter('patchOptionsSingle', {}, @(c) iscell(c));
 
 % show defaults if requested
 if nargin == 1 && strcmp(measurementsBefore, 'defaults')
@@ -394,6 +400,15 @@ while plotter.next
         textTexGroup(params.yLabelShift(1), params.limits(2) + params.yLabelShift(2), ...
             groupNames{2}, 'HorizontalAlignment', params.yLabelAlignment{1}, ...
             'VerticalAlignment', params.yLabelAlignment{2}, params.labelOptions{:});
+    end
+    
+    % draw patches, if asked to
+    if params.drawPatches
+        if nGroups == 1
+            showTernaryTexturesSingle(uniqueGroups{i}, params.patchOptionsSingle{:});
+        elseif nGroups == 2
+            error([mfilename ':notimp'], 'Patches for mixed planes not implemented.');
+        end
     end
 end
 
