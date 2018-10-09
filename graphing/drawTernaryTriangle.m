@@ -23,6 +23,8 @@ function drawTernaryTriangle(varargin)
 %       Plot options for simplex boundary.
 %    'axisopts'
 %       Plot options for coordinate axes.
+%    'axisovershoot'
+%       Fraction by which to overshoot the axes.
 
 % parse optional arguments
 parser = inputParser;
@@ -38,6 +40,7 @@ parser.addParameter('axes', true, @(b) isscalar(b) && islogical(b));
 parser.addParameter('circleopts', {'color', [0.8, 0.8, 0.8], 'linewidth', 0.5}, @(c) iscell(c));
 parser.addParameter('simplexopts', {'color', [0.6 0.6 0.6], 'linewidth', 0.5}, @(c) iscell(c));
 parser.addParameter('axisopts', {'color', [0.8 0.8 0.8], 'linewidth', 0.5}, @(c) iscell(c));
+parser.addParameter('axisovershoot', 0.5, @(x) isscalar(x) && isnumeric(x));
 
 % show defaults if asked
 if nargin == 1 && strcmp(varargin{1}, 'defaults')
@@ -74,9 +77,10 @@ end
 
 % draw the main axes
 if params.axes
-    plot([0 1.5], [0 0], params.axisopts{:});
-    plot([0 -1/2*1.5], [0 1.5*max_t2], params.axisopts{:});
-    plot([0 -1/2*1.5], [0 -1.5*max_t2], params.axisopts{:});
+    f = 1 + params.axisovershoot;
+    plot([0 f], [0 0], params.axisopts{:});
+    plot([0 -1/2*f], [0 f*max_t2], params.axisopts{:});
+    plot([0 -1/2*f], [0 -f*max_t2], params.axisopts{:});
 end
 
 % label the corners
