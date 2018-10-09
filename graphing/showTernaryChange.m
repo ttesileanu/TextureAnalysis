@@ -159,10 +159,6 @@ parser.parse(varargin{:});
 params = parser.Results;
 unmatched = parser.Unmatched;
 
-% XXX there is a lot of code repetition here from plotTernaryMatrix
-% XXX probably the best way to fix this is to implement plotTernaryMatrix
-%     as a special case of this function, with no 'after' measurements
-
 % handle single set inputs
 if ~iscell(measurementsBefore)
     measurementsBefore = {measurementsBefore};
