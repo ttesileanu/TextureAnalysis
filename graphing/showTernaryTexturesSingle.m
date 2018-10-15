@@ -21,7 +21,7 @@ parser = inputParser;
 parser.CaseSensitive = true;
 parser.FunctionName = mfilename;
 
-parser.addParameter('patchSize', 12, @(n) isscalar(n) && isnumeric(n) && n > 0);
+parser.addParameter('patchSize', 16, @(n) isscalar(n) && isnumeric(n) && n > 0);
 parser.addParameter('patchExtent', 0.7, @(x) isscalar(x) && isnumeric(x) && x > 0);
 parser.addParameter('offset', 0.5, @(x) isscalar(x) && isnumeric(x));
 parser.addParameter('bimageOpts', {'borderwidth', 0.5}, @(c) iscell(c));
@@ -69,7 +69,7 @@ for i = 1:3
     % draw the patch
     bimage([corner(1) corner(1) + params.patchExtent], ...
            [corner(2) + params.patchExtent corner(2)], ...
-           patches{i}, 'CDataMapping', 'scaled');
+           patches{i}, 'CDataMapping', 'scaled', params.bimageOpts{:});
 end
 set(gca, 'clim', [0 1]);
 colormap('gray');
