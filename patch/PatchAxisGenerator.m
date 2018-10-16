@@ -97,6 +97,7 @@ classdef PatchAxisGenerator < handle
         auxOpts_ = [];
         mtcs_ = [];
         locations_ = [];
+        maxLocation_ = [];
         tol_ = 1e-6;
     end
     
@@ -197,6 +198,7 @@ classdef PatchAxisGenerator < handle
                             maxT = l;
                         end
                     end
+                    obj.maxLocation_ = maxT;
                 else
                     maxT = obj.maxLocation;
                 end
@@ -272,6 +274,11 @@ classdef PatchAxisGenerator < handle
         function locs = getLocations(obj)
             % Get the list of locations that the generator will use.
             locs = obj.locations_;
+        end
+        
+        function loc = getMaxLocation(obj)
+            % Get the automatically-detected maximum location.
+            loc = obj.maxLocation_;
         end
     end
     
