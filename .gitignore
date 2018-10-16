@@ -10,3 +10,4 @@ segGuiSettings.mat
 sandbox/
 /*.mat
 filters/
+.ipynb_checkpoints
