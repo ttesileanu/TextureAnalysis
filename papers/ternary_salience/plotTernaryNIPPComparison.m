@@ -36,6 +36,45 @@ safePrint(fullfile('figs', 'draft', 'ternarySecondOrderNIPPMatch.pdf'));
 fig = figure;
 fig.Units = 'inches';
 totalX = 6;
+totalY = 6;
+fig.Position = [2 2 totalX totalY];
+
+ax = zeros(22, 1);
+figX = 1.16;
+figY = 1.16;
+factorX = 0.8;
+factorY = 0.8;
+edgeX = 0.10;
+edgeY = 0.05;
+for i = 1:length(ax)
+    crtAx = axes;
+    crtRow = floor((i-1)/5);
+    crtCol = mod(i-1, 5);
+    crtAx.Units = 'inches';
+    crtAx.OuterPosition = [crtCol*figX + edgeX totalY - (crtRow+1)*figY - edgeY ...
+        figX*factorX figY*factorY];
+    ax(i) = crtAx;
+end
+
+plusMinus = '+-';
+plotTernaryMatrix({predictions, ternaryAvg}, 'ellipse', false, ...
+    'groupMaskFct', @(g) sum(g == ';') == 1, ...
+    'beautifyOptions', {'ticks', 'off', 'ticklabels', false, ...
+        'titlesize', 12, 'titleweight', 'normal', 'noaxes', true, ...
+        'fontscale', 0.667}, ...
+    'plotterOptions', {'fixedAxes', ax}, ...
+    'labelOptions', {'FontSize', 8, 'subscriptSpacing', -0.55, ...
+        'coeffToStr', @(i) plusMinus(i)}, ...
+    'xLabelAlignment', {'center', 'bottom'}, 'yLabelAlignment', {'left', 'bottom'});
+preparegraph;
+
+safePrint(fullfile('figs', 'draft', 'ternaryMixedNIPPMatch.pdf'));
+
+%% Mixed planes (OLD)
+
+fig = figure;
+fig.Units = 'inches';
+totalX = 6;
 totalY = 5;
 fig.Position = [2 2 totalX totalY];
 
