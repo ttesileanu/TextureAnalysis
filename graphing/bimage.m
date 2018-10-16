@@ -88,8 +88,10 @@ x_range = sort(x_range);
 y_range = sort(y_range);
 
 % correct the ranges to match pixel edges instead of centers
-x_ps = (diff(x_range) + 1) / size(data, 2);
-y_ps = (diff(y_range) + 1) / size(data, 1);
+% x_ps = (diff(x_range) + 1) / size(data, 2);
+% y_ps = (diff(y_range) + 1) / size(data, 1);
+x_ps = diff(x_range) / size(data, 2);
+y_ps = diff(y_range) / size(data, 1);
 x_range = [x_range(1) - 0.5*x_ps x_range(2) + 0.5*x_ps];
 y_range = [y_range(1) - 0.5*y_ps y_range(2) + 0.5*y_ps];
 
