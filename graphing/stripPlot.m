@@ -26,6 +26,11 @@ function h = stripPlot(x, y, varargin)
 %     'kde'
 %       Scale amount of jitter by a kernel density estimate of the data in
 %       each category.
+%     'boxes'
+%       Set to `true` to draw interquartile ranges and medians.
+%     'boxOpts'
+%       Options to pass to plot for the interquartile range boxes and
+%       medians.
 
 % parse optional arguments
 parser = inputParser;
@@ -39,6 +44,8 @@ parser.addParameter('sizes', [], @(s) isempty(s) || (isnumeric(s) && isscalar(s)
 parser.addParameter('marker', '', @(s) isempty(s) || ischar(s));
 parser.addParameter('jitter', 0, @(x) isscalar(x) && isnumeric(x));
 parser.addParameter('kde', false, @(b) islogical(b) && isscalar(b));
+parser.addParameter('boxes', false, @(b) islogical(b) && isscalar(b));
+parser.addParameter('boxOpts', {'linewidth', 0.5, 'color', 'k'}, @(c) iscell(c));
 
 % show defaults if requested
 if nargin == 1 && strcmp(x, 'defaults')
@@ -66,13 +73,13 @@ end
 % create a color matrix
 categories = unique(x);
 c = zeros(length(x), 3);
-xAll = zeros(size(y));
+xAll0 = zeros(size(y));
 for i = 1:length(categories)
     mask = ismember(x, categories(i));
     if ~isnumeric(x)
-        xAll(mask) = i;
+        xAll0(mask) = i;
     else
-        xAll(mask) = categories(i);
+        xAll0(mask) = categories(i);
     end
     color = params.colors(mod(i-1, size(params.colors, 1)) + 1, :);
     for k = 1:3
@@ -84,8 +91,10 @@ end
 
 % add jitter
 if ~params.kde
-    xAll = xAll + params.jitter*(rand(size(xAll)) - 0.5);
+    xAll = xAll0 + params.jitter*(rand(size(xAll0)) - 0.5);
 else
+    xAll = xAll0;
+%     allJitters = [];
     for i = 1:length(categories)
         mask = ismember(x, categories(i));
         allY = y(mask);
@@ -93,6 +102,8 @@ else
         kde = kde / max(kde);
         crtJitter = params.jitter*(rand(sum(mask), 1) - 0.5) .* kde;
         xAll(mask) = xAll(mask) + crtJitter;
+        
+%         allJitters = [allJitters crtJitter(:)']; %#ok<AGROW>
     end
 end
 
@@ -103,5 +114,35 @@ else
     opts = {};
 end
 h = scatter(xAll, y, params.sizes, c, opts{:});
+
+% draw boxes, if necessary
+if params.boxes
+    wasHold = ishold;
+    hold on;
+    
+    % decide how wide the boxes should be
+    boxWidth = params.jitter;
+    
+    for i = 1:length(categories)
+        mask = ismember(x, categories(i));
+        xValues = xAll0(mask);
+        allY = y(mask);
+        
+        quartiles = quantile(allY, [0.25, 0.50, 0.75]);
+        
+        % draw the box
+        plot(xValues(1) + 0.5*boxWidth * [-1 1 1 -1 -1], ...
+             [quartiles(1) quartiles(1) quartiles(3) quartiles(3) quartiles(1)], ...
+             params.boxOpts{:});
+         
+        % draw the median
+        plot(xValues(1) + 0.5*boxWidth * [-1 1], ...
+             quartiles(2)*[1 1], params.boxOpts{:});
+    end
+    
+    if ~wasHold
+        hold off;
+    end
+end
 
 end
