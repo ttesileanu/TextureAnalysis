@@ -126,8 +126,8 @@ trafos('rot270') = @(group) applyGroupGeometricPermutation(group, 3, 'BDAC');
 trafos('exch12') = @(group) applyGroupColorTransformation(group, 3, 2, 0);
 trafos('exch01') = @(group) applyGroupColorTransformation(group, 3, 2, 1);
 trafos('exch02') = @(group) applyGroupColorTransformation(group, 3, 2, 2);
-trafos('cycle120') = @(group) applyGroupColorTransformation(group, 3, 1, 1);
-trafos('cycle201') = @(group) applyGroupColorTransformation(group, 3, 1, 2);
+% trafos('cycle120') = @(group) applyGroupColorTransformation(group, 3, 1, 1);
+% trafos('cycle201') = @(group) applyGroupColorTransformation(group, 3, 1, 2);
 
 % generate the transformed NI predictions & PP data
 trafoNames = trafos.keys;
@@ -225,7 +225,7 @@ for i = 1:nTrafos
     
     h = stripPlot(crtLocs, crtDifferences, 'jitter', 0.25, 'sizes', 1e-3, 'kde', true, ...
         'colors', [0 0.3438 0.7410 ; 0.8000 0.3000 0.3000], ...
-        'marker', '.');
+        'marker', '.', 'boxes', false);
 %     set(h, 'markerfacealpha', 0.5, 'markeredgealpha', 0.5);
 end
 
