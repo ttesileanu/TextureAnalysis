@@ -10,50 +10,47 @@ load(fullfile('save', 'TernaryNIPredictions_vanHateren_2x32_square.mat'));
 
 %% Plot the data
 
-uniqueSubjects = unique(pp.subjects);
-uniqueColors = lines(length(uniqueSubjects));
-colorMap = containers.Map(uniqueSubjects, num2cell(uniqueColors, 2));
-
 fig = figure;
 fig.Units = 'inches';
 totalX = 6;
-totalY = 5;
+totalY = 7.5;
 fig.Position = [2 2 totalX totalY];
 
-% axes for mixed planes
-multi_ax = zeros(22, 1);
-rowNumbers = [2 2 6 6 6];
-rowShifts = [4 4 0 0 0];
-rowStarts = [1 1+cumsum(rowNumbers(1:end-1))];
-figX = totalX/max(rowNumbers);
-figY = totalY/length(rowNumbers);
-factorX = 0.75;
-factorY = 0.75;
-for i = 1:length(multi_ax)
+ax = zeros(26, 1);
+figX = 1.2;
+figY = 1.2;
+figXSingle = 1.5;
+figYSingle = 1.5;
+factorX = 0.8;
+factorY = 0.8;
+edgeX = 0.05;
+edgeY = -0.1;
+crtX = edgeX + (figXSingle - figX)/2;
+crtY = totalY - figY - edgeY;
+for i = 1:length(ax)
     crtAx = axes;
-    
-    crtRow = find(i >= rowStarts, 1, 'last');
-    crtShift = rowShifts(crtRow);
-    crtCol = i - rowStarts(crtRow); % 0-based!!
-    
+        
     crtAx.Units = 'inches';
-    crtAx.OuterPosition = [(crtShift + crtCol)*figX totalY - crtRow*figY figX*factorX figY*factorY];
+%     crtAx.OuterPosition = [crtCol*figX + edgeX totalY - (crtRow+1)*figY - edgeY ...
+%         figX*factorX figY*factorY];
+    crtAx.OuterPosition = [crtX crtY figX*factorX figY*factorY];
+    ax(i) = crtAx;
     
-    multi_ax(i) = crtAx;
-end
-
-% axes for single planes
-single_ax = zeros(4, 1);
-for i = 1:length(single_ax)
-    crtAx = axes;
-    
-    crtRow = floor((i-1)/2);
-    crtCol = mod(i-1, 2);
-    
-    crtAx.Units = 'inches';
-    crtAx.OuterPosition = [(2/3 + 5/3*crtCol)*figX totalY - (1 + crtRow)*figY figX figY];
-    
-    single_ax(i) = crtAx;
+    % keep only single-group planes on first row
+    if i < 4
+        crtX = crtX + figXSingle;
+    else
+        if i == 4
+            crtX = edgeX;
+            crtY = crtY - figYSingle;
+        else
+            crtX = crtX + figX;
+            if crtX > totalX
+                crtX = edgeX;
+                crtY = crtY - figY;
+            end
+        end
+    end
 end
 
 % plot single planes
@@ -65,7 +62,7 @@ plotTernaryMatrix({predictions, pp}, 'ellipse', false, ...
         'fontscale', 0.667}, ...
     'triangleOptions', {'fontscale', 0.667, 'edgelabels', 'digit'}, ...
     'limits', 1.5, ...
-    'plotterOptions', {'fixedAxes', single_ax}, ...
+    'plotterOptions', {'fixedAxes', ax(1:4)}, ...
     'titleShift', [0 -0.5], 'titleAlignment', {'center', 'bottom'}, ...
     'labelOptions', {'FontSize', 8, 'subscriptSpacing', -0.55, ...
         'coeffToStr', @(i) plusMinus(i)});
@@ -76,7 +73,7 @@ plotTernaryMatrix({predictions, pp}, 'ellipse', false, ...
     'beautifyOptions', {'ticks', 'off', 'ticklabels', false, ...
         'titlesize', 12, 'titleweight', 'normal', 'noaxes', true, ...
         'fontscale', 0.667}, ...
-    'plotterOptions', {'fixedAxes', multi_ax}, ...
+    'plotterOptions', {'fixedAxes', ax(5:end)}, ...
     'labelOptions', {'FontSize', 8, 'subscriptSpacing', -0.55, ...
         'coeffToStr', @(i) plusMinus(i)}, ...
     'xLabelAlignment', {'center', 'bottom'}, ...
