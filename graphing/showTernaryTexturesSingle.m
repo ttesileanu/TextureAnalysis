@@ -13,6 +13,9 @@ function showTernaryTexturesSingle(group, varargin)
 %       Amount by which the center of the patches is displaced with respect
 %       to the vertex that they correspond to, as a fraction of the axis
 %       length.
+%    'centerPatch'
+%       Set to `true` to also draw a patch corresponding to unbiased random
+%       textures.
 %    'bimageOpts'
 %       Options to be passed to `bimage` for drawing the patches.
 
@@ -24,6 +27,7 @@ parser.FunctionName = mfilename;
 parser.addParameter('patchSize', 16, @(n) isscalar(n) && isnumeric(n) && n > 0);
 parser.addParameter('patchExtent', 0.7, @(x) isscalar(x) && isnumeric(x) && x > 0);
 parser.addParameter('offset', 0.5, @(x) isscalar(x) && isnumeric(x));
+parser.addParameter('centerPatch', false, @(b) isscalar(b) && islogical(b));
 parser.addParameter('bimageOpts', {'borderwidth', 0.5}, @(c) iscell(c));
 
 % show defaults if requested
@@ -71,6 +75,18 @@ for i = 1:3
            [corner(2) + params.patchExtent corner(2)], ...
            patches{i}, 'CDataMapping', 'scaled', params.bimageOpts{:});
 end
+
+% draw the center batch, if needed
+if params.centerPatch
+    centerPatch = randi([0, 2], params.patchSize)/2;
+    corner = -0.5*[params.patchExtent params.patchExtent];
+
+    % draw the patch
+    bimage([corner(1) corner(1) + params.patchExtent], ...
+           [corner(2) + params.patchExtent corner(2)], ...
+           centerPatch, 'CDataMapping', 'scaled', params.bimageOpts{:});
+end
+
 set(gca, 'clim', [0 1]);
 colormap('gray');
 
