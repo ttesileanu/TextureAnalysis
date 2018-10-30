@@ -18,7 +18,7 @@ function beautifygraph(varargin)
 %    'ticks'
 %    'minorticks'
 %       Set to 'on' or 'off' to either show or not show the (minor) ticks.
-%    'fontname'
+%    'fontnames'
 %       Set fonts to use. This should be a pair, {axes font, title/labels
 %       font}.
 %    'titleweight'
