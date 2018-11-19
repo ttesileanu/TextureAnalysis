@@ -325,3 +325,25 @@ while plotter.next
     disp(['95% credible interval for sigma, ', logPriors{i}{1} ' prior: [' ...
         num2str(lo, '%.3f') ', ' num2str(hi, '%.3f') ']']);
 end
+
+%% Make a pretty plot of the beta posterior
+
+fig = figure;
+fig.Units = 'inches';
+fig.Position(3:4) = [4 2];
+
+fig.Color = [1 1 1];
+
+idx = 1;
+
+% histogram(posteriorSamplesBurned{idx}(:, 1), 'normalization', 'pdf');
+
+histogram(posteriorSamplesBurned{idx}(:, 1), 50, 'BinLimits', [0.6 1.2], ...
+    'normalization', 'pdf');
+xlabel('\beta');
+ylabel('Posterior PDF');
+
+beautifygraph('linewidth', 0.5, 'minorticks', 'off');
+preparegraph;
+
+safePrint(fullfile('figs/betaPosterior.pdf'));
