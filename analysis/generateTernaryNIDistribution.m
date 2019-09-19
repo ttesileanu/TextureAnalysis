@@ -22,6 +22,15 @@
 %       interval before ternarizing. Options are
 %           'equalize' -- histogram equalization
 %           'contrast' -- contrast adaptation
+%   filterScope
+%       Choose the scope of the whitening filter:
+%           'patch' (default) -- whiten each patch separately
+%           'image'           -- whiten before patchifying
+%   compressScope
+%       Choose the scope of the compression. Note that setting this to
+%       'image' forces `filterScope` to be 'image' as well.
+%           'patch' (default) -- compress each patch separately
+%           'image'           -- compress before patchifying
 
 setdefault('dbChoice', 'PennNoSky');
 
@@ -29,6 +38,10 @@ setdefault('valuesNR', {[1, 32], [1, 48], [1, 64], [2, 32], [2, 48], [2, 64], ..
     [4, 32], [4, 48], [4, 64]});
 
 setdefault('compressType', 'equalize');
+
+setdefault('compressScope', 'patch');
+
+setdefault('filterScope', 'patch');
 
 %% Preprocess options
 
@@ -39,6 +52,10 @@ switch compressType
         compressFunction = @(image) contrastAdapt(image, 'minStd', 1e-3);
     otherwise
         error('Unknown compressType');
+end
+
+if strcmp(compressScope, 'image')
+    filterScope = 'image';
 end
 
 valuesN = cellfun(@(x) x(1), valuesNR);
@@ -81,11 +98,25 @@ for i = 1:length(valuesN)
     % set up the preprocessing pipeline
     preprocessPipeline = {
         @logTransform, ...
-        @(image) blockAverage(image, crtN), ...
-        @(image) patchify(image, crtR), ...
-        @(image) filterImage(image, filters{i}), ...
-        compressFunction, ...
-        @(image) quantizeImage(image, 3)};
+        @(image) blockAverage(image, crtN)};
+    
+    if strcmp(filterScope, 'image')
+        preprocessPipeline = [preprocessPipeline {@(image) filterImage(image, filters{i})}]; %#ok<AGROW>
+    end
+    if strcmp(compressScope, 'image')
+        preprocessPipeline = [preprocessPipeline {compressFunction}]; %#ok<AGROW>
+    end
+    
+    preprocessPipeline = [preprocessPipeline {@(image) patchify(image, crtR)}]; %#ok<AGROW>
+    
+    if strcmp(filterScope, 'patch')
+        preprocessPipeline = [preprocessPipeline {@(image) filterImage(image, filters{i})}]; %#ok<AGROW>
+    end
+    if strcmp(compressScope, 'patch')
+        preprocessPipeline = [preprocessPipeline {compressFunction}]; %#ok<AGROW>
+    end
+    
+    preprocessPipeline = [preprocessPipeline {@(image) quantizeImage(image, 3)}]; %#ok<AGROW>
     
     % image quantization has a small random component that matters for
     % patches that have many identical pixel values
@@ -113,9 +144,16 @@ results = resultsFocus;
 %% Save the ternary stats
 
 if ~strcmp(compressType, 'equalize')
-    compressExt = ['_' compressType];
+    extras = ['_' compressType];
 else
-    compressExt = '';
+    extras = '';
 end
-save(fullfile('save', ['TernaryDistribution_' dbChoice compressExt '.mat']), 'results', ...
+if ~strcmp(filterScope, 'patch')
+    extras = [extras '_flt' filterScope];
+end
+if ~strcmp(compressScope, 'patch')
+    extras = [extras '_comp' compressScope];
+end
+filename = ['TernaryDistribution_' dbChoice extras '.mat'];
+save(fullfile('save', filename), 'results', ...
     'valuesR', 'valuesN', 'valuesNR', '-v7.3');
