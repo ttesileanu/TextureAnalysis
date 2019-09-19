@@ -73,6 +73,7 @@ end
 
 %% Scree plot
 
+figure;
 plot(pcExplained, 'k.-');
 
 hold on;
@@ -88,6 +89,7 @@ preparegraph;
 
 %% Look at individual principal components
 
+figure;
 bar(pcVectors(:, 1));
 
 coords = getCoordinateMapping(3, 'analyzeFull');
@@ -141,6 +143,17 @@ set(gca, 'xtick', ticks, 'xticklabels', labels);
 
 beautifygraph('minorticks', 'off');
 preparegraph;
+
+%% Check how many PCs have thresholds below 1
+
+load(fullfile('save', ...
+    ['TernaryNIPredictions_' dbChoice '_' int2str(NRselection(1)) ...
+    'x' int2str(NRselection(2)) '_square.mat']));
+
+PCThresholds = gainsToThresholds(gain, num2cell(pcVectors, 1));
+
+figure;
+plot(PCThresholds(1:65));
 
 %% SCRATCH
 
