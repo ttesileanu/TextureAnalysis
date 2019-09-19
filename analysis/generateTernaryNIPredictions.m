@@ -16,6 +16,15 @@
 %       interval before ternarizing. Options are
 %           'equalize' -- histogram equalization
 %           'contrast' -- contrast adaptation
+%   filterScope
+%       Choose the scope of the whitening filter:
+%           'patch' (default) -- whiten each patch separately
+%           'image'           -- whiten before patchifying
+%   compressScope
+%       Choose the scope of the compression. Note that setting this to
+%       'image' forces `filterScope` to be 'image' as well.
+%           'patch' (default) -- compress each patch separately
+%           'image'           -- compress before patchifying
 %   NRselection
 %       Choose one of the analyses, based on block-averaging factor (N) and
 %       patch size (R).
@@ -43,6 +52,8 @@
 
 setdefault('dbChoice', 'PennNoSky');
 setdefault('compressType', 'equalize');
+setdefault('compressScope', 'patch');
+setdefault('filterScope', 'patch');
 setdefault('NRselection', [2, 32]);
 setdefault('restrictToFocus', true);
 setdefault('useErrorBars', true);
@@ -51,12 +62,22 @@ setdefault('fitLogSlope', false);
 
 %% Preprocess options
 
-if ~strcmp(compressType, 'equalize')
-    compressExt = ['_' compressType];
-else
-    compressExt = '';
+if strcmp(compressScope, 'image')
+    filterScope = 'image';
 end
-niFileName = ['TernaryDistribution_' dbChoice compressExt '.mat'];
+
+if ~strcmp(compressType, 'equalize')
+    extras = ['_' compressType];
+else
+    extras = '';
+end
+if ~strcmp(filterScope, 'patch')
+    extras = [extras '_flt' filterScope];
+end
+if ~strcmp(compressScope, 'patch')
+    extras = [extras '_comp' compressScope];
+end
+niFileName = ['TernaryDistribution_' dbChoice extras '.mat'];
 
 switch gainTransform
     case 'identity'
@@ -132,7 +153,7 @@ end
 
 NRstr = [int2str(NRselection(1)) 'x' int2str(NRselection(2))];
 fitLogSuffixes = {'', '_powfit'};
-outFileName = ['TernaryNIPredictions_' dbChoice compressExt '_' NRstr ...
+outFileName = ['TernaryNIPredictions_' dbChoice extras '_' NRstr ...
     '_' gainTransform fitLogSuffixes{1 + fitLogSlope} '.mat'];
 save(fullfile('save', outFileName), 'NRselection', 'restrictToFocus', ...
     'gain', 'predictions', 'predictionDetails', 'gainTransformFct');
@@ -141,8 +162,8 @@ save(fullfile('save', outFileName), 'NRselection', 'restrictToFocus', ...
 
 fig = figure;
 fig.Units = 'inches';
-totalX = 6;
-totalY = 5;
+totalX = 12;
+totalY = 10;
 fig.Position = [2 2 totalX totalY];
 
 % axes for mixed planes
@@ -182,7 +203,7 @@ for i = 1:length(single_ax)
 end
 
 % plot single planes
-plusMinus = '+?';
+plusMinus = '+-';
 plotTernaryMatrix({predictions, pp}, 'ellipse', false, ...
     'groupMaskFct', @(g) length(g) == 6 && ~strcmp(g(1:2), 'AC'), ...
     'beautifyOptions', {'ticks', 'off', 'ticklabels', false, ...
