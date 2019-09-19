@@ -4,7 +4,7 @@ function [image, crop] = filterImage(image, filter)
 %   image. If the `filter` matrix is the same size as the first two
 %   dimensions of `image`, it is applied to each one of the patches
 %   identified by the third dimension. If `image` is 2d and has a different
-%   size than the `filter`, then after the filte is applied, an edge of
+%   size than the `filter`, then after the filter is applied, an edge of
 %   size equal to half the size of the filter is clipped on all four sides
 %   of the image to remove edge effects.
 %
