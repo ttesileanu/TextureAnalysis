@@ -62,7 +62,7 @@ fig.Position = [1 1 1.5 1];
 % make an arbitrary Weibull curve
 xVals = linspace(0, 1);
 % yvals = 1./(1 + exp(-10*(xvals - 0.5)));
-yVals = 1 - 2.^(-(xVals/0.5).^2.5);
+yVals = 1/4 + (3/4) * (1 - 2.^(-(xVals/0.5).^2.5));
 
 % draw the curve
 color = [0.8 0.3 0.3];
@@ -70,11 +70,15 @@ plot(xVals, yVals, 'color', color);
 hold on;
 plot(xVals(end/2), yVals(end/2), '.', 'color', color);
 
-set(gca, 'ytick', [0 1], 'yticklabel', {'chance', 'perfect'}, 'xtick', [0, 1], ...
+% set(gca, 'ytick', [0.25 1], 'yticklabel', {'chance', 'perfect'}, 'xtick', [0, 1], ...
+%     'xticklabel', {'1/3', '1'});
+set(gca, 'ytick', [0.25 1], 'yticklabel', {'0.25', '1.00'}, 'xtick', [0, 1], ...
     'xticklabel', {'1/3', '1'});
 % xlabel('coordinate');
 
 box off;
+
+ylim([0, 1]);
 
 preparegraph;
 
