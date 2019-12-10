@@ -557,10 +557,11 @@ ax.OuterPosition = [0.2 0.2 2.3 2.05];
 hold on;
 
 % draw all the points
-smartscatter(secondOrder, fourthOrder, 'density', false, 'color', [0.5 0.5 0.5], ...
+smartscatter(secondOrder, fourthOrder, 'density', false, 'color', [0.8 0.8 0.8], ...
     'alpha', 0.05, 'maxpoints', inf, 'size', 5);
 % overlay the in-focus points
-smartscatter(secondOrderFocus, fourthOrderFocus, 'density', false, 'color', [0    0.4470    0.7410], ...
+% [0    0.4470    0.7410]
+smartscatter(secondOrderFocus, fourthOrderFocus, 'density', false, 'color', [0 0 0], ...
     'alpha', 0.05, 'maxpoints', inf, 'size', 5);
 % xlabel(group1);
 % ylabel(group2);
@@ -572,13 +573,13 @@ xlim([0.1 0.999]);
 ylim([0.2 0.999]);
 
 % beautify and save
-beautifygraph('fontscale', 0.6667, 'ticksize', 11);
+beautifygraph('fontscale', 0.6667, 'ticksize', 11, 'minorticks', 'off');
 preparegraph;
 
 plusMinus = '+-';
 textTexGroup(0.55, 0.08, group1, 'verticalalignment', 'top', 'horizontalalignment', 'center', ...
-    'fontsize', 8, 'coeffToStr', @(i) plusMinus(i));
+    'fontsize', 10, 'coeffToStr', @(i) plusMinus(i));
 textTexGroup(-0.04, 0.60, group2, 'verticalalignment', 'middle', 'horizontalalignment', 'right', ...
-    'fontsize', 8, 'coeffToStr', @(i) plusMinus(i));
+    'fontsize', 10, 'coeffToStr', @(i) plusMinus(i));
 
 safePrint(fullfile('figs', 'draft', 'focusLocus'), 'type', 'png', 'printOpts', {'-r600'});
