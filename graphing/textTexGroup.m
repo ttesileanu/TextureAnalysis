@@ -15,6 +15,8 @@ function h = textTexGroup(x, y, group, varargin)
 %       Name of font to use.
 %    'FontSize'
 %       Font size for the top-level symbol.
+%    'FontWeight'
+%       Font weight ('normal' or 'bold').
 %    'Units':
 %       Units in which the `x` and `y` arguments are given (default is data
 %       units).
@@ -44,6 +46,11 @@ function h = textTexGroup(x, y, group, varargin)
 %       Spacing added before postfix, in units of subscript extents.
 %    'groupSpacing'
 %       Spacing added between groups, in units of subscript extents.
+%    'squareSubscripts'
+%       If set to `true`, the vertical spacing for the subscripts is forced
+%       equal to the horizontal spacing. This can be useful in the ternary
+%       case where the symbols representing the coefficients are symmetric
+%       in the x and y directions.
 
 % parse optional arguments
 parser = inputParser;
@@ -51,6 +58,7 @@ parser.CaseSensitive = false;
 parser.FunctionName = mfilename;
 
 parser.addParameter('FontName', '', @(s) ischar(s) && isvector(s));
+parser.addParameter('FontWeight', '', @(s) ischar(s) && isvector(s));
 parser.addParameter('FontSize', [], @(x) isscalar(x) && isnumeric(x) && x > 0);
 parser.addParameter('Units', '', @(s) ischar(s) && isvector(s));
 parser.addParameter('HorizontalAlignment', 'left', @(s) ismember(s, {'left', 'center', 'right'}));
@@ -63,6 +71,7 @@ parser.addParameter('subscriptScaling', 0.8, @(x) isnumeric(x) && isscalar(x) &&
 parser.addParameter('subscriptSpacing', -0.4, @(x) isnumeric(x) && isscalar(x));
 parser.addParameter('postfixSpacing', 0.1, @(x) isnumeric(x) && isscalar(x));
 parser.addParameter('groupSpacing', 0.2, @(x) isnumeric(x) && isscalar(x));
+parser.addParameter('squareSubscripts', false, @(b) isscalar(b) && islogical(b));
 
 % show defaults if requested
 if nargin == 1 && strcmp(x, 'defaults')
@@ -112,7 +121,7 @@ for idx = 1:length(groups)
     if isempty(params.symbol)
         order = length(type);
         symbolList = {'\gamma', '\beta', '\theta', '\alpha'};
-        symbol = symbolList{order};
+        symbol = ['\boldmath $' symbolList{order} '$'];
     else
         symbol = params.symbol;
     end
@@ -125,23 +134,29 @@ for idx = 1:length(groups)
     if ~isempty(params.FontSize)
         textOptions = [textOptions {'FontSize', params.FontSize}]; %#ok<AGROW>
     end
+    if ~isempty(params.FontWeight)
+        textOptions = [textOptions {'FontWeight', params.FontWeight}]; %#ok<AGROW>
+    end
     if ~isempty(units)
         textOptions = [textOptions {'Units', units}]; %#ok<AGROW>
     end
-    hSymbol = text(x, y, symbol, textOptions{:});
+    hSymbol = text(x, y, symbol, textOptions{:}, 'interpreter', 'latex');
     
     % figure out size and spacing for subscripts
     subscriptSize = hSymbol.FontSize*params.subscriptScaling;
     
     tmp = uicontrol('style', 'text', 'string', 'X', ...
         'fontname', hSymbol.FontName, 'fontsize', subscriptSize, ...
-        'visible', false);
+        'fontweight', hSymbol.FontWeight, 'visible', false);
     % note that the control is on the figure, so we can't get extents in axis
     % coordinates
     tmp.Units = 'pixels';
     subscriptExtents = tmp.Extent(3:4);
     % the extents obtained like this are way too big...
     subscriptExtents = subscriptExtents*(1 + params.subscriptSpacing);
+    if params.squareSubscripts
+        subscriptExtents(2) = subscriptExtents(1);
+    end
     
     % specify position of subscripts in pixels
     hSymbol.Units = 'pixels';
@@ -161,6 +176,7 @@ for idx = 1:length(groups)
             crtH = text(symbolEdge(1) + j*subscriptExtents(1), symbolEdge(2) - i*subscriptExtents(2), ...
                 params.coeffToStr(allCoeffs(k)), ...
                 'fontname', hSymbol.FontName, 'fontsize', subscriptSize, ...
+                'fontweight', hSymbol.FontWeight, ...
                 'verticalalignment', 'top', 'Units', 'pixels');
             largestX = max(largestX, j*subscriptExtents(1));
             hCoeffs = [hCoeffs crtH]; %#ok<AGROW>
@@ -178,7 +194,8 @@ for idx = 1:length(groups)
         bracketPosition = symbolEdge + ...
             [largestX + subscriptExtents(1)*(1 + params.postfixSpacing), 0];
         crtH = text(bracketPosition(1), bracketPosition(2), postfix, 'fontname', ...
-            hSymbol.FontName, 'fontsize', hSymbol.FontSize, 'Units', 'pixels');
+            hSymbol.FontName, 'fontsize', hSymbol.FontSize, ...
+            'fontweight', hSymbol.FontWeight, 'Units', 'pixels');
         hCoeffs = [hCoeffs crtH]; %#ok<AGROW>
     end
     
