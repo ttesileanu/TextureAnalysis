@@ -74,3 +74,28 @@ preparegraph;
 set(fig, 'Renderer', 'painters');
 
 safePrint(fullfile('figs', 'draft', 'higherOrderThresholds'));
+
+%% Plot legend
+
+fig1 = figure;
+fig1.Units = 'inches';
+fig1.Position(3:4) = [1.5 1.2];
+hold on;
+h = zeros(1 + length(uniqueSubjects), 1);
+mask = cellfun(@(g) length(g) > 6 && sum(g == ';') == 0, pp.groups);
+usedSubjects = unique(pp.subjects(mask));
+for i = 1:length(uniqueSubjects)
+    if ~ismember(uniqueSubjects{i}, usedSubjects)
+        continue;
+    end
+    h(i) = plot(nan, nan, 'x', 'color', uniqueColors(i, :), 'markersize', 5);
+end
+h(end) = plot(nan, nan, '.', 'color', [0 0.3438 0.7410], 'markersize', 8);
+legend(h(h ~= 0), [uniqueSubjects(h(1:end-1) ~= 0) ; {'prediction'}], 'fontsize', 8);
+
+beautifygraph;
+axis off;
+
+preparegraph;
+
+safePrint(fullfile('figs', 'draft', 'multipleSubjectLegend'));
