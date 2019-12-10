@@ -39,6 +39,10 @@
 %           roots. Since the efficient coding problem solved here uses a
 %           Gaussian approximation, this transformation might indicate a
 %           departure of visual processing in the brain from Gaussianity.
+%   highlight
+%       Which analysis to highlight.
+%   plotType
+%       This can be 'violin' or 'jitter'.
 
 setdefault('dbChoice', 'PennNoSky');
 setdefault('compressType', 'equalize');
@@ -46,6 +50,8 @@ setdefault('valuesNR', {[1, 32], [1, 48], [1, 64], [2, 32], [2, 48], [2, 64], ..
     [4, 32], [4, 48], [4, 64]});
 setdefault('symmetrizePP', false);
 setdefault('gainTransform', 'square');
+setdefault('highlight', [2 32]);
+setdefault('plotType', 'violin');
 
 %% Preprocess options
 
@@ -123,12 +129,19 @@ allDifferencesMatrix = cell2mat(cellfun(@(s) ...
 
 allDifferences = allDifferencesMatrix(:);
 allCategories = flatten(meshgrid(1:length(valuesNR), ones(size(allDifferencesMatrix, 1), 1)));
-h = stripPlot(allCategories, allDifferences, 'jitter', 0.5, 'marker', '.', ...
-    'sizes', 1e-3, 'kde', true);
+allColors = repmat([0.5, 0.5, 0.5], length(valuesNR), 1);
+allColors(cellfun(@(c) isequal(c, [2 32]), valuesNR), :) = [0 0.3438 0.7410];
+switch plotType
+    case 'jitter'
+        h = stripPlot(allCategories, allDifferences, 'jitter', 0.5, 'marker', '.', ...
+            'sizes', 1e-3, 'kde', true, 'colors', allColors);
+    case 'violin'
+        h = violinPlot(allCategories, allDifferences, 'width', 0.5, 'colors', allColors, 'boxes', true);
+end
 % set(h, 'markerfacealpha', 0.5, 'markeredgealpha', 0.5);
 
 hold on;
-boxplot(allDifferencesMatrix, 'colors', 'k', 'whisker', 0, 'symbol', '');
+% boxplot(allDifferencesMatrix, 'colors', 'k', 'whisker', 0, 'symbol', '');
 
 % boxplot messes up the position!
 ax.Position = [0.4 0.5 2.5 0.9];

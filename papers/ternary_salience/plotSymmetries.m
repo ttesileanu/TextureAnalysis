@@ -41,6 +41,8 @@
 %           roots. Since the efficient coding problem solved here uses a
 %           Gaussian approximation, this transformation might indicate a
 %           departure of visual processing in the brain from Gaussianity.
+%   plotType
+%       This can be 'violin' or 'jitter'.
 
 setdefault('dbChoice', 'PennNoSky');
 setdefault('compressType', 'equalize');
@@ -48,6 +50,7 @@ setdefault('symmetryNR', [2, 32]);
 setdefault('restrictToFocus', true);
 setdefault('symmetrizePP', false);
 setdefault('gainTransform', 'square');
+setdefault('plotType', 'violin');
 
 %% Preprocess options
 
@@ -122,10 +125,10 @@ trafos('lrFlip') = @(group) applyGroupGeometricPermutation(group, 3, 'BADC');
 trafos('udFlip') = @(group) applyGroupGeometricPermutation(group, 3, 'CDAB');
 trafos('rot90') = @(group) applyGroupGeometricPermutation(group, 3, 'CADB');
 trafos('rot180') = @(group) applyGroupGeometricPermutation(group, 3, 'DCBA');
-trafos('rot270') = @(group) applyGroupGeometricPermutation(group, 3, 'BDAC');
-trafos('exch12') = @(group) applyGroupColorTransformation(group, 3, 2, 0);
-trafos('exch01') = @(group) applyGroupColorTransformation(group, 3, 2, 1);
-trafos('exch02') = @(group) applyGroupColorTransformation(group, 3, 2, 2);
+% trafos('rot270') = @(group) applyGroupGeometricPermutation(group, 3, 'BDAC');
+trafos('exch(G,W)') = @(group) applyGroupColorTransformation(group, 3, 2, 0);
+trafos('exch(B,G)') = @(group) applyGroupColorTransformation(group, 3, 2, 1);
+trafos('exch(B,W)') = @(group) applyGroupColorTransformation(group, 3, 2, 2);
 % trafos('cycle120') = @(group) applyGroupColorTransformation(group, 3, 1, 1);
 % trafos('cycle201') = @(group) applyGroupColorTransformation(group, 3, 1, 2);
 
@@ -204,7 +207,16 @@ hold on;
 
 plot([0, nTrafos+1], [0 0], 'color', [0.65 0.65 0.65], 'linewidth', 0.5);
 
-for i = 1:nTrafos
+% group transformations by type of symmetry
+% trafoReorder = [1, 2, 3, 4, 8, 7, 5, 6];
+trafoReorder = [1, 2, 3, 4, 7, 6, 5];
+
+% make sure the jitter is reproducible
+rng(1);
+
+for k = 1:nTrafos
+    
+    i = trafoReorder(k);
     differencesNI = 2*(niDetails{i}.common.measurements2.thresholds - ...
         niDetails{i}.common.measurements1.thresholds) ./ ...
         (niDetails{i}.common.measurements2.thresholds + ...
@@ -214,8 +226,8 @@ for i = 1:nTrafos
         (ppDetails{i}.common.measurements2.thresholds + ...
          ppDetails{i}.common.measurements1.thresholds);
      
-    crtLocs = [(i - 0.15)*ones(length(differencesNI), 1) ; ...
-        (i + 0.15)*ones(length(differencesPP), 1)];
+    crtLocs = [(k - 0.15)*ones(length(differencesNI), 1) ; ...
+        (k + 0.15)*ones(length(differencesPP), 1)];
     crtDifferences = [differencesNI(:) ; differencesPP(:)];
     
     % ignore differences that are exacty zero
@@ -223,9 +235,16 @@ for i = 1:nTrafos
     crtLocs = crtLocs(mask);
     crtDifferences = crtDifferences(mask);
     
-    h = stripPlot(crtLocs, crtDifferences, 'jitter', 0.25, 'sizes', 1e-3, 'kde', true, ...
-        'colors', [0 0.3438 0.7410 ; 0.8000 0.3000 0.3000], ...
-        'marker', '.', 'boxes', false);
+    switch plotType
+        case 'jitter'
+            stripPlot(crtLocs, crtDifferences, 'jitter', 0.25, 'sizes', 1e-3, 'kde', true, ...
+                'colors', [0 0.3438 0.7410 ; 0.8000 0.3000 0.3000], ...
+                'marker', '.', 'boxes', false);
+        case 'violin'
+            violinPlot(crtLocs, crtDifferences, 'width', 0.25, ...
+                'colors', [0 0.3438 0.7410 ; 0.8000 0.3000 0.3000], ...
+                'boxes', false);
+    end
 %     set(h, 'markerfacealpha', 0.5, 'markeredgealpha', 0.5);
 end
 
@@ -234,7 +253,7 @@ end
 
 beautifygraph(ax, 'fontscale', 0.6667);
 
-set(ax, 'xtick', 1:nTrafos, 'xticklabel', trafoNames, 'xticklabelrotation', 45, ...
+set(ax, 'xtick', 1:nTrafos, 'xticklabel', trafoNames(trafoReorder), 'xticklabelrotation', 45, ...
     'yminortick', 'on');
 ax.XAxis.FontSize = 8;
 ax.YAxis.FontSize = 8;
