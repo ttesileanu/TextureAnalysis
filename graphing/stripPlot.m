@@ -64,7 +64,7 @@ if ischar(params.colors)
     % !!! we need to use `eval`; for some safety, check that the name given
     % is a simple variable/function name
     if ~isvarname(params.colors)
-        error([mfilename ':badcmap'], 'Invalid colormap name passeed to colors option.');
+        error([mfilename ':badcmap'], 'Invalid colormap name passed to colors option.');
     end
     
     params.colors = eval(params.colors);
