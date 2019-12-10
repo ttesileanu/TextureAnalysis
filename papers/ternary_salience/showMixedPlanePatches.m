@@ -14,23 +14,27 @@ rng(82);
 fig = figure;
 fig.Units = 'inches';
 totalX = 6;
-totalY = 8.5;
+totalY = 6.6;
 fig.Position = [2 2 totalX totalY];
 
 mixedGroups = sortGroups(unique(ternaryAvg.groups(cellfun(@(s) sum(s == ';') > 0, ...
     ternaryAvg.groups))));
 ax = zeros(length(mixedGroups), 1);
-figX = 1.42;
-figY = 1.42;
+figX = 1.45;
+figY = 1.05;
 edgeX = -0.1;
 edgeY = 0.22;
+spacingX = 0;
+spacingY = 0.05;
 plusMinus = '+-';
 for i = 1:length(ax)
     crtAx = axes;
     crtRow = floor((i-1)/4);
     crtCol = mod(i-1, 4);
     crtAx.Units = 'inches';
-    crtAx.OuterPosition = [crtCol*figX + edgeX totalY - (crtRow+1)*figY - edgeY ...
+    crtAx.OuterPosition = [
+        crtCol*(figX + spacingX) + edgeX ...
+        totalY - (crtRow+1)*(figY + spacingY) - edgeY ...
         figX figY];
     ax(i) = crtAx;
     
@@ -59,6 +63,8 @@ for i = 1:length(ax)
         groupNames{2}, 'HorizontalAlignment', 'left', ...
         'VerticalAlignment', 'bottom', 'coeffToStr', @(i) plusMinus(i), ...
         'FontSize', 8);
+    
+    drawnow;
 end
 preparegraph;
 
