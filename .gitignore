@@ -1,13 +1,7 @@
 .DS_Store
 *.swp
 *~
-save/
+NaturalImages
 NaturalImages/
-VOCImages
-figs/
-summaries/
-segGuiSettings.mat
-sandbox/
 /*.mat
-filters/
 .ipynb_checkpoints
