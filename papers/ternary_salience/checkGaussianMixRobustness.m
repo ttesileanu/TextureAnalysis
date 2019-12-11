@@ -51,7 +51,7 @@ disp(['Took ' num2str(toc(t0), '%.2f') ' seconds.']);
 
 load(fullfile('save', 'BinaryFocusResamples_PennNoSky.mat'));
 
-%% Save resampled ternary stats
+%% Save resampled binary stats
 
 save(fullfile('save', 'BinaryFocusResamples_PennNoSky.mat'), ...
     'nBinaryResults', 'nBinarySamples', 'resampledBinaryClusterInfo');
