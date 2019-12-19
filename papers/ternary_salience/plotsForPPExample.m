@@ -158,38 +158,3 @@ preparegraph;
 
 % save to file
 safePrint(fullfile('figs', 'draft', 'singlePlanePPDirections'));
-
-%% show measurement rays, mixed plane
-
-% only loading the data for the directions in which thresholds are measured
-ternaryAvg = loadTernaryPP(fullfile('data', 'mtc_soid_xlsrun_summ.mat'));
-
-% make the figure
-fig = figure;
-fig.Units = 'inches';
-fig.Position = [1 1 2 2];
-
-% draw the guiding circles
-drawTernaryMixedBackground('Direction 1', 'Direction 2');
-% choose the directions in some particular plane, it doesn't matter which
-mask = strcmp(ternaryAvg.groups, 'AB_1_1[2];AC_1_1[0]');
-directions = cell2mat(ternaryAvg.directions(mask));
-directions2 = ternary6tomix2(directions);
-
-% remove the axes
-axis equal;
-axis off;
-
-hold on;
-
-% draw the rays along which we have measurements
-color = [0.8 0.3 0.3];
-for i = 1:length(directions)
-    crtDir2 = directions2(i, :);
-    plot([0 crtDir2(1)], [0 crtDir2(2)], 'color', color);
-end
-
-preparegraph;
-
-% save to file
-safePrint(fullfile('figs', 'draft', 'mixedPlanePPDirections'));
