@@ -27,7 +27,8 @@
 %           'image'           -- compress before patchifying
 %   NRselection
 %       Choose one of the analyses, based on block-averaging factor (N) and
-%       patch size (R).
+%       patch size (R). This can also be a cell array of tuples in order to
+%       generate several analyses at the same time.
 %   restrictToFocus
 %       Set to `true` to only keep patches that were identified as in-focus
 %       by a two-Gaussian fit.
@@ -54,7 +55,8 @@ setdefault('dbChoice', 'PennNoSky');
 setdefault('compressType', 'equalize');
 setdefault('compressScope', 'patch');
 setdefault('filterScope', 'patch');
-setdefault('NRselection', [2, 32]);
+setdefault('NRselection', {[1, 32], [1, 48], [1, 64], [2, 32], [2, 48], [2, 64], ...
+    [4, 32], [4, 48], [4, 64]});
 setdefault('restrictToFocus', true);
 setdefault('useErrorBars', true);
 setdefault('gainTransform', 'square');
@@ -89,6 +91,21 @@ switch gainTransform
             error('Invalid value for gainTransform.');
         end
         gainTransformFct = gainTransform;
+end
+
+% handle running multiple analyses at the same time
+if iscell(NRselection)
+    allNRs__ = NRselection;
+    for selIt = 1:length(allNRs__)
+        NRselection = allNRs__{selIt};
+        disp(['Working on N=', int2str(NRselection(1)), ', R=' ...
+            int2str(NRselection(2)) '...']);
+        clearvars -except dbChoice compressType compressScope filterScope ...
+            NRselection restrictToFocus useErrorBars gainTransform fitLogSlope ...
+            allNRs__;
+        generateTernaryNIPredictions;
+    end
+    return;
 end
 
 %% Load the ternary NI distribution
