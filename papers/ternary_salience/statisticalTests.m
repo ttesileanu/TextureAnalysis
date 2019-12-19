@@ -163,9 +163,6 @@ disp(['95% CI of D is [' num2str(lo, '%.3f') ', ' num2str(hi, '%.3f') ']']);
 
 %% NULL MODEL #2: shuffle all groups randomly
 
-% Note that this will in general not lead to elliptical threshold contours
-% in texture planes.
-
 % ensure reproducibility
 rng(4736734);
 
@@ -345,5 +342,3 @@ ylabel('Posterior PDF');
 
 beautifygraph('linewidth', 0.5, 'minorticks', 'off');
 preparegraph;
-
-safePrint(fullfile('figs/betaPosterior.pdf'));
