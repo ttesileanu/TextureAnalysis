@@ -132,7 +132,7 @@ allPredictionResults = allPredictionResults(reorder);
 
 save(fullfile('save', 'TernaryDistribution_PennNoSky_2x32_multicutoff_predictions.mat'));
 
-%% Check how much the psychophysics depends on cutoff
+%% Check how much the match with the psychophysics depends on cutoff
 
 grayAmounts = arrayfun(@(s) diff(s.cutoffs), allPredictionResults);
 % restrict comparison to either second-order or mixed groups
