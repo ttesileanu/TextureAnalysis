@@ -130,4 +130,5 @@ safePrint(fullfile('figs', 'draft', 'ternarizationEffects'));
 %% SCRATCH
 
 grayAmounts = arrayfun(@(s) diff(s.cutoffs), ni.allPredictionResults);
+figure;
 plot(grayAmounts, comparisons);
