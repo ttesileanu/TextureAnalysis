@@ -16,6 +16,7 @@ addpath(fullfile(PWD, 'conversion'));
 addpath(fullfile(PWD, 'efficient_coding'));
 addpath(fullfile(PWD, 'file'));
 % addpath(fullfile(PWD, 'filters'));
+addpath(fullfile(PWD, 'generator'));
 addpath(fullfile(PWD, 'graphing'));
 addpath(fullfile(PWD, 'indices'));
 addpath(fullfile(PWD, 'misc'));
