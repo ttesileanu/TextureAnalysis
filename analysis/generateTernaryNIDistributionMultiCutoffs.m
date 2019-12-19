@@ -7,16 +7,25 @@
 % running. When these variables are not defined, default values are used.
 %
 % Options:
+%   dbChoice
+%       Choice of database to use. Available options are
+%           'PennNoSky'     -- Penn image database, filtering out pictures
+%                              with lots of sky
+%           'vanHateren'    -- van Hateren image database, filtering out
+%                              pictures with lots of sky or lots of
+%                              human-made objects
 %   valuesNR
 %       Cell array of pairs [N, R] of downsampling factor and patch size
 %       for which to run the analysis.
 %   cutoffChoices
 %       Choices to use for the quantization cutoffs.
 
+setdefault('dbChoice', 'PennNoSky');
+
 setdefault('valuesNR', {[2, 32]});
 
 defaultCutoffs0 = arrayfun(@(g) [(1-g)/2, (1+g)/2], linspace(0, 1, 25), 'uniform', false);
-defaultCutoffs = cutoffs0(2:end-1);
+defaultCutoffs = defaultCutoffs0(2:end-1);
 setdefault('cutoffChoices', defaultCutoffs);
 
 %% Preprocess options
@@ -30,7 +39,7 @@ filters = cell(1, length(valuesN));
 for i = 1:length(valuesN)
     N = valuesN(i);
     R = valuesR(i);
-    filterFilename = fullfile('filters', ['filter' int2str(N) 'x' int2str(R) '.mat']);
+    filterFilename = fullfile('filters', dbChoice, ['filter' int2str(N) 'x' int2str(R) '.mat']);
     % load the filter from whichever variable has the right size and type
     crtFilter = open(filterFilename);
     fields = fieldnames(crtFilter);
@@ -47,7 +56,7 @@ end
 
 %% Generate the ternary stats
 
-images = parseImageNameFile('PennNoSkyIndex.txt', fullfile('NaturalImages', 'PennNoSky'));
+images = parseImageNameFile([dbChoice 'Index.txt'], fullfile('NaturalImages', dbChoice));
 
 tic;
 for i = 1:length(valuesN)
@@ -97,7 +106,7 @@ for i = 1:length(valuesN)
         
         % save
         disp('Saving to file...');
-        filename = ['TernaryDistribution_PennNoSky_' int2str(N) 'x' int2str(R) ...
+        filename = ['TernaryDistribution_' dbChoice '_' int2str(N) 'x' int2str(R) ...
             '_cutoff_' int2str(round(100*crtCutoffs(1))) '_' int2str(round(100*crtCutoffs(2))) '.mat'];
         
         cutoffs = crtCutoffs;
