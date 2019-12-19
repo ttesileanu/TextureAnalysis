@@ -1,0 +1,4 @@
+# don't version-control the save files
+*
+# but do version-control *this* file
+!.gitignore
