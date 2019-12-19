@@ -305,8 +305,6 @@ preparegraph;
 
 set(ax, 'xminortick', 'off');
 
-safePrint(fullfile('figs', 'draft', 'symmetries'));
-
 %% SCRATCH
 
 fig = figure;
