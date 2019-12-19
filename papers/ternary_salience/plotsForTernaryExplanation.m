@@ -384,7 +384,7 @@ safePrint(fullfile('figs', 'draft', 'ternarizationPdf'));
 %% Calculate power spectrum before and after whitening
 
 % calculate power spectrum before and after filtering
-filterNoAvg0 = open(fullfile('filters', 'filter1x32.mat'));
+filterNoAvg0 = open(fullfile('filters', 'PennNoSky', 'filter1x32.mat'));
 filterNoAvg = filterNoAvg0.filter;
 
 [imgFullPatchified, imgFullPatchLocs] = patchify(img0log, size(filterNoAvg));
