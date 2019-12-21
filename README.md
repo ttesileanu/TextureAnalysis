@@ -8,21 +8,24 @@ Download the files into a directory of your choice. Before using the code, you m
 ### Downloading data
 The psychophysics data is already available in the repository, in the `data` folder. However, the natural-image data must be downloaded separately. We use two databases in the paper: the [UPenn natural image database](http://tofu.psych.upenn.edu/~upennidb/), and the [van Hateren natural image dataset](http://bethgelab.org/datasets/vanhateren/). Here are instructions for downloading the needed pictures:
 
-* Penn database: the download process is a bit convoluted:
+* Penn database:
   * this work uses a curated subset of the images from the Penn database, as described in [Hermundstad et al. (2014)](https://elifesciences.org/articles/03722)
-  * first navigate to http://tofu.psych.upenn.edu/~upennidb/gallery2/main.php
-  * note that every step below can take a couple of minutes as the server is slow
-  * add any album to the cart (we will change the picture selection later)
-  * choose "Download in Zip" from the "cart actions" dropdown on the top right, then click the "Go" button
-  * on the "Image database download page", look down to where it says "Index file", press "Choose File" and choose the `indices/PennNoSkyIndex.txt` in this repository
-  * press "Load existing list" button below
-  * in the form below, enter your email address and select "Include luminance (LUM) files"
-  * press the "Submit" button
-  * an archive will be prepared and you will receive an email to download it
-  * this will take a while!
-  * once downloaded, place the pictures (or a link to them) under `NaturalImages/PennNoSky` in the directory where you downloaded the scripts (a symbolic link also works)
+  * the download process from the UPenn website is a bit convoluted, so we made a copy here: https://www.dropbox.com/sh/14iti3zm7oxnw95/AAD5fWXTaRxpyJmPbR2S2UBxa?dl=0
+  * to download directly from the source, follow these steps:
+    * first navigate to http://tofu.psych.upenn.edu/~upennidb/gallery2/main.php
+    * note that every step below can take a couple of minutes as the server is slow
+    * add any album to the cart (we will change the picture selection later)
+    * choose "Download in Zip" from the "cart actions" dropdown on the top right, then click the "Go" button
+    * on the "Image database download page", look down to where it says "Index file", press "Choose File" and choose the `indices/PennNoSkyIndex.txt` in this repository
+    * press "Load existing list" button below
+    * in the form below, enter your email address and select "Include luminance (LUM) files"
+    * press the "Submit" button
+    * an archive will be prepared and you will receive an email to download it
+    * this will take a while!
+    * once downloaded, unzip the pictures under `NaturalImages/PennNoSky` in the directory where you downloaded the scripts (a symbolic link also works)
   * alternatively, use FTP to download images from ftp://anonymous@tofu.psych.upenn.edu/fulldb
 * van Hateren database
+  * we use a curated subset of the pictures from the [van Hateren database](http://bethgelab.org/datasets/vanhateren/); use the IMC format
   * download the IMC files as a zip from http://cin-11.medizin.uni-tuebingen.de:61280/vanhateren/zipped/vanhateren_imc.zip
   * unzip into `NaturalImages/vanHateren`
 
