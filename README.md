@@ -11,6 +11,7 @@ The psychophysics data is already available in the repository, in the `data` fol
 * Penn database:
   * this work uses a curated subset of the images from the Penn database, as described in [Hermundstad et al. (2014)](https://elifesciences.org/articles/03722)
   * the download process from the UPenn website is a bit convoluted, so we made a copy here: https://www.dropbox.com/sh/14iti3zm7oxnw95/AAD5fWXTaRxpyJmPbR2S2UBxa?dl=0
+    * download and unzip into `NaturalImages/PennNoSky` in the directory containing the scripts
   * to download directly from the source, follow these steps:
     * first navigate to http://tofu.psych.upenn.edu/~upennidb/gallery2/main.php
     * note that every step below can take a couple of minutes as the server is slow
