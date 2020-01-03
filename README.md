@@ -35,7 +35,7 @@ The scripts for making the plots for the paper can be found in `papers/ternary_s
 
 Running the scripts in the order described below should ensure that all the results are present when they are needed. It's best to run `clear all` before running each script below (note that options like `dbChoice` must be set *after* the `clear all`).
 * run `plotsForPPExample.m` to make the plots needed for the figure describing the psychophysics
-* run showMixedPlanePatches.m to make the figure showing the textures in mixed planes
+* run `showMixedPlanePatches.m` to make the figure showing the textures in mixed planes
 * run `generateNIFilters.m` to generate whitening filters
 * run `generateTernaryNIDistribution.m` to analyze the texture content of all the images in the PennNoSky subset of the UPenn natural image database
 * run plotsForTernaryExplanation.m to make the plots needed for the figure describing the natural-image analysis
