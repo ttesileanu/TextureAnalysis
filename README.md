@@ -38,7 +38,7 @@ Running the scripts in the order described below should ensure that all the resu
 * run `showMixedPlanePatches.m` to make the figure showing the textures in mixed planes
 * run `generateNIFilters.m` to generate whitening filters
 * run `generateTernaryNIDistribution.m` to analyze the texture content of all the images in the PennNoSky subset of the UPenn natural image database
-* run plotsForTernaryExplanation.m to make the plots needed for the figure describing the natural-image analysis
+* run `plotsForTernaryExplanation.m` to make the plots needed for the figure describing the natural-image analysis
 * run `generateTernaryNIPredictions.m` to build threshold predictions based on the natural-image distribution
 * now we can:
   * make the alloy plots comparing predicted to measured thresholds using `plotTernaryNIPPComparison.m`
@@ -52,9 +52,9 @@ Running the scripts in the order described below should ensure that all the resu
   * we can rerun `statisticalTests.m` setting `dbChoice = 'vanHateren'` to perform statistical tests on the van Hateren results
   * we can rerun `plotDependenceOnNR.m` making sure to define `dbChoice = 'vanHateren'` to show how the N and R parameters affect the results in this case
   * we can rerun `plotSymmetries.m` after defining `dbChoice = 'vanHateren'` to see how the symmetry results change when using the van Hateren database
-* run generateTernaryNIDistributionMultiCutoffs.m
-* run generateTernaryNIPredictionsMultiCutoffs.m
-* we can now run plotTernarization.m to see how the specific cutoff used for the ternarization process affects the results
+* run `generateTernaryNIDistributionMultiCutoffs.m`
+* run `generateTernaryNIPredictionsMultiCutoffs.m`
+* we can now run `plotTernarization.m` to see how the specific cutoff used for the ternarization process affects the results
 * optionally we can run the following scripts whose results have not been included in the paper:
     * `plotTernaryPCA.m` to perform principal components analysis on the distribution of textures in natural images
     * `checkGaussianMixRobustness.m` to check how robust the separation between in-focus and blurry patches is -- this requires first running `generateBinaryNIDistribution.m` and `generateFocusResamples.m` (takes a **long** time)
