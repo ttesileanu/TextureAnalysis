@@ -42,7 +42,8 @@ Running the scripts in the order described below should ensure that all the resu
 * run `generateTernaryNIPredictions.m` to build threshold predictions based on the natural-image distribution
 * now we can:
   * make the alloy plots comparing predicted to measured thresholds using `plotTernaryNIPPComparison.m`
-  * run `statisticalTests.m` for desired `NRselection` choices to check to what extent the results support our efficient-coding model XXX should make a script that automates this 
+  * run `statisticalTests.m` to check to what extent the results support our efficient-coding model
+    * the results are saved in 'save/PennNoSky_equalize_square.csv' in a format similar to that from the Tables in the paper's SI
   * make the plot showing how the results depend on the patch size and downsampling ratio using `plotDependenceOnNR.m`
   * make the plot showing the effect of symmetry transformations using `plotSymmetries.m`
   * plot per-subject results using `plotMultipleSubjects.m`
