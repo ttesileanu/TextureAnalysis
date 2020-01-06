@@ -18,7 +18,8 @@
 %           'contrast' -- contrast adaptation
 %   NRselection
 %       Choose one of the analyses, based on block-averaging factor (N) and
-%       patch size (R).
+%       patch size (R). This can also be a cell array of tuples in order to
+%       generate several analyses at the same time.
 %   symmetrizePP
 %       Set to `true` to take the average between each psychophysics
 %       measurement and the measurement in the opposite texture direction.
@@ -42,14 +43,43 @@
 %       measurements.
 %   nSamples
 %       Number of samples to use for statistical tests.
+%   outFile
+%       Text file to which to append the results. Format, e.g.,
+%         '2x48, 0.231, 0.0000, [0.512, 0.670], 0.0003, [0.412, 0.732], [0.451, 0.632], [0.241, 0.283]
+%       where the first entry identifies the preprocessing options, next we
+%       have the D value for the actual predictions obtained from our
+%       natural-image analysis; then the p-value for the null hypothesis
+%       used in the first permutation test (see the paper) and the 95%
+%       highest-density interval of D values obtained from the permutations;
+%       then the same for the second permutation test (see the paper); and
+%       finally the highest-density interval for the posterior probability
+%       of the beta and sigma parameters from the parameter-estimation test
+%       (see the paper). These are the values that appear in, e.g., Table 1
+%       in the SI. Note that a p-value of 0 saved to file means that none
+%       of the `nSamples` samples reached a value as extreme as the
+%       observed one -- thus, it is more appropriately summarized as
+%       `p < 1 / nSamples`.
+%
+%       By default, the file chosen is located in the 'save' folder, and is
+%       named, e.g., 'PennNoSky_equalize_square.csv', identifying the
+%       database, compression type for lightness values, and gain transform
+%       for the efficient coding results. The file is created if it doesn't
+%       exist, but otherwise it is only appended to.
 
 setdefault('dbChoice', 'PennNoSky');
 setdefault('compressType', 'equalize');
-setdefault('NRselection', [2, 32]);
+setdefault('NRselection', {[1, 32], [1, 48], [1, 64], [2, 32], [2, 48], [2, 64], ...
+    [4, 32], [4, 48], [4, 64]});
 setdefault('symmetrizePP', false);
 setdefault('gainTransform', 'square');
 setdefault('nSamples', 10000);
 setdefault('fitLogSlope', false);
+if isstr(gainTransform)
+    gainTransformStr = ['_' gainTransform];
+else
+    gainTransformStr = '';
+end
+setdefault('outFile', fullfile('save', [dbChoice '_' compressType gainTransformStr '.csv']));
 
 %% Preprocess options
 
@@ -58,6 +88,22 @@ if ~strcmp(compressType, 'equalize')
 else
     compressExt = '';
 end
+
+% handle running multiple analyses at the same time
+if iscell(NRselection)
+    allNRs__ = NRselection;
+    for selIt__ = 1:length(allNRs__)
+        NRselection = allNRs__{selIt__};
+        disp(['Working on N=', int2str(NRselection(1)), ', R=' ...
+            int2str(NRselection(2)) '...']);
+        clearvars -except dbChoice compressType NRselection ...
+            symmetrizePP gainTransform nSamples fitLogSlope outFile ...
+            allNRs__ selIt__;
+        statisticalTests;
+    end
+    return;
+end
+
 % niFileName = ['TernaryDistribution_' dbChoice compressExt '.mat'];
 NRstr = [int2str(NRselection(1)) 'x' int2str(NRselection(2))];
 fitLogSuffixes = {'', '_powfit'};
@@ -161,6 +207,11 @@ disp(['Actual D = ' num2str(actualPPNIComparison, '%.3f')]);
 [lo, hi] = getHdi(comparisonsToTheorySimple, 0.95);
 disp(['95% CI of D is [' num2str(lo, '%.3f') ', ' num2str(hi, '%.3f') ']']);
 
+D1 = actualPPNIComparison;
+D1lo = lo;
+D1hi = hi;
+p1 = pvalSimple;
+
 %% NULL MODEL #2: shuffle all groups randomly
 
 % ensure reproducibility
@@ -230,6 +281,11 @@ end
 disp(['Actual D = ' num2str(actualPPNIComparison, '%.3f')]);
 [lo, hi] = getHdi(comparisonsToTheoryPermGroupCyclic, 0.95);
 disp(['95% CI of D is [' num2str(lo, '%.3f') ', ' num2str(hi, '%.3f') ']']);
+
+D2 = actualPPNIComparison;
+D2lo = lo;
+D2hi = hi;
+p2 = pvalSimple;
 
 %% BAYESIAN MODEL: interpolate between constant threshold and NI predictions
 
@@ -307,6 +363,11 @@ while plotter.next
     [lo, hi] = getHdi(posteriorSamplesBurned{i}(:, 1), 0.95);
     disp(['95% credible interval for beta, ', logPriors{i}{1} ' prior: [' ...
         num2str(lo, '%.3f') ', ' num2str(hi, '%.3f') ']']);
+    
+    if strcmp(logPriors{i}{1}, 'flat')
+        beta_lo = lo;
+        beta_hi = hi;
+    end
 end
 
 % show posterior sigma
@@ -321,6 +382,22 @@ while plotter.next
     [lo, hi] = getHdi(exp(posteriorSamplesBurned{i}(:, 2)), 0.95);
     disp(['95% credible interval for sigma, ', logPriors{i}{1} ' prior: [' ...
         num2str(lo, '%.3f') ', ' num2str(hi, '%.3f') ']']);
+    if strcmp(logPriors{i}{1}, 'flat')
+        sigma_lo = lo;
+        sigma_hi = hi;
+    end
+end
+
+%% Save to file, if a file is provided
+
+if ~isempty(outFile)
+    f = fopen(outFile, 'a');
+    fprintf(f, '%dx%d, %.3f, %.4f, [%.3f, %.3f], %.4f, [%.3f, %.3f], [%.3f, %.3f], [%.3f, %.3f]\n', ...
+        NRselection(1), NRselection(2), D1, ...
+        p1, D1lo, D1hi, ....
+        p2, D2lo, D2hi, ...
+        beta_lo, beta_hi, sigma_lo, sigma_hi);
+    fclose(f); 
 end
 
 %% Make a pretty plot of the beta posterior
