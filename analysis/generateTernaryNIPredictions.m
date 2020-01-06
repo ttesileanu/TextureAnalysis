@@ -95,14 +95,14 @@ end
 
 % handle running multiple analyses at the same time
 if iscell(NRselection)
-    allNRs__ = NRselection;
-    for selIt = 1:length(allNRs__)
-        NRselection = allNRs__{selIt};
-        disp(['Working on N=', int2str(NRselection(1)), ', R=' ...
+    allNRs__ = NRselection;s
+    for selIt__ = 1:length(allNRs__)
+        NRselection = allNRs__{selIt__};
+        disp(['Working on N=',s int2str(NRselection(1)), ', R=' ...
             int2str(NRselection(2)) '...']);
         clearvars -except dbChoice compressType compressScope filterScope ...
             NRselection restrictToFocus useErrorBars gainTransform fitLogSlope ...
-            allNRs__;
+            allNRs__ selIt__;
         generateTernaryNIPredictions;
     end
     return;
