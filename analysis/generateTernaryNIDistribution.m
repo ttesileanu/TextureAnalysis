@@ -131,14 +131,14 @@ disp(['Generating the ternary stats took ' num2str(toc, '%.2f') ' seconds.']);
 tic;
 resultsFocus = cell(1, length(valuesN));
 for i = 1:length(results)
-    disp(['Working on focus analysis for binary results ' int2str(i) ...
+    disp(['Working on focus analysis for ternary results ' int2str(i) ...
           '/' int2str(length(results)) '...']);
     % focus analysis has a random component
     % to keep things reproducible, we fix the random number generator seed
     rng('default');
     resultsFocus{i} = runFocusAnalysis(results{i});
 end
-disp(['Focus analysis for binary stats took ' num2str(toc, '%.2f') ' seconds.']);
+disp(['Focus analysis for ternary stats took ' num2str(toc, '%.2f') ' seconds.']);
 results = resultsFocus;
 
 %% Save the ternary stats
