@@ -31,15 +31,22 @@ parser = inputParser;
 parser.CaseSensitive = true;
 parser.FunctionName = mfilename;
 
+[~, colorDict] = get_palette();
+
+defaultColors = containers.Map;
+defaultColors('circle') = lighten(colorDict('gray'), 0.75);
+defaultColors('axis') = lighten(colorDict('gray'), 0.75);
+defaultColors('simplex') = lighten(colorDict('dark blue'), 0.50);
+
 parser.addParameter('edgelabels', 'probability', @(s) ismember(s, {'probability', 'digit', 'none'}));
 parser.addParameter('fontscale', 1, @(x) isscalar(x) && isnumeric(x) && x > 0);
 parser.addParameter('innercircle', false, @(b) isscalar(b) && islogical(b));
 parser.addParameter('outercircle', true, @(b) isscalar(b) && islogical(b));
 parser.addParameter('simplex', true, @(b) isscalar(b) && islogical(b));
 parser.addParameter('axes', true, @(b) isscalar(b) && islogical(b));
-parser.addParameter('circleopts', {'color', [0.8, 0.8, 0.8], 'linewidth', 0.5}, @(c) iscell(c));
-parser.addParameter('simplexopts', {'color', [0.6 0.6 0.6], 'linewidth', 0.5}, @(c) iscell(c));
-parser.addParameter('axisopts', {'color', [0.8 0.8 0.8], 'linewidth', 0.5}, @(c) iscell(c));
+parser.addParameter('circleopts', {'color', defaultColors('circle'), 'linewidth', 0.5}, @(c) iscell(c));
+parser.addParameter('simplexopts', {'color', defaultColors('simplex'), 'linewidth', 0.5}, @(c) iscell(c));
+parser.addParameter('axisopts', {'color', defaultColors('axis'), 'linewidth', 0.5}, @(c) iscell(c));
 parser.addParameter('axisovershoot', 0.5, @(x) isscalar(x) && isnumeric(x));
 
 % show defaults if asked
