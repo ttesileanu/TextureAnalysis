@@ -13,17 +13,17 @@ rng(82);
 
 fig = figure;
 fig.Units = 'inches';
-totalX = 6;
-totalY = 6.6;
+totalX = 5.49;
+totalY = 6.3;
 fig.Position = [2 2 totalX totalY];
 
 mixedGroups = sortGroups(unique(ternaryAvg.groups(cellfun(@(s) sum(s == ';') > 0, ...
     ternaryAvg.groups))));
 ax = zeros(length(mixedGroups), 1);
-figX = 1.45;
-figY = 1.05;
+figX = 1.32;
+figY = 1.00;
 edgeX = -0.1;
-edgeY = 0.22;
+edgeY = 0.20;
 spacingX = 0;
 spacingY = 0.05;
 plusMinus = '+-';
@@ -55,14 +55,23 @@ for i = 1:length(ax)
     ylim([-0.6, 0.6]);
     
     groupNames = strtrim(split(mixedGroups{i}, ';'));
-    textTexGroup(0.59, 0.1, ...
+    crtAx.Clipping = 'off';
+    plot([0 0], [0.65 0.95], 'k', 'linewidth', 0.75);
+    plot([-0.05 0 0.05], [0.87 0.95 0.87], 'k', 'linewidth', 0.75);
+%     plot(0, 0.95, '^k');
+    
+    plot([0.65 1.15], [0 0], 'k', 'linewidth', 0.75);
+    plot([1.07 1.15 1.07], [-0.05 0 0.05], 'k', 'linewidth', 0.75);
+%     plot(1.05, 0, '>k');
+    
+    textTexGroup(0.61, 0.03, ...
         groupNames{1}, 'HorizontalAlignment', 'left', ...
         'VerticalAlignment', 'bottom', 'coeffToStr', @(i) plusMinus(i), ...
-        'FontSize', 8);
-    textTexGroup(0, 0.59, ...
+        'FontSize', 8, 'squareSubscripts', true);
+    textTexGroup(0.06, 0.59, ...
         groupNames{2}, 'HorizontalAlignment', 'left', ...
         'VerticalAlignment', 'bottom', 'coeffToStr', @(i) plusMinus(i), ...
-        'FontSize', 8);
+        'FontSize', 8, 'squareSubscripts', true);
     
     drawnow;
 end
