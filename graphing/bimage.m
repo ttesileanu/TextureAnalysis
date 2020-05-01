@@ -90,16 +90,26 @@ y_range = sort(y_range);
 % correct the ranges to match pixel edges instead of centers
 % x_ps = (diff(x_range) + 1) / size(data, 2);
 % y_ps = (diff(y_range) + 1) / size(data, 1);
-x_ps = diff(x_range) / size(data, 2);
-y_ps = diff(y_range) / size(data, 1);
+dx = diff(x_range);
+dy = diff(y_range);
+if size(data, 2) > 1
+    x_ps = dx / (size(data, 2) - 1);
+else
+    x_ps = 2 * dx;
+end
+if size(data, 1) > 1
+    y_ps = dy / (size(data, 1) - 1);
+else
+    y_ps = 2 * dy;
+end
 x_range = [x_range(1) - 0.5*x_ps x_range(2) + 0.5*x_ps];
 y_range = [y_range(1) - 0.5*y_ps y_range(2) + 0.5*y_ps];
 
 % draw the border
 if params.borderwidth > 0
     h_border = plot(...
-        [x_range(1) x_range(1) x_range(2) x_range(2) x_range(1)], ...
-        [y_range(1) y_range(2) y_range(2) y_range(1) y_range(1)], ...
+        [x_range(1) x_range(1) x_range(2) x_range(2) x_range(1) x_range(1)], ...
+        [y_range(1) y_range(2) y_range(2) y_range(1) y_range(1) y_range(2)], ...
         'color', params.bordercolor, 'linewidth', params.borderwidth);
 end
 
