@@ -13,12 +13,15 @@ texAxes = {[0 1 0], [0 0 1], [1 0 0]};
 barPositions = {[1.05 0.28], [-0.93 1.458], [-0.93 -0.898]};
 centerBarPosition = [-0.25 0.28];
 % color of bars
-barColor = [64, 90, 128]/255;
+[colors, colorDict] = get_palette();
+% barColor = [64, 90, 128]/255;
+% barColor = colors(1, :);
 % size of bar plot
 patchDim = 0.5;
 
 for i = 1:length(planes)
     plane = planes{i};
+    barColor = colors(i + 1, :);
 
     % build the figure
     fig = figure;
@@ -29,7 +32,7 @@ for i = 1:length(planes)
     axis equal;
     
     % draw the guide simplex and circles
-    drawTernaryTriangle('edgelabels', 'none');
+    drawTernaryTriangle('edgelabels', 'none', 'axisovershoot', 0);
     
     % draw
     for k = 1:length(texAxes)
@@ -253,7 +256,8 @@ fig.Position = [2 2 8 4];
 ax = axes;
 ax.OuterPosition = [0 0.2 1 0.8];
 
-crtColor = [0.5 0.7 1]/2;
+% crtColor = [0.5 0.7 1]/2;
+crtColor = colorDict('gray');
 bar(crtHisto, 0.6, 'edgecolor', 'none', 'facecolor', crtColor);
 xlim([0 82]);
 
@@ -270,11 +274,12 @@ ax2.YDir = 'reverse';
 hold on;
 
 gliderSize = 2;
+gliderShift = gliderSize / 4;
 topEdge = 10;
 for i = 1:81
     row = mod(i-1, 3);
-    bimage(i - gliderSize/2, topEdge + row*gliderSize*1.5, gliders{i}, ...
-        'CDataMapping', 'scaled', 'gridwidth', 1);
+    bimage(i - gliderShift, topEdge + row*gliderSize*1.5, gliders{i}, ...
+        'CDataMapping', 'scaled', 'gridwidth', 1, 'borderwidth', 1);
 end
 colormap('gray');
 
@@ -299,7 +304,7 @@ fig.Position = [1 1 1.1 0.7];
 
 % get a CDF for the patch
 crtPatchFiltered = imgFiltered(1:32, 1:32);
-[patchHist, patchBins] = hist(crtPatchFiltered(:), 32);
+[patchHist, patchBins] = hist(crtPatchFiltered(:), 32); %#ok<HIST>
 patchCdf = cumsum(patchHist) / sum(patchHist);
 
 % find the positions of the cutoffs
@@ -334,7 +339,7 @@ for i = 1:length(cutoffsX)
 end
 
 % draw the CDF
-plot(patchBins, patchCdf, 'color', [0    0.4470    0.7410]);
+plot(patchBins, patchCdf, 'color', colors(1, :));
 
 % fix the axes (ticks, labels, etc.)
 xlim(patchBins([1 end]));
@@ -414,7 +419,7 @@ loglog(radiiBefore, 10.^(coeffs(1)*log10(radiiBefore) + coeffs(2)), ...
     'color', [0.6, 0.6, 0.6], 'linewidth', 0.25);
 hold on;
 % draw the radial spectrum
-loglog(radiiBefore, radialSpectrumBefore, 'color', [0    0.4470    0.7410]);
+loglog(radiiBefore, radialSpectrumBefore, 'color', colors(1, :));
 
 % set the axes and labels
 xlabel('log radius');
