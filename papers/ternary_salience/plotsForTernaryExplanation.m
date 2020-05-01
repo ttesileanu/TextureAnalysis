@@ -450,7 +450,7 @@ loglog(radiiAfter, repmat(const_y, size(radiiAfter)), ...
     'color', [0.6, 0.6, 0.6], 'linewidth', 0.25);
 hold on;
 % draw the radial power spectrum after filtering
-loglog(radiiAfter, radialSpectrumAfter, 'color', [0    0.4470    0.7410]);
+loglog(radiiAfter, radialSpectrumAfter, 'color', colors(1, :));
 
 % set the axes and labels
 xlabel('log radius');
@@ -553,11 +553,11 @@ fourthOrderFocus = fourthOrder(focusMask);
 % make the figure
 fig = figure;
 fig.Units = 'inches';
-fig.Position = [1 1 2.5 2.25];
+fig.Position = [1 1 2 1.8];
 
 ax = axes;
 ax.Units = 'inches';
-ax.OuterPosition = [0.2 0.2 2.3 2.05];
+ax.OuterPosition = [0.2 0.2 1.84 1.64];
 
 hold on;
 
@@ -583,8 +583,8 @@ preparegraph;
 
 plusMinus = '+-';
 textTexGroup(0.55, 0.08, group1, 'verticalalignment', 'top', 'horizontalalignment', 'center', ...
-    'fontsize', 10, 'coeffToStr', @(i) plusMinus(i));
+    'fontsize', 10, 'coeffToStr', @(i) plusMinus(i), 'squareSubscripts', true);
 textTexGroup(-0.04, 0.60, group2, 'verticalalignment', 'middle', 'horizontalalignment', 'right', ...
-    'fontsize', 10, 'coeffToStr', @(i) plusMinus(i));
+    'fontsize', 10, 'coeffToStr', @(i) plusMinus(i), 'squareSubscripts', true);
 
 safePrint(fullfile('figs', 'draft', 'focusLocus'), 'type', 'png', 'printOpts', {'-r600'});
