@@ -20,11 +20,15 @@ parser = inputParser;
 parser.CaseSensitive = true;
 parser.FunctionName = mfilename;
 
+[~, colorDict] = get_palette();
+defaultColors('circle') = lighten(colorDict('gray'), 0.75);
+defaultColors('axis') = lighten(colorDict('gray'), 0.75);
+
 % parser.addParameter('circles', [1/4, 1/2, 3/4, 1], @(v) isempty(v) || (isvector(v) && isnumeric(v)));
 parser.addParameter('circles', 1, @(v) isempty(v) || (isvector(v) && isnumeric(v)));
 parser.addParameter('axes', true, @(b) isscalar(b) && islogical(b));
-parser.addParameter('circleopts', {'color', [0.8, 0.8, 0.8], 'linewidth', 0.5}, @(c) iscell(c));
-parser.addParameter('axisopts', {'color', [0.8 0.8 0.8], 'linewidth', 0.5}, @(c) iscell(c));
+parser.addParameter('circleopts', {'color', defaultColors('circle'), 'linewidth', 0.5}, @(c) iscell(c));
+parser.addParameter('axisopts', {'color', defaultColors('axis'), 'linewidth', 0.5}, @(c) iscell(c));
 
 % show defaults if asked
 if nargin == 1 && strcmp(varargin{1}, 'defaults')

@@ -51,11 +51,12 @@ parser.CaseSensitive = true;
 parser.FunctionName = mfilename;
 parser.KeepUnmatched = true;
 
+default_colors = num2cell(get_palette(), 2);
+
 parser.addParameter('groupMaskFct', @(g) true);
 parser.addParameter('groupSelection', 'union', @(c) (iscell(c) && isvector(c)) ...
     || ismember(c, {'intersect', 'union'}));
-parser.addParameter('colors', {[0 0.3438 0.7410], [0.8 0.3 0.3]}, ...
-    @(c) iscell(c) && isvector(c));
+parser.addParameter('colors', default_colors, @(c) iscell(c) && isvector(c));
 parser.addParameter('markers', {'.', 'x'}, @(c) iscell(c) && isvector(c));
 parser.addParameter('sizes', [8, 5], @(x) isnumeric(x) && isvector(x) && all(x > 0));
 parser.addParameter('colorFct', []);

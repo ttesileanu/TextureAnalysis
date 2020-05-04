@@ -58,13 +58,17 @@ parser = inputParser;
 parser.CaseSensitive = true;
 parser.FunctionName = mfilename;
 
+[~, colorDict] = get_palette();
+default_color = colorDict('red');
+default_error_color = colorDict('gray');
+
 parser.addOptional('directions', {}, @(c) iscell(c));
 parser.addParameter('marker', 'x', @(s) ischar(s));
-parser.addParameter('color', [0.8 0.3 0.3], @(v) isempty(v) || ...
+parser.addParameter('color', default_color, @(v) isempty(v) || ...
     (ismatrix(v) && isnumeric(v) && size(v, 2) == 3));
 parser.addParameter('size', 5, @(x) isnumeric(x) && isvector(x) && all(x > 0));
 parser.addParameter('errors', [], @(v) isempty(v) || (ismatrix(v) && size(v, 2) == 2 && isnumeric(v)));
-parser.addParameter('errorColor', [0.3 0.3 0.3], @(v) isvector(v) && isnumeric(v) && length(v) == 3);
+parser.addParameter('errorColor', default_error_color, @(v) isvector(v) && isnumeric(v) && length(v) == 3);
 parser.addParameter('errorBars', true, @(b) islogical(b) && isscalar(b));
 parser.addParameter('ellipse', false, @(b) islogical(b) && isscalar(b));
 parser.addParameter('colorFct', []);
