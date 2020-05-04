@@ -62,15 +62,17 @@ end
 
 fig = figure;
 fig.Units = 'inches';
-fig.Position(3:4) = [6 2];
+fig.Position(3:4) = [5.08 2];
 
 % ax = axes;
 % ax.Position = [0 0 1 1];
 % ax.Units = 'inches';
 % ax.Position = [0.4 0.5 2.5 0.9];
 
+[colors, colorDict] = get_palette();
+
 hold on;
-plot([0, 1], [0 0], 'color', [0.65 0.65 0.65], 'linewidth', 0.5);
+plot([0, 1], [0 0], 'color', lighten(colorDict('gray'), 0.65), 'linewidth', 0.5);
 
 % allDifferencesMatrix = cell2mat(cellfun(@(s) s.common.logdiff, details, ...
 %     'uniform', false));
@@ -86,9 +88,9 @@ allCategories = flatten(meshgrid(grayAmounts(:)', ones(size(allDifferencesMatrix
 [allCategories, reorder] = sort(allCategories);
 grayAmounts = sort(grayAmounts);
 allDifferences = allDifferences(reorder);
-allColors = 0.5 * ones(length(grayAmounts), 3);
+allColors = repmat(lighten(colorDict('gray'), 0.3), length(grayAmounts), 1);
 [~, idxMain] = min(abs(grayAmounts - 1/3));
-allColors(idxMain, :) = [0 0.3438 0.7410];
+allColors(idxMain, :) = colorDict('blue');
 width = 0.03;
 switch plotType
     case 'jitter'
@@ -124,6 +126,9 @@ ylabel('Relative error');
 set(ax, 'xminortick', 'off');
 
 preparegraph;
+
+set(ax, 'color','none');
+set(fig, 'color', 'none');
 
 safePrint(fullfile('figs', 'draft', 'ternarizationEffects'));
 

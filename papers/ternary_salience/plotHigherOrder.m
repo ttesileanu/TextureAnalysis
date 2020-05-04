@@ -13,25 +13,27 @@ ni = open(fullfile('save', 'TernaryNIPredictions_PennNoSky_2x32_square.mat'));
 %%
 
 uniqueSubjects = unique(pp.subjects);
-uniqueColors = lines(length(uniqueSubjects));
+% uniqueColors = lines(length(uniqueSubjects));
+uniqueColors = get_palette();
+uniqueColors = [uniqueColors(1:5, :) ; uniqueColors(7, :)];
 colorMap = containers.Map(uniqueSubjects, num2cell(uniqueColors, 2));
 
 % color for NI
-colorMap('subject') = [0 0.3438 0.7410];
+colorMap('subject') = uniqueColors(1, :);
 
 fig = figure;
 fig.Units = 'inches';
-totalX = 6;
-totalY = 3;
+totalX = 5.08;
+totalY = 2.54;
 fig.Position = [2 2 totalX totalY];
 
 ax = zeros(7, 1);
-figX = 1.5;
-figY = 1.5;
+figX = 1.27;
+figY = 1.27;
 factorX = 0.8;
 factorY = 0.8;
-edgeX = 0.05;
-edgeY = -0.1;
+edgeX = 0.04;
+edgeY = -0.08;
 crtX = edgeX;
 crtY = totalY - figY - edgeY;
 for i = 1:length(ax)
@@ -61,12 +63,12 @@ plotTernaryMatrix({ni.predictions, pp}, 'ellipse', false, ...
     'beautifyOptions', {'ticks', 'off', 'ticklabels', false, ...
         'titlesize', 12, 'titleweight', 'normal', 'noaxes', true, ...
         'fontscale', 0.667}, ...
-    'triangleOptions', {'fontscale', 0.667, 'edgelabels', 'digit'}, ...
+    'triangleOptions', {'edgelabels', 'none', 'axisovershoot', 0}, ...
     'limits', 1.5, ...
     'plotterOptions', {'fixedAxes', ax}, ...
     'titleShift', [0 -0.5], 'titleAlignment', {'center', 'bottom'}, ...
-    'labelOptions', {'FontSize', 8, 'subscriptSpacing', -0.55, ...
-        'coeffToStr', @(i) plusMinus(i)}, ...
+    'labelOptions', {'FontSize', 8, 'subscriptSpacing', -0.42, ...
+        'coeffToStr', @(i) plusMinus(i), 'squareSubscripts', true}, ...
     'colorFct', colorMap);
 
 preparegraph;
@@ -90,7 +92,7 @@ for i = 1:length(uniqueSubjects)
     end
     h(i) = plot(nan, nan, 'x', 'color', uniqueColors(i, :), 'markersize', 5);
 end
-h(end) = plot(nan, nan, '.', 'color', [0 0.3438 0.7410], 'markersize', 8);
+h(end) = plot(nan, nan, '.', 'color', colorMap('subject'), 'markersize', 8);
 legend(h(h ~= 0), [uniqueSubjects(h(1:end-1) ~= 0) ; {'prediction'}], 'fontsize', 8);
 
 beautifygraph;

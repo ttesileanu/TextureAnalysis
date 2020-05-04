@@ -35,16 +35,16 @@ safePrint(fullfile('figs', 'draft', 'ternarySecondOrderNIPPMatch.pdf'));
 
 fig = figure;
 fig.Units = 'inches';
-totalX = 6;
-totalY = 6;
+totalX = 5.48;
+totalY = 5.50;
 fig.Position = [2 2 totalX totalY];
 
 ax = zeros(22, 1);
-figX = 1.16;
-figY = 1.16;
+figX = 1.05;
+figY = 1.05;
 factorX = 0.8;
 factorY = 0.8;
-edgeX = 0.10;
+edgeX = 0.09;
 edgeY = 0.05;
 for i = 1:length(ax)
     crtAx = axes;

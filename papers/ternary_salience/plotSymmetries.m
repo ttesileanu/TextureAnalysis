@@ -198,14 +198,17 @@ end
 
 fig = figure;
 fig.Units = 'inches';
-fig.Position(3:4) = [3 1.5];
+fig.Position(3:4) = [2.8 1.5];
 
 ax = axes;
 ax.Units = 'inches';
-ax.Position = [0.4 0.5 2.5 0.9];
+ax.Position = [0.4 0.5 2.33 0.9];
 hold on;
 
-plot([0, nTrafos+1], [0 0], 'color', [0.65 0.65 0.65], 'linewidth', 0.5);
+[colors, colorDict] = get_palette();
+
+plot([0, nTrafos+1], [0 0], 'color', lighten(colorDict('gray'), 0.65), ...
+    'linewidth', 0.5);
 
 % group transformations by type of symmetry
 % trafoReorder = [1, 2, 3, 4, 8, 7, 5, 6];
@@ -238,12 +241,10 @@ for k = 1:nTrafos
     switch plotType
         case 'jitter'
             stripPlot(crtLocs, crtDifferences, 'jitter', 0.25, 'sizes', 1e-3, 'kde', true, ...
-                'colors', [0 0.3438 0.7410 ; 0.8000 0.3000 0.3000], ...
-                'marker', '.', 'boxes', false);
+                'colors', colors, 'marker', '.', 'boxes', false);
         case 'violin'
             violinPlot(crtLocs, crtDifferences, 'width', 0.25, ...
-                'colors', [0 0.3438 0.7410 ; 0.8000 0.3000 0.3000], ...
-                'boxes', false);
+                'colors', colors, 'boxes', false);
     end
 %     set(h, 'markerfacealpha', 0.5, 'markeredgealpha', 0.5);
 end

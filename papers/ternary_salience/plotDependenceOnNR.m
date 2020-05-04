@@ -111,14 +111,17 @@ end
 
 fig = figure;
 fig.Units = 'inches';
-fig.Position(3:4) = [3 1.5];
+fig.Position(3:4) = [2.8 1.5];
 
 ax = axes;
 ax.Units = 'inches';
-ax.Position = [0.4 0.5 2.5 0.9];
+ax.Position = [0.4 0.5 2.33 0.9];
+
+[~, colorDict] = get_palette();
 
 hold on;
-plot([0, length(valuesNR)+1], [0 0], 'color', [0.65 0.65 0.65], 'linewidth', 0.5);
+plot([0, length(valuesNR)+1], [0 0], 'color', lighten(colorDict('gray'), 0.65), ...
+    'linewidth', 0.5);
 
 % allDifferencesMatrix = cell2mat(cellfun(@(s) s.common.logdiff, details, ...
 %     'uniform', false));
@@ -129,8 +132,8 @@ allDifferencesMatrix = cell2mat(cellfun(@(s) ...
 
 allDifferences = allDifferencesMatrix(:);
 allCategories = flatten(meshgrid(1:length(valuesNR), ones(size(allDifferencesMatrix, 1), 1)));
-allColors = repmat([0.5, 0.5, 0.5], length(valuesNR), 1);
-allColors(cellfun(@(c) isequal(c, [2 32]), valuesNR), :) = [0 0.3438 0.7410];
+allColors = repmat(lighten(colorDict('gray'), 0.3), length(valuesNR), 1);
+allColors(cellfun(@(c) isequal(c, [2 32]), valuesNR), :) = colorDict('blue');
 switch plotType
     case 'jitter'
         stripPlot(allCategories, allDifferences, 'jitter', 0.5, 'marker', '.', ...
@@ -144,7 +147,7 @@ hold on;
 % boxplot(allDifferencesMatrix, 'colors', 'k', 'whisker', 0, 'symbol', '');
 
 % boxplot messes up the position!
-ax.Position = [0.4 0.5 2.5 0.9];
+ax.Position = [0.4 0.5 2.33 0.9];
 
 beautifygraph(ax, 'fontscale', 0.6667);
 
