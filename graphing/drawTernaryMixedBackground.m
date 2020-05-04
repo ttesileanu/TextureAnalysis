@@ -21,6 +21,7 @@ parser.CaseSensitive = true;
 parser.FunctionName = mfilename;
 
 [~, colorDict] = get_palette();
+defaultColors = containers.Map();
 defaultColors('circle') = lighten(colorDict('gray'), 0.75);
 defaultColors('axis') = lighten(colorDict('gray'), 0.75);
 
