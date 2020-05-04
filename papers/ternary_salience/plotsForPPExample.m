@@ -10,6 +10,7 @@ rng(34546);
 patchSize = 64;
 stripSize = 16;
 stripDistance = 8;
+[colors, colorDict] = get_palette();
 
 % the background patch
 bkgPatch = randi([0 2], patchSize)/2;
@@ -65,7 +66,7 @@ xVals = linspace(0, 1);
 yVals = 1/4 + (3/4) * (1 - 2.^(-(xVals/0.5).^2.5));
 
 % draw the curve
-color = [0.8 0.3 0.3];
+color = colorDict('red');
 plot(xVals, yVals, 'color', color);
 hold on;
 plot(xVals(end/2), yVals(end/2), '.', 'color', color);
@@ -144,7 +145,7 @@ axis off;
 hold on;
 
 % draw the rays along which we have measurements
-color = [0.8 0.3 0.3];
+color = colorDict('red');
 for i = 1:length(directions)
     crtDir = directions{i};
     % locate the position on the simplex
