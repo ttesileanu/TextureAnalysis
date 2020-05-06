@@ -74,7 +74,7 @@ setdefault('symmetrizePP', false);
 setdefault('gainTransform', 'square');
 setdefault('nSamples', 10000);
 setdefault('fitLogSlope', false);
-if isstr(gainTransform)
+if ischar(gainTransform)
     gainTransformStr = ['_' gainTransform];
 else
     gainTransformStr = '';
