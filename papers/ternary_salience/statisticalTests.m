@@ -65,6 +65,10 @@
 %       database, compression type for lightness values, and gain transform
 %       for the efficient coding results. The file is created if it doesn't
 %       exist, but otherwise it is only appended to.
+%   errorMeasure
+%       Kind of measure to use for estimating errors. This can be
+%        'RMSLE':   root mean square log error
+%        'MedALE':  median absolute log error
 
 setdefault('dbChoice', 'PennNoSky');
 setdefault('compressType', 'equalize');
@@ -80,6 +84,7 @@ else
     gainTransformStr = '';
 end
 setdefault('outFile', fullfile('save', [dbChoice '_' compressType gainTransformStr '.csv']));
+setdefault('errorMeasure', 'RMSLE');
 
 %% Preprocess options
 
@@ -98,7 +103,7 @@ if iscell(NRselection)
             int2str(NRselection(2)) '...']);
         clearvars -except dbChoice compressType NRselection ...
             symmetrizePP gainTransform nSamples fitLogSlope outFile ...
-            allNRs__ selIt__;
+            errorMeasure allNRs__ selIt__;
         statisticalTests;
     end
     return;
@@ -151,7 +156,7 @@ ppArtificialSimple = cell(1, nSamples);
 comparisonsToExperimentSimple = zeros(nSamples, 1);
 comparisonsToTheorySimple = zeros(nSamples, 1);
 
-compType = 'direct';
+compOpts = {'direct', 'normalize', true, 'summaryType', errorMeasure};
 
 progress = TextProgress;
 for i = 1:nSamples
@@ -159,17 +164,15 @@ for i = 1:nSamples
     
     % get distances to experiment and NI predictions, normalizing out the
     % median log threshold
-    comparisonsToExperimentSimple(i) = compareMeasurements(pp, ppArtificialSimple{i}, compType, ...
-        'normalize', true);
-    comparisonsToTheorySimple(i) = compareMeasurements(ni, ppArtificialSimple{i}, compType, ...
-        'normalize', true);
+    comparisonsToExperimentSimple(i) = compareMeasurements(pp, ppArtificialSimple{i}, compOpts{:});
+    comparisonsToTheorySimple(i) = compareMeasurements(ni, ppArtificialSimple{i}, compOpts{:});
     
     progress.update(i*100/nSamples);
 end
 progress.done;
 
 % distance between prediction and experiment
-actualPPNIComparison = compareMeasurements(pp, ni, compType, 'normalize', true);
+actualPPNIComparison = compareMeasurements(pp, ni, compOpts{:});
 
 %% Make plots
 
@@ -223,7 +226,7 @@ ppArtificialPermGroupCyclic = cell(1, nSamples);
 comparisonsToExperimentPermGroupCyclic = zeros(nSamples, 1);
 comparisonsToTheoryPermGroupCyclic = zeros(nSamples, 1);
 
-compType = 'direct';
+compOpts = {'direct', 'normalize', true, 'summaryType', errorMeasure};
 
 progress = TextProgress;
 for i = 1:nSamples
@@ -233,18 +236,16 @@ for i = 1:nSamples
     % get distances to experiment and NI predictions, normalizing out the
     % median log threshold
     comparisonsToExperimentPermGroupCyclic(i) = compareMeasurements(...
-        pp, ppArtificialPermGroupCyclic{i}, compType, ...
-        'normalize', true);
+        pp, ppArtificialPermGroupCyclic{i}, compOpts{:});
     comparisonsToTheoryPermGroupCyclic(i) = compareMeasurements(...
-        ni, ppArtificialPermGroupCyclic{i}, compType, ...
-        'normalize', true);
+        ni, ppArtificialPermGroupCyclic{i}, compOpts{:});
     
     progress.update(i*100/nSamples);
 end
 progress.done;
 
 % distance between prediction and experiment
-actualPPNIComparison = compareMeasurements(pp, ni, compType, 'normalize', true);
+actualPPNIComparison = compareMeasurements(pp, ni, compOpts{:});
 
 %% Make plots
 
