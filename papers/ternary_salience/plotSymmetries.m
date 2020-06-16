@@ -43,6 +43,13 @@
 %           departure of visual processing in the brain from Gaussianity.
 %   plotType
 %       This can be 'violin' or 'jitter'.
+%   diffType
+%       Type of error to calculate. This can be
+%        'spe'
+%           Symmetric percentage error -- this is the ratio between the
+%           difference and the mean of the measured and predicted values.
+%        'log'
+%           Difference between log measurement and log prediction.
 
 setdefault('dbChoice', 'PennNoSky');
 setdefault('compressType', 'equalize');
@@ -51,6 +58,7 @@ setdefault('restrictToFocus', true);
 setdefault('symmetrizePP', false);
 setdefault('gainTransform', 'square');
 setdefault('plotType', 'violin');
+setdefault('diffType', 'log');
 
 %% Preprocess options
 
@@ -220,14 +228,22 @@ rng(1);
 for k = 1:nTrafos
     
     i = trafoReorder(k);
-    differencesNI = 2*(niDetails{i}.common.measurements2.thresholds - ...
-        niDetails{i}.common.measurements1.thresholds) ./ ...
-        (niDetails{i}.common.measurements2.thresholds + ...
-         niDetails{i}.common.measurements1.thresholds);
-    differencesPP = 2*(ppDetails{i}.common.measurements2.thresholds - ...
-        ppDetails{i}.common.measurements1.thresholds) ./ ...
-        (ppDetails{i}.common.measurements2.thresholds + ...
-         ppDetails{i}.common.measurements1.thresholds);
+    switch diffType
+        case 'spe'
+            differencesNI = 2*(niDetails{i}.common.measurements2.thresholds - ...
+                niDetails{i}.common.measurements1.thresholds) ./ ...
+                (niDetails{i}.common.measurements2.thresholds + ...
+                 niDetails{i}.common.measurements1.thresholds);
+            differencesPP = 2*(ppDetails{i}.common.measurements2.thresholds - ...
+                ppDetails{i}.common.measurements1.thresholds) ./ ...
+                (ppDetails{i}.common.measurements2.thresholds + ...
+                 ppDetails{i}.common.measurements1.thresholds);
+        case 'log'
+            differencesNI = niDetails{i}.common.logdiff;
+            differencesPP = ppDetails{i}.common.logdiff;
+        otherwise
+            error('Unknown diffType.');
+    end
      
     crtLocs = [(k - 0.15)*ones(length(differencesNI), 1) ; ...
         (k + 0.15)*ones(length(differencesPP), 1)];
@@ -258,7 +274,14 @@ set(ax, 'xtick', 1:nTrafos, 'xticklabel', trafoNames(trafoReorder), 'xticklabelr
     'yminortick', 'on');
 ax.XAxis.FontSize = 8;
 ax.YAxis.FontSize = 8;
-ylabel('Relative change');
+switch diffType
+    case 'spe'
+        ylabel('Relative change');
+    case 'log'
+        ylabel('Log change');
+    otherwise
+        error('Unknown diffType.');
+end
 % ylim([0, 0.45]);
 % ylim([0, plotMax]);
 xlim([0, nTrafos+1]);

@@ -43,6 +43,13 @@
 %       Which analysis to highlight.
 %   plotType
 %       This can be 'violin' or 'jitter'.
+%   diffType
+%       Type of error to calculate. This can be
+%        'spe'
+%           Symmetric percentage error -- this is the ratio between the
+%           difference and the mean of the measured and predicted values.
+%        'log'
+%           Difference between log measurement and log prediction.
 
 setdefault('dbChoice', 'PennNoSky');
 setdefault('compressType', 'equalize');
@@ -52,6 +59,7 @@ setdefault('symmetrizePP', false);
 setdefault('gainTransform', 'square');
 setdefault('highlight', [2 32]);
 setdefault('plotType', 'violin');
+setdefault('diffType', 'log');
 
 %% Preprocess options
 
@@ -123,12 +131,18 @@ hold on;
 plot([0, length(valuesNR)+1], [0 0], 'color', lighten(colorDict('gray'), 0.65), ...
     'linewidth', 0.5);
 
-% allDifferencesMatrix = cell2mat(cellfun(@(s) s.common.logdiff, details, ...
-%     'uniform', false));
-allDifferencesMatrix = cell2mat(cellfun(@(s) ...
-    2*(s.common.measurements2.thresholds - s.common.measurements1.thresholds) ./ ...
-      (s.common.measurements2.thresholds + s.common.measurements1.thresholds), ...
-    details, 'uniform', false));
+switch diffType
+    case 'spe'
+        allDifferencesMatrix = cell2mat(cellfun(@(s) ...
+        2*(s.common.measurements2.thresholds - s.common.measurements1.thresholds) ./ ...
+          (s.common.measurements2.thresholds + s.common.measurements1.thresholds), ...
+        details, 'uniform', false));
+    case 'log'
+        allDifferencesMatrix = cell2mat(cellfun(@(s) s.common.logdiff, details, ...
+            'uniform', false));
+    otherwise
+        error('Unknown diffType.');
+end
 
 allDifferences = allDifferencesMatrix(:);
 allCategories = flatten(meshgrid(1:length(valuesNR), ones(size(allDifferencesMatrix, 1), 1)));
@@ -162,7 +176,14 @@ yl = 2;
 ylim([-yl yl]);
 
 % ylabel('Log error');
-ylabel('Relative error');
+switch diffType
+    case 'spe'
+        ylabel('Relative error');
+    case 'log'
+        ylabel('Log error');
+    otherwise
+       error('Unknown diffType.');
+end 
 
 set(ax, 'xminortick', 'off');
 

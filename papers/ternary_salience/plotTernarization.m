@@ -13,9 +13,17 @@
 %       origin.
 %   plotType
 %       This can be 'violin' or 'jitter'.
+%   diffType
+%       Type of error to calculate. This can be
+%        'spe'
+%           Symmetric percentage error -- this is the ratio between the
+%           difference and the mean of the measured and predicted values.
+%        'log'
+%           Difference between log measurement and log prediction.
 
 setdefault('symmetrizePP', false);
 setdefault('plotType', 'violin');
+setdefault('diffType', 'log');
 
 %% Load psychophysics
 
@@ -74,12 +82,18 @@ fig.Position(3:4) = [5.08 2];
 hold on;
 plot([0, 1], [0 0], 'color', lighten(colorDict('gray'), 0.65), 'linewidth', 0.5);
 
-% allDifferencesMatrix = cell2mat(cellfun(@(s) s.common.logdiff, details, ...
-%     'uniform', false));
-allDifferencesMatrix = cell2mat(cellfun(@(s) ...
-    2*(s.common.measurements2.thresholds - s.common.measurements1.thresholds) ./ ...
-      (s.common.measurements2.thresholds + s.common.measurements1.thresholds), ...
-    details, 'uniform', false));
+switch diffType
+    case 'spe'
+        allDifferencesMatrix = cell2mat(cellfun(@(s) ...
+            2*(s.common.measurements2.thresholds - s.common.measurements1.thresholds) ./ ...
+              (s.common.measurements2.thresholds + s.common.measurements1.thresholds), ...
+            details, 'uniform', false));
+    case 'log'
+        allDifferencesMatrix = cell2mat(cellfun(@(s) s.common.logdiff, details, ...
+            'uniform', false));
+    otherwise
+        error('Unknown diffType.');
+end
 
 allDifferences = allDifferencesMatrix(:);
 grayAmounts = arrayfun(@(s) diff(s.cutoffs), ni.allPredictionResults);
@@ -121,7 +135,14 @@ yl = 2;
 ylim([-yl yl]);
 
 xlabel('Fraction gray');
-ylabel('Relative error');
+switch diffType
+    case 'spe'
+        ylabel('Relative error');
+    case 'log'
+        ylabel('Log error');
+    otherwise
+        error('Unknown diffType.');
+end
 
 set(ax, 'xminortick', 'off');
 
