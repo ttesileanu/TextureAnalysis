@@ -64,6 +64,10 @@ function [difference, details] = compareMeasurements(measurements1, measurements
 %       between the 'hi' and 'lo' limits is below the value provided here
 %       are considered for the calculation. The ratios from the first
 %       measurements structure are used.
+%    'summaryType'
+%       How to summarize the differences in the two groups of values.
+%        'RMSLE':   root mean square log error
+%        'MedALE':  median absolute log error
 
 % parse optional arguments
 parser = inputParser;
@@ -75,6 +79,7 @@ parser.addParameter('changedOnly', true, @(b) islogical(b) && isscalar(b));
 parser.addParameter('invarianceTol', 1e-8, @(x) isnumeric(x) && isscalar(x));
 parser.addParameter('normalize', false, @(b) islogical(b) && isscalar(b));
 parser.addParameter('hiLoRatioLimit', inf, @(x) isnumeric(x) && isscalar(x));
+parser.addParameter('summaryType', 'RMSLE', @(s) ismember(s, {'RMSLE', 'MedALE'}));
 
 % show defaults if requested
 if nargin == 1 && strcmp(measurements1, 'defaults')
@@ -133,9 +138,18 @@ if params.normalize
 end
 details.common.logdiff = logThresholds2 - logThresholds1;
 
+switch params.summaryType
+    case 'RMSLE'
+        summaryFct = @rms;
+    case 'MedALE'
+        summaryFct = @medabs;
+    otherwise
+        error([mfilename ':badsumm'], 'Unknown summaryType.');
+end
+
 switch type
     case 'direct'
-        difference = rms(details.common.logdiff(changed & mask));
+        difference = summaryFct(details.common.logdiff(changed & mask));
         details.common.nAveraged = sum(changed & mask);
     case 'group'
         uniqueGroups = sortGroups(unique(measurements1.groups));
@@ -160,9 +174,9 @@ switch type
         % calculate group averages
         details.common.uniqueGroups = uniqueGroups;
         details.common.groupDiffMeans = cellfun(@(group) ...
-            rms(details.common.logdiff(strcmp(measurements1.groups, group) & mask)), ...
+            summaryFct(details.common.logdiff(strcmp(measurements1.groups, group) & mask)), ...
             uniqueGroups);
-        difference = rms(details.common.groupDiffMeans);
+        difference = summaryFct(details.common.groupDiffMeans);
     case 'ellipse'
         uniqueGroups = sortGroups(unique(measurements1.groups));
         uniqueGroupMask = true(size(uniqueGroups));
@@ -244,7 +258,7 @@ switch type
         details.common.ellipseDifferences = wvecDiff;
         
         % calculate overall difference
-        difference = rms(details.common.ellipseDifferences);
+        difference = summaryFct(details.common.ellipseDifferences);
     otherwise
         error([mfilename ':badtype'], 'Unrecognized difference type.');
 end
@@ -257,6 +271,13 @@ function x = rms(v)
 % Get root mean squared from vector.
 
 x = sqrt(mean(v(:).^2));
+
+end
+
+function x = medabs(v)
+% Get median of absolute vaue from vector.
+
+x = median(abs(v(:)));
 
 end
 
