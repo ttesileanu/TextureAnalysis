@@ -53,7 +53,7 @@
 %       highest-density interval of D values obtained from the permutations;
 %       then the same for the second permutation test (see the paper); and
 %       finally the highest-density interval for the posterior probability
-%       of the beta and sigma parameters from the parameter-estimation test
+%       of the eta and sigma parameters from the parameter-estimation test
 %       (see the paper). These are the values that appear in, e.g., Table 1
 %       in the SI. Note that a p-value of 0 saved to file means that none
 %       of the `nSamples` samples reached a value as extreme as the
@@ -292,13 +292,13 @@ p2 = pvalSimple;
 
 % Consider a probabilistic model in which the log threshold in direction i
 % is related to the natural image prediction in that direction by
-%   log_th(i) - avg_log_th = beta*(log_pred - avg_log_pred) + eta(i)
-% where eta(i) are i.i.d. errors drawn from a normal distribution with
+%   log_th(i) - avg_log_th = eta*(log_pred - avg_log_pred) + epsilon(i)
+% where epsilon(i) are i.i.d. errors drawn from a normal distribution with
 % standard deviation sigma.
 
-% Note that the log thresholds are simply random when beta = 0, and are
-% given by the NI predictions + random error when beta = 1. We aim to find
-% the posterior distribution for beta and see whether it overlaps 0 or 1.
+% Note that the log thresholds are simply random when eta = 0, and are
+% given by the NI predictions + random error when eta = 1. We aim to find
+% the posterior distribution for eta and see whether it overlaps 0 or 1.
 
 % We try a few different priors to make sure we're not biasing the
 % inference.
@@ -317,13 +317,13 @@ yiHat = yi - mean(yi);
 
 % prepare the priors
 n = length(xiHat);
-priorBetaStd = 10;
+priorEtaStd = 10;
 priorLogSigmaStd = 10;
 logPriors = {...
-    {'flat', @(beta, logSigma) 0}, ...
-    {'normalBeta', @(beta, logSigma) -0.5*(beta/priorBetaStd)^2}, ...
-    {'normalLogSigma', @(beta, logSigma) -0.5*(logSigma/priorLogSigmaStd)^2}, ...
-    {'normalBoth', @(beta, logSigma) -0.5*(beta/priorBetaStd)^2 - 0.5*(logSigma/priorLogSigmaStd)^2}};
+    {'flat', @(eta, logSigma) 0}, ...
+    {'normalEta', @(eta, logSigma) -0.5*(eta/priorEtaStd)^2}, ...
+    {'normalLogSigma', @(eta, logSigma) -0.5*(logSigma/priorLogSigmaStd)^2}, ...
+    {'normalBoth', @(eta, logSigma) -0.5*(eta/priorEtaStd)^2 - 0.5*(logSigma/priorLogSigmaStd)^2}};
 
 % run the inference, plot some diagnostics
 figure;
@@ -342,7 +342,7 @@ for i = 1:length(logPriors)
     % plot diagnostics
     subplot(length(logPriors), 1, i);
     plot(posteriorSamples);
-    legend({'\beta', 'log(\sigma)'});
+    legend({'\eta', 'log(\sigma)'});
     xlabel('Iteration');
     title(priorName);
     
@@ -350,24 +350,24 @@ for i = 1:length(logPriors)
     posteriorSamplesBurned{i} = posteriorSamples(end/2:end, :);
 end
 
-% show posterior beta
-minBeta = min([0 ; cellfun(@(samples) min(samples(:, 1)), posteriorSamplesBurned(:))]);
-maxBeta = max([1 ; cellfun(@(samples) max(samples(:, 1)), posteriorSamplesBurned(:))]);
+% show posterior eta
+minEta = min([0 ; cellfun(@(samples) min(samples(:, 1)), posteriorSamplesBurned(:))]);
+maxEta = max([1 ; cellfun(@(samples) max(samples(:, 1)), posteriorSamplesBurned(:))]);
 plotter = MatrixPlotter(length(logPriors), 'fixedSize', [8 4], 'fixedSizeUnits', 'inches');
 while plotter.next
     i = plotter.index;
     
-    histogram(posteriorSamplesBurned{i}(:, 1), 100, 'BinLimits', [minBeta maxBeta]);
-    xlabel('\beta');
+    histogram(posteriorSamplesBurned{i}(:, 1), 100, 'BinLimits', [minEta maxEta]);
+    xlabel('\eta');
     title(logPriors{i}{1});
     
     [lo, hi] = getHdi(posteriorSamplesBurned{i}(:, 1), 0.95);
-    disp(['95% credible interval for beta, ', logPriors{i}{1} ' prior: [' ...
+    disp(['95% credible interval for eta, ', logPriors{i}{1} ' prior: [' ...
         num2str(lo, '%.3f') ', ' num2str(hi, '%.3f') ']']);
     
     if strcmp(logPriors{i}{1}, 'flat')
-        beta_lo = lo;
-        beta_hi = hi;
+        eta_lo = lo;
+        eta_hi = hi;
     end
 end
 
@@ -397,11 +397,11 @@ if ~isempty(outFile)
         NRselection(1), NRselection(2), D1, ...
         p1, D1lo, D1hi, ....
         p2, D2lo, D2hi, ...
-        beta_lo, beta_hi, sigma_lo, sigma_hi);
+        eta_lo, eta_hi, sigma_lo, sigma_hi);
     fclose(f); 
 end
 
-%% Make a pretty plot of the beta posterior
+%% Make a pretty plot of the eta posterior
 
 fig = figure;
 fig.Units = 'inches';
@@ -415,7 +415,7 @@ idx = 1;
 
 histogram(posteriorSamplesBurned{idx}(:, 1), 50, 'BinLimits', [0.6 1.2], ...
     'normalization', 'pdf');
-xlabel('\beta');
+xlabel('\eta');
 ylabel('Posterior PDF');
 
 beautifygraph('linewidth', 0.5, 'minorticks', 'off');
