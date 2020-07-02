@@ -14,6 +14,12 @@ function drawTernaryMixedBackground(varargin)
 %       Plot options for the guiding circles.
 %    'axisopts'
 %       Plot options for the coordinate axes.
+%    'axisarrows'
+%       If true, draw arrows at the end of the axis lines.
+%    'axisrange'
+%       Range for axis lines.
+%    'arrowsize'
+%       Size of arrows if 'axisarrows' is true.
 
 % parse optional arguments
 parser = inputParser;
@@ -30,6 +36,9 @@ parser.addParameter('circles', 1, @(v) isempty(v) || (isvector(v) && isnumeric(v
 parser.addParameter('axes', true, @(b) isscalar(b) && islogical(b));
 parser.addParameter('circleopts', {'color', defaultColors('circle'), 'linewidth', 0.5}, @(c) iscell(c));
 parser.addParameter('axisopts', {'color', defaultColors('axis'), 'linewidth', 0.5}, @(c) iscell(c));
+parser.addParameter('axisarrows', false, @(b) isscalar(b) && islogical(b));
+parser.addParameter('axisrange', [-1, 1], @(x) isvector(x) && length(x) == 2 && isnumeric(x));
+parser.addParameter('arrowsize', 0.05, @(x) isscalar(x) && isnumeric(x) && x > 0);
 
 % show defaults if asked
 if nargin == 1 && strcmp(varargin{1}, 'defaults')
@@ -57,8 +66,16 @@ for i = 1:length(circleRadii)
 end
 
 % draw the main axes
-plot([-1 1], [0 0], params.axisopts{:});
-plot([0 0], [-1 1], params.axisopts{:});
+plot(params.axisrange, [0 0], params.axisopts{:});
+plot([0 0], params.axisrange, params.axisopts{:});
+
+if params.axisarrows
+    ax1 = params.axisrange(2);
+    as1 = params.arrowsize;
+    as2 = as1 * 8 / 5;
+    plot(as1 * [-1 0 1], ax1 - as2 * [1 0 1], params.axisopts{:});
+    plot(ax1 - as2 * [1 0 1], as1 * [-1 0 1], params.axisopts{:});
+end
 
 % revert hold state
 if ~wasHold
