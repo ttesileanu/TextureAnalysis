@@ -39,6 +39,35 @@ masked_groups = ternaryAvg.groups(group_mask);
 masked_directions = ternaryAvg.directions(group_mask);
 mask_mixed = cellfun(@(g) sum(g == ';') == 1, masked_groups);
 
+%% Show nonlinearity in thresholds
+
+fig = figure;
+fig.Units = 'inches';
+fig.Position = [2 2 4 3];
+
+[~, colorDict] = get_palette();
+
+hold on;
+
+axis equal;
+plot([0, 1], [0, 1], ':', 'color', colorDict('gray'));
+scatter(ternaryAvg.thresholds(group_mask), predictions.thresholds(group_mask), ...
+    [], colorDict('blue'), 'filled', 'MarkerFaceAlpha', 0.5);
+
+xlabel('Measured thresholds');
+ylabel('Predicted thresholds');
+
+xlim([0, 1.3]);
+ylim([0, 1]);
+
+beautifygraph;
+preparegraph;
+
+set(gca, 'color','none');
+set(fig, 'color', 'none');
+
+safePrint(fullfile('figs', 'draft', 'nonlinear_thresholds.pdf'));
+
 %% Compare different kinds of errors
 
 fig = figure;
