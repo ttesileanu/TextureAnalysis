@@ -10,7 +10,7 @@ function status = ellipse(x0, y0, a, b, theta, varargin)
 %   `r'*M*r = 1`.
 %
 %   Additional arguments are directly passed to Matlab's PLOT, except for:
-%    'npoints'
+%    'nPoints'
 %       Set the number of points used for drawing the ellipse.
 %
 %   See also: PLOT.
@@ -48,8 +48,7 @@ else
 end
 
 % separate special arguments from PLOT arguments
-specialArgs0 = false(size(varargin));
-specialArgs0(ischar(varargin)) = ismember(varargin(ischar(varargin)), {'nPoints'});
+specialArgs0 = strcmp(varargin, {'nPoints'});
 if any(specialArgs0)
     if specialArgs0(end)
         error([mfilename ':badspargs'], 'Incomplete argument.');
