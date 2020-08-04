@@ -50,6 +50,8 @@ function [projectedThresholds] = plotTernaryThresholds(...
 %       Options to pass to drawTernaryTriangle.
 %    'mixedOptions'
 %       Options to pass to drawTernaryMixedBackground.
+%    'ellipseOptions'
+%       Options to pass to ellipse.
 %    
 %   See also: plotTernaryMatrix.
 
@@ -75,6 +77,7 @@ parser.addParameter('colorFct', []);
 parser.addParameter('drawGuides', 'auto', @(b) (islogical(b) && isscalar(b)) || strcmp(b, 'auto'));
 parser.addParameter('triangleOptions', {}, @(c) iscell(c) && isvector(c));
 parser.addParameter('mixedOptions', {}, @(c) iscell(c) && isvector(c));
+parser.addParameter('ellipseOptions', {}, @(c) iscell(c) && isvector(c));
 
 % show defaults if requested
 if nargin == 1 && strcmp(thresholds, 'defaults')
@@ -214,7 +217,8 @@ if params.ellipse
         % remove non-finite entries
         measM = fitEllipse(projectedThresholds(finiteMask, :));
         avgColor = mean(colors, 1);
-        ellipse(0, 0, measM, 'color', mixcolor(avgColor, [0.5 0.5 0.5]));
+        ellipse(0, 0, measM, 'color', mixcolor(avgColor, [0.5 0.5 0.5]), ...
+            params.ellipseOptions{:});
     end
 end
 
